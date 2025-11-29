@@ -1,0 +1,83 @@
+// Instructions to manually add to HomePage.jsx around line 309
+
+// STEP 1: Replace the static features array declaration with this:
+const [features, setFeatures] = useState([
+  {
+    icon: <FaShoppingBag className="w-8 h-8" />,
+    title: "Unique Catalogue",
+    description: "Exclusive designs you won't find anywhere else",
+    bgColor: "from-rose-50 to-rose-100"
+  },
+  {
+    icon: <FaTruck className="w-8 h-8" />,
+    title: "Shipping & Returns",
+    description: "Free shipping on orders above ₹999 & easy returns",
+    bgColor: "from-blue-50 to-blue-100"
+  },
+  {
+    icon: <FaShieldAlt className="w-8 h-8" />,
+    title: "Secure Payment",
+    description: "100% secure payment with multiple options",
+    bgColor: "from-green-50 to-green-100"
+  },
+  {
+    icon: <FaCreditCard className="w-8 h-8" />,
+    title: "Buy More Save More",
+    description: "Special discounts on bulk orders",
+    bgColor: "from-purple-50 to-purple-100"
+  },
+  {
+    icon: <FaStar className="w-8 h-8" />,
+    title: "Warranty",
+    description: "1-year warranty on all products",
+    bgColor: "from-amber-50 to-amber-100"
+  },
+  {
+    icon: <FaHeadset className="w-8 h-8" />,
+    title: "24/7 Support",
+    description: "Dedicated customer support team",
+    bgColor: "from-slate-50 to-slate-100"
+  }
+]);
+
+// STEP 2: Add this useEffect right after the features state declaration:
+useEffect(() => {
+  const fetchFeatures = async () => {
+    try {
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+      const res = await fetch(`${API_URL}/special-offers`);
+      const data = await res.json();
+
+      if (data.success && data.data && data.data.length > 0) {
+        const iconMap = {
+          'FaGift': FaShoppingBag,
+          'FaTruck': FaTruck,
+          'FaShieldAlt': FaShieldAlt,
+          'FaCreditCard': FaCreditCard,
+          'FaStar': FaStar,
+          'FaHeadset': FaHeadset
+        };
+
+        const mappedFeatures = data.data.map(offer => ({
+          icon: React.createElement(iconMap[offer.icon] || FaShoppingBag, { className: "w-8 h-8" }),
+          title: offer.title,
+          description: offer.description,
+          bgColor: offer.bgColor || 'from-rose-50 to-rose-100'
+        }));
+
+        setFeatures(mappedFeatures);
+      }
+    } catch (error) {
+      console.error('Error fetching special offers:', error);
+    }
+  };
+
+  fetchFeatures();
+}, []);
+
+// STEP 3: Find the "Why Shop With Us" section rendering (around line 900-950)
+// and update the feature card to use the bgColor:
+// Change from:
+// <div className="bg-gradient-to-br from-rose-50 to-rose-100 p-6 rounded-xl">
+// To:
+// <div className={`bg-gradient-to-br ${feature.bgColor} p-6 rounded-xl`}>
