@@ -21,7 +21,7 @@ type FormMultipleImageInputProps<TFormData extends FieldValues> = {
   placeholder?: string;
   previewImages?: string[];
   maxImages?: number;
-  acceptedTypes?: string;
+  onRemovePreviewImage?: (index: number) => void;
 };
 
 export default function FormMultipleImageInput<TFormData extends FieldValues>({
@@ -32,6 +32,7 @@ export default function FormMultipleImageInput<TFormData extends FieldValues>({
   previewImages = [],
   maxImages = Infinity,
   acceptedTypes = "image/jpeg,image/jpg,image/png,image/webp",
+  onRemovePreviewImage,
 }: FormMultipleImageInputProps<TFormData>) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [dragActive, setDragActive] = useState(false);
@@ -69,20 +70,27 @@ export default function FormMultipleImageInput<TFormData extends FieldValues>({
   };
 
   const handleFiles = (files: File[]) => {
+    console.log('🖼️ FormMultipleImageInput: handleFiles called with', files.length, 'files');
+
     const validFiles = files.filter((file) => {
       if (!acceptedTypes.includes(file.type)) {
+        console.warn('Skipping file with invalid type:', file.type);
         return false;
       }
       if (file.size > 3 * 1024 * 1024) { // 3MB limit
+        console.warn('Skipping file too large:', file.size);
         return false;
       }
       return true;
     });
 
     const filesToAdd = validFiles.slice(0, remainingSlots);
+    console.log('🖼️ FormMultipleImageInput: filesToAdd:', filesToAdd.length);
+    console.log('🖼️ FormMultipleImageInput: currentImages before update:', currentImages.length);
 
     if (filesToAdd.length > 0) {
       const newImages = [...currentImages, ...filesToAdd];
+      console.log('🖼️ FormMultipleImageInput: Calling onChange with', newImages.length, 'images');
       onChange(newImages);
     }
   };
@@ -162,8 +170,22 @@ export default function FormMultipleImageInput<TFormData extends FieldValues>({
                           />
                         </div>
                         <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center">
-                          <span className="text-white text-xs font-medium">Current</span>
+                          <span className="text-white text-xs font-medium">Existing</span>
                         </div>
+                        {onRemovePreviewImage && (
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="icon"
+                            className="absolute -top-2 -right-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onRemovePreviewImage(index);
+                            }}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        )}
                       </div>
                     ))}
 

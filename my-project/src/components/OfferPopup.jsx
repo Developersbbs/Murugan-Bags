@@ -59,21 +59,12 @@ const OfferPopup = () => {
             {/* Popup Modal */}
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
                 <div
-                    className={`relative bg-white rounded-2xl shadow-2xl max-w-2xl w-full overflow-hidden pointer-events-auto transform transition-all duration-300 ${isClosing ? 'scale-95 opacity-0' : 'scale-100 opacity-100'
+                    className={`relative bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden pointer-events-auto transform transition-all duration-300 ${isClosing ? 'scale-95 opacity-0' : 'scale-100 opacity-100'
                         }`}
                     onClick={(e) => e.stopPropagation()}
                 >
-                    {/* Close Button */}
-                    <button
-                        onClick={handleClose}
-                        className="absolute top-4 right-4 z-10 bg-white/90 hover:bg-white text-slate-700 rounded-full p-2 shadow-lg transition-all hover:scale-110"
-                        aria-label="Close popup"
-                    >
-                        <FaTimes className="w-5 h-5" />
-                    </button>
-
-                    {/* Image Section */}
-                    <div className="relative w-full h-64 md:h-80 bg-gradient-to-br from-rose-100 to-purple-100">
+                    {/* Background Image */}
+                    <div className="absolute inset-0 z-0">
                         <img
                             src={imageUrl}
                             alt={popup.heading}
@@ -82,38 +73,45 @@ const OfferPopup = () => {
                                 e.target.style.display = 'none';
                             }}
                         />
+                        {/* Gradient Overlay for Readability */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/60 to-black/20" />
                     </div>
 
+                    {/* Close Button */}
+                    <button
+                        onClick={handleClose}
+                        className="absolute top-4 right-4 z-20 bg-black/20 hover:bg-black/40 text-white rounded-full p-2 backdrop-blur-sm transition-all hover:scale-110 border border-white/20"
+                        aria-label="Close popup"
+                    >
+                        <FaTimes className="w-5 h-5" />
+                    </button>
+
                     {/* Content Section */}
-                    <div className="p-8 md:p-10">
-                        <h2 className="text-3xl md:text-4xl font-bold text-slate-800 mb-4 leading-tight">
+                    <div className="relative z-10 p-8 md:p-10 flex flex-col items-center text-center h-full min-h-[400px] justify-end">
+                        <h2 className="text-3xl md:text-4xl font-bold text-white mb-3 leading-tight drop-shadow-lg">
                             {popup.heading}
                         </h2>
-                        <p className="text-slate-600 text-lg mb-8 leading-relaxed">
+                        <p className="text-gray-100 text-lg mb-8 leading-relaxed drop-shadow-md max-w-sm">
                             {popup.description}
                         </p>
 
                         {/* Action Buttons */}
-                        <div className="flex flex-col sm:flex-row gap-4">
+                        <div className="flex flex-col w-full gap-3">
                             <Link
                                 to={popup.buttonLink || '/products'}
                                 onClick={handleClose}
-                                className="flex-1 bg-gradient-to-r from-rose-600 to-pink-600 text-white px-8 py-4 rounded-xl font-semibold text-center hover:from-rose-700 hover:to-pink-700 transform hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl"
+                                className="w-full bg-white text-slate-900 px-8 py-3.5 rounded-xl font-bold text-lg hover:bg-rose-50 transform hover:scale-[1.02] transition-all duration-200 shadow-lg"
                             >
                                 {popup.buttonText || 'Shop Now'}
                             </Link>
                             <button
                                 onClick={handleClose}
-                                className="sm:w-auto px-6 py-4 text-slate-600 hover:text-slate-800 font-medium transition-colors"
+                                className="w-full px-6 py-2 text-white/80 hover:text-white font-medium transition-colors text-sm"
                             >
-                                Maybe Later
+                                No thanks, maybe later
                             </button>
                         </div>
                     </div>
-
-                    {/* Decorative Element */}
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-rose-400/20 to-purple-400/20 rounded-full blur-3xl -z-10" />
-                    <div className="absolute bottom-0 left-0 w-40 h-40 bg-gradient-to-tr from-pink-400/20 to-rose-400/20 rounded-full blur-3xl -z-10" />
                 </div>
             </div>
         </>

@@ -1,6 +1,7 @@
 "use client";
 
 import { SheetTrigger } from "@/components/ui/sheet";
+import { useMemo } from "react";
 import { editProduct } from "@/actions/products/editProduct";
 import { ProductDetails } from "@/services/products/types";
 import ProductFormSheet from "../../_components/form/ProductFormSheet";
@@ -110,12 +111,12 @@ export function EditProductSheet({ product, children }: Props) {
         attributesType: typeof variant.attributes,
         attributesKeys: variant.attributes ? Object.keys(variant.attributes) : 'no attributes'
       });
-      
+
       if (variant.attributes) {
         Object.entries(variant.attributes).forEach(([attrName, attrValue]) => {
           const attrId = `attr-${attrName.toLowerCase()}`;
           console.log(`🔄 EDIT SHEET: Processing attribute ${attrName} -> ${attrValue}, attrId: ${attrId}`);
-          
+
           if (!selectedValues[attrId]) {
             selectedValues[attrId] = [];
           }
@@ -143,24 +144,20 @@ export function EditProductSheet({ product, children }: Props) {
   };
 
   // Transform the variant data
-  const formVariants = product.product_variants ? transformVariantsForForm(product.product_variants) : null;
+  const formVariants = useMemo(() => {
+    return product.product_variants ? transformVariantsForForm(product.product_variants) : null;
+  }, [product.product_variants]);
 
   console.log("EditProductSheet - Product data:", product);
-  console.log("EditProductSheet - Available fields:", Object.keys(product));
-  console.log("EditProductSheet - Product ID value:", product.id);
-  console.log("EditProductSheet - Product _id value:", product._id);
-  console.log("EditProductSheet - Categories:", product.categories);
-  console.log("EditProductSheet - Product variants:", product.product_variants);
-  console.log("EditProductSheet - Transformed variants for form:", formVariants);
-  console.log("EditProductSheet - formVariants keys:", formVariants ? Object.keys(formVariants) : 'null');
-  console.log("EditProductSheet - formVariants.selectedValues:", formVariants?.selectedValues);
-  console.log("EditProductSheet - Initial data being passed to form:", {
+  // ... (logs can remain or be removed, keeping them for now but maybe reduced)
+
+  const initialData = useMemo(() => ({
     name: product.name,
     description: product.description ?? "",
     images: [],
     sku: product.sku,
     productType: (product.product_type as "physical" | "digital") || "physical",
-    productStructure: product.product_variants && product.product_variants.length > 0 ? "variant" : "simple",
+    productStructure: (product.product_variants && product.product_variants.length > 0 ? "variant" : "simple") as "variant" | "simple",
     categories: product.categories ? product.categories.map(cat => {
       // Add null checks for category and its properties
       const categoryId = cat.category?._id || '';
@@ -169,7 +166,7 @@ export function EditProductSheet({ product, children }: Props) {
 
       // Handle subcategories with null check
       const subcategories = Array.isArray(cat.subcategories) ? cat.subcategories : [];
-      
+
       return {
         categoryId,
         categoryName,
@@ -180,15 +177,21 @@ export function EditProductSheet({ product, children }: Props) {
     }) : [],
     costPrice: product.cost_price,
     salesPrice: product.selling_price,
-    stock: product.baseStock,
-    minStockThreshold: product.minStock,
+    stock: product.baseStock ?? undefined,
+    minStockThreshold: product.minStock ?? undefined,
     slug: product.slug,
     tags: product.tags || [],
     seoTitle: product.seo?.title || "",
     seoDescription: product.seo?.description || "",
     seoKeywords: product.seo?.keywords || [],
+    seoCanonical: product.seo?.canonical || "",
+    seoRobots: (product.seo?.robots as "index,follow" | "noindex,nofollow" | "index,nofollow" | "noindex,follow") || "index,follow",
+    seoOgTitle: product.seo?.ogTitle || "",
+    seoOgDescription: product.seo?.ogDescription || "",
+    seoOgImage: product.seo?.ogImage || "",
+    // Add the transformed variant data
     product_variants: formVariants,
-  });
+  }), [product, formVariants]);
 
   return (
     <ProductFormSheet
@@ -196,47 +199,7 @@ export function EditProductSheet({ product, children }: Props) {
       description="Update necessary product information here"
       submitButtonText="Update Product"
       actionVerb="updated"
-      initialData={{
-        name: product.name,
-        description: product.description ?? "",
-        images: [],
-        sku: product.sku,
-        productType: (product.product_type as "physical" | "digital") || "physical",
-        productStructure: product.product_variants && product.product_variants.length > 0 ? "variant" : "simple",
-        categories: product.categories ? product.categories.map(cat => {
-          // Add null checks for category and its properties
-          const categoryId = cat.category?._id || '';
-          const categoryName = cat.category?.name || 'Uncategorized';
-          const categorySlug = cat.category?.slug || '';
-
-          // Handle subcategories with null check
-          const subcategories = Array.isArray(cat.subcategories) ? cat.subcategories : [];
-          
-          return {
-            categoryId,
-            categoryName,
-            categorySlug,
-            subcategoryIds: subcategories.map(sub => sub?._id || ''),
-            subcategoryNames: subcategories.map(sub => sub?.name || ''),
-          };
-        }) : [],
-        costPrice: product.cost_price,
-        salesPrice: product.selling_price,
-        stock: product.baseStock,
-        minStockThreshold: product.minStock,
-        slug: product.slug,
-        tags: product.tags || [],
-        seoTitle: product.seo?.title || "",
-        seoDescription: product.seo?.description || "",
-        seoKeywords: product.seo?.keywords || [],
-        seoCanonical: product.seo?.canonical || "",
-        seoRobots: (product.seo?.robots as "index,follow" | "noindex,nofollow" | "index,nofollow" | "noindex,follow") || "index,follow",
-        seoOgTitle: product.seo?.ogTitle || "",
-        seoOgDescription: product.seo?.ogDescription || "",
-        seoOgImage: product.seo?.ogImage || "",
-        // Add the transformed variant data
-        product_variants: formVariants,
-      }}
+      initialData={initialData}
       action={(formData) => editProduct(product._id, formData)}
       previewImages={product.image_url}
     >

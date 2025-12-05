@@ -1036,1180 +1036,1211 @@ router.post("/", uploadDigitalFile, async (req, res) => {
   }
 });
 router.put("/:id", uploadDigitalFile, async (req, res) => {
-    try {
-        console.log('=== PUT PRODUCT DEBUG ===');
-        console.log('Request body keys:', Object.keys(req.body));
+  try {
+    console.log('=== PUT PRODUCT DEBUG ===');
+    console.log('Request body keys:', Object.keys(req.body));
 
-        // Parse categories
-        let categories = [];
-        if (req.body.categories) {
-            try {
-                const parsedCategories = JSON.parse(req.body.categories);
-                console.log('=== PUT: PARSING CATEGORIES ===');
+    // Parse categories
+    let categories = [];
+    if (req.body.categories) {
+      try {
+        const parsedCategories = JSON.parse(req.body.categories);
+        console.log('=== PUT: PARSING CATEGORIES ===');
 
-                if (Array.isArray(parsedCategories)) {
-                    for (const cat of parsedCategories) {
-                        let categoryId = null;
+        if (Array.isArray(parsedCategories)) {
+          for (const cat of parsedCategories) {
+            let categoryId = null;
 
-                        if (cat.categoryId) {
-                            if (typeof cat.categoryId === 'string' && cat.categoryId.length === 24 && /^[a-fA-F0-9]{24}$/.test(cat.categoryId)) {
-                                categoryId = cat.categoryId;
-                            }
-                        }
-                        else if (cat.category) {
-                            if (typeof cat.category === 'string' && cat.category.length === 24 && /^[a-fA-F0-9]{24}$/.test(cat.category)) {
-                                categoryId = cat.category;
-                            }
-                            else if (typeof cat.category === 'string') {
-                                try {
-                                    const Category = require("../models/Category.js");
-                                    const foundCategory = await Category.findOne({
-                                        $or: [{ slug: cat.category }, { name: cat.category }]
-                                    });
+            if (cat.categoryId) {
+              if (typeof cat.categoryId === 'string' && cat.categoryId.length === 24 && /^[a-fA-F0-9]{24}$/.test(cat.categoryId)) {
+                categoryId = cat.categoryId;
+              }
+            }
+            else if (cat.category) {
+              if (typeof cat.category === 'string' && cat.category.length === 24 && /^[a-fA-F0-9]{24}$/.test(cat.category)) {
+                categoryId = cat.category;
+              }
+              else if (typeof cat.category === 'string') {
+                try {
+                  const Category = require("../models/Category.js");
+                  const foundCategory = await Category.findOne({
+                    $or: [{ slug: cat.category }, { name: cat.category }]
+                  });
 
-                                    if (foundCategory) {
-                                        categoryId = foundCategory._id.toString();
-                                    } else {
-                                        continue;
-                                    }
-                                } catch (categoryError) {
-                                    console.error("Error finding category:", categoryError);
-                                    continue;
-                                }
-                            }
-                            else if (cat.category._id || cat.category.id) {
-                                categoryId = cat.category._id || cat.category.id;
-                            }
-                        }
-
-                        if (categoryId) {
-                            let subcategories = [];
-
-                            if (cat.subcategoryIds && Array.isArray(cat.subcategoryIds)) {
-                                for (const subcatId of cat.subcategoryIds) {
-                                    if (typeof subcatId === 'string' && subcatId.length === 24 && /^[a-fA-F0-9]{24}$/.test(subcatId)) {
-                                        subcategories.push(subcatId);
-                                    }
-                                }
-                            }
-                            else if (cat.subcategories && Array.isArray(cat.subcategories)) {
-                                for (const subcat of cat.subcategories) {
-                                    if (typeof subcat === 'string' && subcat.length === 24 && /^[a-fA-F0-9]{24}$/.test(subcat)) {
-                                        subcategories.push(subcat);
-                                    } else if (typeof subcat === 'string') {
-                                        try {
-                                            const Subcategory = require("../models/Subcategory.js");
-                                            const foundSubcategory = await Subcategory.findOne({
-                                                $or: [{ slug: subcat }, { name: subcat }]
-                                            });
-
-                                            if (foundSubcategory) {
-                                                subcategories.push(foundSubcategory._id.toString());
-                                            }
-                                        } catch (subcategoryError) {
-                                            console.error("Error finding subcategory:", subcategoryError);
-                                        }
-                                    }
-                                }
-                            }
-
-                            categories.push({
-                                category: categoryId,
-                                subcategories: subcategories
-                            });
-                        }
-                    }
+                  if (foundCategory) {
+                    categoryId = foundCategory._id.toString();
+                  } else {
+                    continue;
+                  }
+                } catch (categoryError) {
+                  console.error("Error finding category:", categoryError);
+                  continue;
                 }
-            } catch (e) {
-                console.error("Error parsing categories JSON:", e);
+              }
+              else if (cat.category._id || cat.category.id) {
+                categoryId = cat.category._id || cat.category.id;
+              }
             }
-        }
 
-        let tags = [];
-        if (req.body.tags) {
-            try {
-                tags = JSON.parse(req.body.tags);
-            } catch (e) {
-                tags = Array.isArray(req.body.tags) ? req.body.tags : [req.body.tags];
-            }
-        }
+            if (categoryId) {
+              let subcategories = [];
 
-        let seoKeywords = [];
-        if (req.body.seo_keywords) {
-            try {
-                seoKeywords = JSON.parse(req.body.seo_keywords);
-            } catch (e) {
-                console.error("Error parsing seoKeywords JSON:", e);
-            }
-        }
-
-        let variantsData = null;
-        if (req.body.product_variants) {
-            try {
-                variantsData = JSON.parse(req.body.product_variants);
-                console.log('Parsed variants data for update:', JSON.stringify(variantsData, null, 2));
-            } catch (e) {
-                console.error("Error parsing variants JSON:", e);
-            }
-        }
-
-        const productType = req.body.product_type || 'physical';
-
-        // Process files
-        let allImageUrls = [];
-        let digitalFile = null;
-        let variantImagesMap = {};
-
-        if (req.files && Array.isArray(req.files)) {
-            const filesByField = {};
-            req.files.forEach(file => {
-                if (!filesByField[file.fieldname]) {
-                    filesByField[file.fieldname] = [];
+              if (cat.subcategoryIds && Array.isArray(cat.subcategoryIds)) {
+                for (const subcatId of cat.subcategoryIds) {
+                  if (typeof subcatId === 'string' && subcatId.length === 24 && /^[a-fA-F0-9]{24}$/.test(subcatId)) {
+                    subcategories.push(subcatId);
+                  }
                 }
-                filesByField[file.fieldname].push(file);
-            });
+              }
+              else if (cat.subcategories && Array.isArray(cat.subcategories)) {
+                for (const subcat of cat.subcategories) {
+                  if (typeof subcat === 'string' && subcat.length === 24 && /^[a-fA-F0-9]{24}$/.test(subcat)) {
+                    subcategories.push(subcat);
+                  } else if (typeof subcat === 'string') {
+                    try {
+                      const Subcategory = require("../models/Subcategory.js");
+                      const foundSubcategory = await Subcategory.findOne({
+                        $or: [{ slug: subcat }, { name: subcat }]
+                      });
 
-            const imageFields = Object.keys(filesByField).filter(key =>
-                key.startsWith('images[') || key === 'images'
-            );
-
-            imageFields.forEach(key => {
-                filesByField[key].forEach(file => {
-                    allImageUrls.push(`/uploads/products/${file.filename}`);
-                });
-            });
-
-            const variantImageFields = Object.keys(filesByField).filter(key =>
-                key.startsWith('variantImages[')
-            );
-
-            variantImageFields.forEach(key => {
-                const match = key.match(/variantImages\[(\d+)\]\[(\d+)\]/);
-                if (match) {
-                    const comboIndex = parseInt(match[1]);
-
-                    if (!variantImagesMap[comboIndex]) {
-                        variantImagesMap[comboIndex] = [];
+                      if (foundSubcategory) {
+                        subcategories.push(foundSubcategory._id.toString());
+                      }
+                    } catch (subcategoryError) {
+                      console.error("Error finding subcategory:", subcategoryError);
                     }
-
-                    const file = filesByField[key][0];
-                    if (file) {
-                        variantImagesMap[comboIndex].push(`/uploads/products/${file.filename}`);
-                    }
+                  }
                 }
-            });
+              }
 
-            if (filesByField.fileUpload && filesByField.fileUpload.length > 0) {
-                digitalFile = filesByField.fileUpload[0];
+              categories.push({
+                category: categoryId,
+                subcategories: subcategories
+              });
             }
+          }
         }
+      } catch (e) {
+        console.error("Error parsing categories JSON:", e);
+      }
+    }
 
-        // Determine product structure
-        const productStructure = req.body.productStructure || req.body.product_structure;
+    let tags = [];
+    if (req.body.tags) {
+      try {
+        tags = JSON.parse(req.body.tags);
+      } catch (e) {
+        tags = Array.isArray(req.body.tags) ? req.body.tags : [req.body.tags];
+      }
+    }
 
-        // Fetch the current product early to avoid initialization errors
-        let productQuery = {};
+    let seoKeywords = [];
+    if (req.body.seo_keywords) {
+      try {
+        seoKeywords = JSON.parse(req.body.seo_keywords);
+      } catch (e) {
+        console.error("Error parsing seoKeywords JSON:", e);
+      }
+    }
+
+    let variantsData = null;
+    if (req.body.product_variants) {
+      try {
+        variantsData = JSON.parse(req.body.product_variants);
+        console.log('Parsed variants data for update:', JSON.stringify(variantsData, null, 2));
+      } catch (e) {
+        console.error("Error parsing variants JSON:", e);
+      }
+    }
+
+    const productType = req.body.product_type || 'physical';
+
+    // Process files
+    let allImageUrls = [];
+    let digitalFile = null;
+    let variantImagesMap = {};
+
+    if (req.files && Array.isArray(req.files)) {
+      const filesByField = {};
+      req.files.forEach(file => {
+        if (!filesByField[file.fieldname]) {
+          filesByField[file.fieldname] = [];
+        }
+        filesByField[file.fieldname].push(file);
+      });
+
+      const imageFields = Object.keys(filesByField).filter(key =>
+        key.startsWith('images[') || key === 'images'
+      );
+
+      imageFields.forEach(key => {
+        filesByField[key].forEach(file => {
+          allImageUrls.push(`/uploads/products/${file.filename}`);
+        });
+      });
+
+      // Add existing images if provided
+      if (req.body.existing_images) {
         try {
-            if (req.params.id && req.params.id.length === 24 && /^[a-fA-F0-9]{24}$/.test(req.params.id)) {
-                productQuery._id = new mongoose.Types.ObjectId(req.params.id);
-            } else {
-                productQuery._id = req.params.id;
-            }
-        } catch (err) {
-            productQuery._id = req.params.id;
+          const existingImages = JSON.parse(req.body.existing_images);
+          if (Array.isArray(existingImages)) {
+            // Prepend existing images so they stay at the beginning (or append, depending on desired order)
+            // Usually we want to keep the order. If the frontend sends the full order, we might need a different approach.
+            // For now, let's assume existing images come first, then new uploads.
+            allImageUrls = [...existingImages, ...allImageUrls];
+          }
+        } catch (e) {
+          console.error("Error parsing existing_images:", e);
         }
+      } else if (req.body.existing_images === "") {
+        // Explicitly empty string means remove all existing images (if no new ones uploaded)
+        // allImageUrls is already empty (or has new uploads), so we don't need to do anything special here
+        // except NOT adding existing images.
+      } else {
+        // If existing_images is NOT present in the body at all, it might mean the frontend isn't sending it.
+        // In a standard PUT, this might mean "don't change images".
+        // But our logic usually implies "replace with what's sent".
+        // To be safe and backward compatible:
+        // If NO new images are uploaded AND existing_images is missing, we might want to keep current images?
+        // However, the previous logic was "if allImageUrls.length > 0 updateData.image_url = allImageUrls".
+        // So if we send nothing, it didn't update images.
+        // Now we want to support deleting.
+        // So the frontend MUST send `existing_images` (empty array) if it wants to delete all.
+      }
 
-        const currentProduct = await Product.findOne(productQuery);
-        if (!currentProduct) {
-            return res.status(404).json({ success: false, error: "Product not found" });
+      const variantImageFields = Object.keys(filesByField).filter(key =>
+        key.startsWith('variantImages[')
+      );
+
+      variantImageFields.forEach(key => {
+        const match = key.match(/variantImages\[(\d+)\]\[(\d+)\]/);
+        if (match) {
+          const comboIndex = parseInt(match[1]);
+
+          if (!variantImagesMap[comboIndex]) {
+            variantImagesMap[comboIndex] = [];
+          }
+
+          const file = filesByField[key][0];
+          if (file) {
+            variantImagesMap[comboIndex].push(`/uploads/products/${file.filename}`);
+          }
         }
+      });
 
-        // Build update data
-        const updateData = {
+      if (filesByField.fileUpload && filesByField.fileUpload.length > 0) {
+        digitalFile = filesByField.fileUpload[0];
+      }
+    }
+
+    // Determine product structure
+    const productStructure = req.body.productStructure || req.body.product_structure;
+
+    // Fetch the current product early to avoid initialization errors
+    let productQuery = {};
+    try {
+      if (req.params.id && req.params.id.length === 24 && /^[a-fA-F0-9]{24}$/.test(req.params.id)) {
+        productQuery._id = new mongoose.Types.ObjectId(req.params.id);
+      } else {
+        productQuery._id = req.params.id;
+      }
+    } catch (err) {
+      productQuery._id = req.params.id;
+    }
+
+    const currentProduct = await Product.findOne(productQuery);
+    if (!currentProduct) {
+      return res.status(404).json({ success: false, error: "Product not found" });
+    }
+
+    // Build update data
+    const updateData = {
+      updated_at: new Date()
+    };
+
+    if (req.body.name !== undefined) updateData.name = req.body.name;
+    if (req.body.slug !== undefined) updateData.slug = req.body.slug;
+    if (req.body.description !== undefined) updateData.description = req.body.description;
+    if (productStructure) updateData.product_structure = productStructure;
+    if (req.body.sku) updateData.sku = req.body.sku.toUpperCase();
+    if (categories.length > 0) updateData.categories = categories;
+
+    if (productStructure === 'simple') {
+      if (req.body.cost_price || req.body.costPrice) updateData.cost_price = parseFloat(req.body.cost_price || req.body.costPrice);
+      if (req.body.selling_price || req.body.salesPrice) updateData.selling_price = parseFloat(req.body.selling_price || req.body.salesPrice);
+    } else if (productStructure === 'variant') {
+      updateData.cost_price = undefined;
+      updateData.selling_price = undefined;
+    }
+
+    if (productType === 'physical') {
+      const hasStockUpdate = req.body.stock !== undefined;
+      const hasMinStockUpdate = req.body.min_stock_threshold !== undefined;
+
+      if (hasStockUpdate) updateData.baseStock = parseInt(req.body.stock);
+      if (hasMinStockUpdate) updateData.minStock = parseInt(req.body.min_stock_threshold);
+
+      const isSimpleStructure = (productStructure || currentProduct?.product_structure) === 'simple';
+      if (isSimpleStructure && (hasStockUpdate || hasMinStockUpdate)) {
+        const effectiveBaseStock = hasStockUpdate
+          ? updateData.baseStock
+          : currentProduct?.baseStock;
+        const effectiveMinStock = hasMinStockUpdate
+          ? updateData.minStock
+          : currentProduct?.minStock;
+
+        if (typeof effectiveBaseStock === 'number') {
+          if (effectiveBaseStock > (typeof effectiveMinStock === 'number' ? effectiveMinStock : 0)) {
+            updateData.status = 'selling';
+          } else if (effectiveBaseStock > 0) {
+            updateData.status = 'low_stock';
+          } else {
+            updateData.status = 'out_of_stock';
+          }
+        }
+      }
+    } else if (productType === 'digital') {
+      updateData.baseStock = 0;
+      updateData.minStock = 0;
+      updateData.status = 'selling';
+      updateData.product_structure = 'simple';
+    }
+
+    if (allImageUrls.length > 0 || req.body.existing_images !== undefined) {
+      updateData.image_url = allImageUrls;
+    }
+    if (tags.length > 0) updateData.tags = tags;
+
+    if (req.body.weight !== undefined) updateData.weight = parseFloat(req.body.weight);
+    if (req.body.color !== undefined) updateData.color = req.body.color;
+    if (req.body.size !== undefined) updateData.size = req.body.size;
+    if (req.body.material !== undefined) updateData.material = req.body.material;
+    if (req.body.brand !== undefined) updateData.brand = req.body.brand;
+    if (req.body.warranty !== undefined) updateData.warranty = req.body.warranty;
+
+    if (productType === 'digital') {
+      if (digitalFile) {
+        updateData.file_path = `/uploads/products/${digitalFile.filename}`;
+        updateData.file_size = digitalFile.size;
+      }
+      if (req.body.download_format !== undefined) updateData.download_format = req.body.download_format;
+      if (req.body.license_type !== undefined) updateData.license_type = req.body.license_type;
+      if (req.body.download_limit !== undefined) updateData.download_limit = parseInt(req.body.download_limit);
+    }
+
+    // SEO fields
+    if (req.body.seo_title !== undefined || req.body.seo_description !== undefined || seoKeywords.length > 0 || req.body.seo_canonical !== undefined || req.body.seo_robots !== undefined || req.body.seo_og_title !== undefined || req.body.seo_og_description !== undefined || req.body.seo_og_image !== undefined) {
+      updateData.seo = {};
+
+      if (req.body.seo_title && req.body.seo_title.trim() !== '') {
+        updateData.seo.title = req.body.seo_title;
+      }
+      if (req.body.seo_description && req.body.seo_description.trim() !== '') {
+        updateData.seo.description = req.body.seo_description;
+      }
+      if (seoKeywords && seoKeywords.length > 0) {
+        updateData.seo.keywords = seoKeywords;
+      }
+      if (req.body.seo_canonical && req.body.seo_canonical.trim() !== '') {
+        updateData.seo.canonical = req.body.seo_canonical;
+      }
+      if (req.body.seo_robots) {
+        updateData.seo.robots = req.body.seo_robots;
+      }
+      if (req.body.seo_og_title && req.body.seo_og_title.trim() !== '') {
+        updateData.seo.ogTitle = req.body.seo_og_title;
+      }
+      if (req.body.seo_og_description && req.body.seo_og_description.trim() !== '') {
+        updateData.seo.ogDescription = req.body.seo_og_description;
+      }
+      if (req.body.seo_og_image && req.body.seo_og_image.trim() !== '') {
+        updateData.seo.ogImage = req.body.seo_og_image;
+      }
+    }
+
+    // Transform and update variants
+    if (variantsData && variantsData.combinations && variantsData.combinations.length > 0) {
+      const transformedVariants = transformVariantsForDB(
+        variantsData,
+        req.body.sku || 'PROD',
+        updateData.cost_price || currentProduct.cost_price,
+        updateData.selling_price || currentProduct.selling_price,
+        variantImagesMap
+      );
+
+      if (transformedVariants.length > 0) {
+        // Preserve existing variant IDs if possible to maintain stock history
+        const finalVariants = transformedVariants.map((variant, index) => {
+          let existingVariantId = null;
+
+          // Try to find matching variant by SKU or slug
+          if (currentProduct.product_variants) {
+            const match = currentProduct.product_variants.find(v =>
+              (v.sku && v.sku === variant.sku) ||
+              (v.slug && v.slug === variant.slug)
+            );
+            if (match) existingVariantId = match._id;
+          }
+
+          return {
+            ...variant,
+            _id: existingVariantId || new mongoose.Types.ObjectId(),
+            status: variant.status || 'draft',
+            published: variant.published !== undefined ? variant.published : true,
+            stock: variant.stock || 0,
+            minStock: variant.minStock || 0,
+            images: Array.isArray(variant.images) ? variant.images.filter(Boolean) : [],
+            attributes: variant.attributes || {},
             updated_at: new Date()
+          };
+        });
+
+        updateData.product_variants = finalVariants;
+      }
+    }
+
+    if (req.body.published !== undefined && productStructure !== 'variant') {
+      const isPublishing = req.body.published === 'true';
+      const currentPublished = currentProduct.published || false;
+
+      if (isPublishing !== currentPublished) {
+        // ✅ Create a merged product object with new variant data
+        const productForValidation = {
+          ...currentProduct.toObject(),
+          ...updateData,
+          product_variants: updateData.product_variants || currentProduct.product_variants,
+          product_type: updateData.product_type || currentProduct.product_type,
+          product_structure: updateData.product_structure || currentProduct.product_structure
         };
 
-        if (req.body.name !== undefined) updateData.name = req.body.name;
-        if (req.body.slug !== undefined) updateData.slug = req.body.slug;
-        if (req.body.description !== undefined) updateData.description = req.body.description;
-        if (productStructure) updateData.product_structure = productStructure;
-        if (req.body.sku) updateData.sku = req.body.sku.toUpperCase();
-        if (categories.length > 0) updateData.categories = categories;
-
-        if (productStructure === 'simple') {
-            if (req.body.cost_price || req.body.costPrice) updateData.cost_price = parseFloat(req.body.cost_price || req.body.costPrice);
-            if (req.body.selling_price || req.body.salesPrice) updateData.selling_price = parseFloat(req.body.selling_price || req.body.salesPrice);
-        } else if (productStructure === 'variant') {
-            updateData.cost_price = undefined;
-            updateData.selling_price = undefined;
+        console.log('=== VALIDATING WITH MERGED DATA ===');
+        console.log('Product structure:', productForValidation.product_structure);
+        console.log('Product type:', productForValidation.product_type);
+        console.log('Variants count:', productForValidation.product_variants?.length || 0);
+        if (productForValidation.product_variants && productForValidation.product_variants.length > 0) {
+          console.log('First variant:', {
+            name: productForValidation.product_variants[0].name,
+            stock: productForValidation.product_variants[0].stock,
+            minStock: productForValidation.product_variants[0].minStock,
+            published: productForValidation.product_variants[0].published,
+            status: productForValidation.product_variants[0].status
+          });
         }
 
-        if (productType === 'physical') {
-            const hasStockUpdate = req.body.stock !== undefined;
-            const hasMinStockUpdate = req.body.min_stock_threshold !== undefined;
+        const stockValidation = validateStockForPublish(productForValidation, isPublishing);
 
-            if (hasStockUpdate) updateData.baseStock = parseInt(req.body.stock);
-            if (hasMinStockUpdate) updateData.minStock = parseInt(req.body.min_stock_threshold);
-
-            const isSimpleStructure = (productStructure || currentProduct?.product_structure) === 'simple';
-            if (isSimpleStructure && (hasStockUpdate || hasMinStockUpdate)) {
-                const effectiveBaseStock = hasStockUpdate
-                    ? updateData.baseStock
-                    : currentProduct?.baseStock;
-                const effectiveMinStock = hasMinStockUpdate
-                    ? updateData.minStock
-                    : currentProduct?.minStock;
-
-                if (typeof effectiveBaseStock === 'number') {
-                    if (effectiveBaseStock > (typeof effectiveMinStock === 'number' ? effectiveMinStock : 0)) {
-                        updateData.status = 'selling';
-                    } else if (effectiveBaseStock > 0) {
-                        updateData.status = 'low_stock';
-                    } else {
-                        updateData.status = 'out_of_stock';
-                    }
-                }
-            }
-        } else if (productType === 'digital') {
-            updateData.baseStock = 0;
-            updateData.minStock = 0;
-            updateData.status = 'selling';
-            updateData.product_structure = 'simple';
+        if (!stockValidation.canPublish) {
+          return res.status(400).json({
+            success: false,
+            error: stockValidation.message,
+            requiresStock: true,
+            stockInfo: stockValidation.stockInfo,
+            isZeroStock: (stockValidation.stockInfo?.baseStock ?? currentProduct.baseStock ?? 0) === 0
+          });
         }
 
-        if (allImageUrls.length > 0) updateData.image_url = allImageUrls;
-        if (tags.length > 0) updateData.tags = tags;
+        updateData.published = stockValidation.published;
+        updateData.status = stockValidation.status;
 
-        if (req.body.weight !== undefined) updateData.weight = parseFloat(req.body.weight);
-        if (req.body.color !== undefined) updateData.color = req.body.color;
-        if (req.body.size !== undefined) updateData.size = req.body.size;
-        if (req.body.material !== undefined) updateData.material = req.body.material;
-        if (req.body.brand !== undefined) updateData.brand = req.body.brand;
-        if (req.body.warranty !== undefined) updateData.warranty = req.body.warranty;
+        console.log('Stock validation result:', stockValidation);
 
-        if (productType === 'digital') {
-            if (digitalFile) {
-                updateData.file_path = `/uploads/products/${digitalFile.filename}`;
-                updateData.file_size = digitalFile.size;
-            }
-            if (req.body.download_format !== undefined) updateData.download_format = req.body.download_format;
-            if (req.body.license_type !== undefined) updateData.license_type = req.body.license_type;
-            if (req.body.download_limit !== undefined) updateData.download_limit = parseInt(req.body.download_limit);
-        }
+        updateData._stockValidation = {
+          message: stockValidation.message,
+          stockInfo: stockValidation.stockInfo,
+          requiredAction: isPublishing ? 'publish' : 'archive'
+        };
+      } else {
+        updateData.published = req.body.published === 'true';
+      }
+    }
 
-        // SEO fields
-        if (req.body.seo_title !== undefined || req.body.seo_description !== undefined || seoKeywords.length > 0 || req.body.seo_canonical !== undefined || req.body.seo_robots !== undefined || req.body.seo_og_title !== undefined || req.body.seo_og_description !== undefined || req.body.seo_og_image !== undefined) {
-            updateData.seo = {};
+    console.log('=== BEFORE DATABASE UPDATE ===');
+    console.log('productQuery:', JSON.stringify(productQuery, null, 2));
+    console.log('updateData keys:', Object.keys(updateData));
+    console.log('updateData:', JSON.stringify(updateData, null, 2));
 
-            if (req.body.seo_title && req.body.seo_title.trim() !== '') {
-                updateData.seo.title = req.body.seo_title;
-            }
-            if (req.body.seo_description && req.body.seo_description.trim() !== '') {
-                updateData.seo.description = req.body.seo_description;
-            }
-            if (seoKeywords && seoKeywords.length > 0) {
-                updateData.seo.keywords = seoKeywords;
-            }
-            if (req.body.seo_canonical && req.body.seo_canonical.trim() !== '') {
-                updateData.seo.canonical = req.body.seo_canonical;
-            }
-            if (req.body.seo_robots) {
-                updateData.seo.robots = req.body.seo_robots;
-            }
-            if (req.body.seo_og_title && req.body.seo_og_title.trim() !== '') {
-                updateData.seo.ogTitle = req.body.seo_og_title;
-            }
-            if (req.body.seo_og_description && req.body.seo_og_description.trim() !== '') {
-                updateData.seo.ogDescription = req.body.seo_og_description;
-            }
-            if (req.body.seo_og_image && req.body.seo_og_image.trim() !== '') {
-                updateData.seo.ogImage = req.body.seo_og_image;
-            }
-        }
+    const product = await Product.findOneAndUpdate(
+      productQuery,
+      updateData,
+      { new: true, runValidators: true }
+    );
 
-        // Transform and update variants
-        if (variantsData && variantsData.combinations && variantsData.combinations.length > 0) {
-            const transformedVariants = transformVariantsForDB(
-                variantsData,
-                req.body.sku || 'PROD',
-                updateData.cost_price || currentProduct.cost_price,
-                updateData.selling_price || currentProduct.selling_price,
-                variantImagesMap
-            );
+    if (!product) {
+      return res.status(404).json({ success: false, error: "Product not found" });
+    }
 
-            if (transformedVariants.length > 0) {
-                // Preserve existing variant IDs if possible to maintain stock history
-                const finalVariants = transformedVariants.map((variant, index) => {
-                    let existingVariantId = null;
+    console.log('=== AFTER UPDATE ===');
+    console.log('Updated product variants count:', product.product_variants ? product.product_variants.length : 0);
 
-                    // Try to find matching variant by SKU or slug
-                    if (currentProduct.product_variants) {
-                        const match = currentProduct.product_variants.find(v =>
-                            (v.sku && v.sku === variant.sku) ||
-                            (v.slug && v.slug === variant.slug)
-                        );
-                        if (match) existingVariantId = match._id;
-                    }
+    // Update stock entries
+    try {
+      let staffMember;
+      try {
+        const Staff = require("../models/Staff.js");
+        staffMember = await Staff.findOne({ is_active: true }).sort({ created_at: 1 });
+      } catch (staffError) {
+        console.error('Error finding staff member for stock update:', staffError);
+      }
 
-                    return {
-                        ...variant,
-                        _id: existingVariantId || new mongoose.Types.ObjectId(),
-                        status: variant.status || 'draft',
-                        published: variant.published !== undefined ? variant.published : true,
-                        stock: variant.stock || 0,
-                        minStock: variant.minStock || 0,
-                        images: Array.isArray(variant.images) ? variant.images.filter(Boolean) : [],
-                        attributes: variant.attributes || {},
-                        updated_at: new Date()
-                    };
-                });
+      // Only update base product stock for simple products, not variant products
+      if (product.product_structure === 'simple' && (product.baseStock !== undefined || product.minStock !== undefined)) {
+        const stockUpdate = {
+          quantity: product.baseStock !== undefined ? product.baseStock : null,
+          minStock: product.minStock !== undefined ? product.minStock : null,
+          lastUpdatedBy: staffMember ? staffMember._id : null,
+          updated_at: new Date()
+        };
 
-                updateData.product_variants = finalVariants;
-            }
-        }
+        await Stock.findOneAndUpdate(
+          { productId: product._id, variantId: null },
+          stockUpdate,
+          { upsert: true, new: true }
+        );
+        console.log(`✅ Updated stock entry for base product ${product.name}`);
+      }
 
-        if (req.body.published !== undefined && productStructure !== 'variant') {
-            const isPublishing = req.body.published === 'true';
-            const currentPublished = currentProduct.published || false;
+      // For variant products, first clean up old stock entries then create new ones
+      if (product.product_variants && product.product_variants.length > 0) {
+        console.log('=== UPDATING VARIANT STOCK ENTRIES ===');
 
-            if (isPublishing !== currentPublished) {
-                // ✅ Create a merged product object with new variant data
-                const productForValidation = {
-                    ...currentProduct.toObject(),
-                    ...updateData,
-                    product_variants: updateData.product_variants || currentProduct.product_variants,
-                    product_type: updateData.product_type || currentProduct.product_type,
-                    product_structure: updateData.product_structure || currentProduct.product_structure
-                };
+        // Get all current variant IDs from the updated product
+        const currentVariantIds = product.product_variants.map(v => v._id.toString());
+        console.log('Current variant IDs:', currentVariantIds);
 
-                console.log('=== VALIDATING WITH MERGED DATA ===');
-                console.log('Product structure:', productForValidation.product_structure);
-                console.log('Product type:', productForValidation.product_type);
-                console.log('Variants count:', productForValidation.product_variants?.length || 0);
-                if (productForValidation.product_variants && productForValidation.product_variants.length > 0) {
-                    console.log('First variant:', {
-                        name: productForValidation.product_variants[0].name,
-                        stock: productForValidation.product_variants[0].stock,
-                        minStock: productForValidation.product_variants[0].minStock,
-                        published: productForValidation.product_variants[0].published,
-                        status: productForValidation.product_variants[0].status
-                    });
-                }
+        // Find all existing stock entries for this product's variants
+        const existingStockEntries = await Stock.find({
+          productId: product._id,
+          variantId: { $ne: null }
+        });
+        console.log('Existing stock entries count:', existingStockEntries.length);
 
-                const stockValidation = validateStockForPublish(productForValidation, isPublishing);
-
-                if (!stockValidation.canPublish) {
-                    return res.status(400).json({
-                        success: false,
-                        error: stockValidation.message,
-                        requiresStock: true,
-                        stockInfo: stockValidation.stockInfo,
-                        isZeroStock: (stockValidation.stockInfo?.baseStock ?? currentProduct.baseStock ?? 0) === 0
-                    });
-                }
-
-                updateData.published = stockValidation.published;
-                updateData.status = stockValidation.status;
-
-                console.log('Stock validation result:', stockValidation);
-
-                updateData._stockValidation = {
-                    message: stockValidation.message,
-                    stockInfo: stockValidation.stockInfo,
-                    requiredAction: isPublishing ? 'publish' : 'archive'
-                };
-            } else {
-                updateData.published = req.body.published === 'true';
-            }
-        }
-
-        console.log('=== BEFORE DATABASE UPDATE ===');
-        console.log('productQuery:', JSON.stringify(productQuery, null, 2));
-        console.log('updateData keys:', Object.keys(updateData));
-        console.log('updateData:', JSON.stringify(updateData, null, 2));
-
-        const product = await Product.findOneAndUpdate(
-            productQuery,
-            updateData,
-            { new: true, runValidators: true }
+        // Delete stock entries for variants that no longer exist
+        const stockEntriesToDelete = existingStockEntries.filter(
+          stockEntry => !currentVariantIds.includes(stockEntry.variantId.toString())
         );
 
-        if (!product) {
-            return res.status(404).json({ success: false, error: "Product not found" });
+        if (stockEntriesToDelete.length > 0) {
+          await Stock.deleteMany({
+            _id: { $in: stockEntriesToDelete.map(s => s._id) }
+          });
+          console.log(`🗑️ Deleted ${stockEntriesToDelete.length} orphaned stock entries`);
         }
 
-        console.log('=== AFTER UPDATE ===');
-        console.log('Updated product variants count:', product.product_variants ? product.product_variants.length : 0);
+        // Update or create stock entries for each variant
+        for (let i = 0; i < product.product_variants.length; i++) {
+          const variant = product.product_variants[i];
 
-        // Update stock entries
-        try {
-            let staffMember;
-            try {
-                const Staff = require("../models/Staff.js");
-                staffMember = await Staff.findOne({ is_active: true }).sort({ created_at: 1 });
-            } catch (staffError) {
-                console.error('Error finding staff member for stock update:', staffError);
+          if (variant.stock !== undefined || variant.minStock !== undefined) {
+            const stockUpdate = {
+              productId: product._id,
+              variantId: variant._id,
+              quantity: variant.stock !== undefined ? variant.stock : 0,
+              minStock: variant.minStock !== undefined ? variant.minStock : 0,
+              lastUpdatedBy: staffMember ? staffMember._id : null,
+              updated_at: new Date()
+            };
+
+            // Use variant slug or SKU as a secondary identifier to find existing entries
+            const existingEntry = existingStockEntries.find(
+              entry => entry.variantId.toString() === variant._id.toString()
+            );
+
+            if (existingEntry) {
+              // Update existing entry
+              await Stock.findByIdAndUpdate(existingEntry._id, stockUpdate);
+              console.log(`✅ Updated existing stock entry for variant: ${variant.slug}`);
+            } else {
+              // Create new entry
+              await Stock.create(stockUpdate);
+              console.log(`✅ Created new stock entry for variant: ${variant.slug}`);
             }
-
-            // Only update base product stock for simple products, not variant products
-            if (product.product_structure === 'simple' && (product.baseStock !== undefined || product.minStock !== undefined)) {
-                const stockUpdate = {
-                    quantity: product.baseStock !== undefined ? product.baseStock : null,
-                    minStock: product.minStock !== undefined ? product.minStock : null,
-                    lastUpdatedBy: staffMember ? staffMember._id : null,
-                    updated_at: new Date()
-                };
-
-                await Stock.findOneAndUpdate(
-                    { productId: product._id, variantId: null },
-                    stockUpdate,
-                    { upsert: true, new: true }
-                );
-                console.log(`✅ Updated stock entry for base product ${product.name}`);
-            }
-
-            // For variant products, first clean up old stock entries then create new ones
-            if (product.product_variants && product.product_variants.length > 0) {
-                console.log('=== UPDATING VARIANT STOCK ENTRIES ===');
-
-                // Get all current variant IDs from the updated product
-                const currentVariantIds = product.product_variants.map(v => v._id.toString());
-                console.log('Current variant IDs:', currentVariantIds);
-
-                // Find all existing stock entries for this product's variants
-                const existingStockEntries = await Stock.find({
-                    productId: product._id,
-                    variantId: { $ne: null }
-                });
-                console.log('Existing stock entries count:', existingStockEntries.length);
-
-                // Delete stock entries for variants that no longer exist
-                const stockEntriesToDelete = existingStockEntries.filter(
-                    stockEntry => !currentVariantIds.includes(stockEntry.variantId.toString())
-                );
-
-                if (stockEntriesToDelete.length > 0) {
-                    await Stock.deleteMany({
-                        _id: { $in: stockEntriesToDelete.map(s => s._id) }
-                    });
-                    console.log(`🗑️ Deleted ${stockEntriesToDelete.length} orphaned stock entries`);
-                }
-
-                // Update or create stock entries for each variant
-                for (let i = 0; i < product.product_variants.length; i++) {
-                    const variant = product.product_variants[i];
-
-                    if (variant.stock !== undefined || variant.minStock !== undefined) {
-                        const stockUpdate = {
-                            productId: product._id,
-                            variantId: variant._id,
-                            quantity: variant.stock !== undefined ? variant.stock : 0,
-                            minStock: variant.minStock !== undefined ? variant.minStock : 0,
-                            lastUpdatedBy: staffMember ? staffMember._id : null,
-                            updated_at: new Date()
-                        };
-
-                        // Use variant slug or SKU as a secondary identifier to find existing entries
-                        const existingEntry = existingStockEntries.find(
-                            entry => entry.variantId.toString() === variant._id.toString()
-                        );
-
-                        if (existingEntry) {
-                            // Update existing entry
-                            await Stock.findByIdAndUpdate(existingEntry._id, stockUpdate);
-                            console.log(`✅ Updated existing stock entry for variant: ${variant.slug}`);
-                        } else {
-                            // Create new entry
-                            await Stock.create(stockUpdate);
-                            console.log(`✅ Created new stock entry for variant: ${variant.slug}`);
-                        }
-                    }
-                }
-            }
-        } catch (stockError) {
-            console.error('❌ Error updating stock entries:', stockError);
-            console.error('Stock error details:', stockError.message);
+          }
         }
-
-        res.json({ success: true, data: product });
-    } catch (err) {
-        console.error("Update product error:", err);
-        console.error("Error stack:", err.stack);
-        console.error("Error name:", err.name);
-        console.error("Error message:", err.message);
-
-        if (err.message && err.message.includes('Duplicate variant SKUs')) {
-            return res.status(400).json({
-                success: false,
-                error: 'Duplicate variant SKUs detected within the product. Each variant must have a unique SKU.',
-                details: process.env.NODE_ENV === 'development' ? err.message : undefined
-            });
-        }
-
-        // Send more detailed error in development
-        const errorResponse = {
-            success: false,
-            error: "Failed to update product"
-        };
-
-        if (process.env.NODE_ENV === 'development') {
-            errorResponse.details = err.message;
-            errorResponse.stack = err.stack;
-            errorResponse.name = err.name;
-        }
-
-        res.status(500).json(errorResponse);
+      }
+    } catch (stockError) {
+      console.error('❌ Error updating stock entries:', stockError);
+      console.error('Stock error details:', stockError.message);
     }
+
+    res.json({ success: true, data: product });
+  } catch (err) {
+    console.error("Update product error:", err);
+    console.error("Error stack:", err.stack);
+    console.error("Error name:", err.name);
+    console.error("Error message:", err.message);
+
+    if (err.message && err.message.includes('Duplicate variant SKUs')) {
+      return res.status(400).json({
+        success: false,
+        error: 'Duplicate variant SKUs detected within the product. Each variant must have a unique SKU.',
+        details: process.env.NODE_ENV === 'development' ? err.message : undefined
+      });
+    }
+
+    // Send more detailed error in development
+    const errorResponse = {
+      success: false,
+      error: "Failed to update product"
+    };
+
+    if (process.env.NODE_ENV === 'development') {
+      errorResponse.details = err.message;
+      errorResponse.stack = err.stack;
+      errorResponse.name = err.name;
+    }
+
+    res.status(500).json(errorResponse);
+  }
 });
 
 // DELETE a product by id
 router.delete("/:id", async (req, res) => {
+  try {
+    console.log('=== DELETE PRODUCT DEBUG ===');
+    console.log('Product ID to delete:', req.params.id);
+
+    // Handle both string and ObjectId product IDs
+    let productQuery = {};
     try {
-        console.log('=== DELETE PRODUCT DEBUG ===');
-        console.log('Product ID to delete:', req.params.id);
-
-        // Handle both string and ObjectId product IDs
-        let productQuery = {};
-        try {
-            // Try to create ObjectId first
-            if (req.params.id && req.params.id.length === 24 && /^[a-fA-F0-9]{24}$/.test(req.params.id)) {
-                productQuery._id = new mongoose.Types.ObjectId(req.params.id);
-            } else {
-                // For non-ObjectId strings, search by the string value directly
-                productQuery._id = req.params.id;
-            }
-        } catch (err) {
-            // If ObjectId creation fails, treat as string ID
-            productQuery._id = req.params.id;
-        }
-
-        // Find the product first to get its image URLs for cleanup
-        const product = await Product.findOne(productQuery);
-
-        if (!product) {
-            return res.status(404).json({ success: false, error: "Product not found" });
-        }
-
-        console.log('Found product to delete:', product.name);
-        console.log('Product image URLs:', product.image_url);
-
-        // Extract main product image URLs for cleanup
-        const mainImageFileNames = product.image_url
-            ?.map((url) => url.split("/").pop()) // Extract just the filename
-            .filter(Boolean) ?? [];
-
-        console.log('Main product image files to delete:', mainImageFileNames);
-
-        // Delete main product images
-        if (mainImageFileNames.length > 0) {
-            try {
-                for (const imageFileName of mainImageFileNames) {
-                    const imagePath = path.join(uploadDir, imageFileName);
-                    console.log(`Attempting to delete main product image: ${imageFileName}`);
-                    console.log(`Full path: ${imagePath}`);
-                    console.log(`File exists: ${fs.existsSync(imagePath)}`);
-
-                    if (fs.existsSync(imagePath)) {
-                        fs.unlinkSync(imagePath);
-                        console.log('✅ Deleted main product image:', imageFileName);
-                    } else {
-                        console.log(`⚠️ Main product image file not found: ${imageFileName}`);
-                    }
-                }
-            } catch (storageError) {
-                console.error("❌ Error deleting main product images:", storageError);
-                // Continue with product deletion even if image deletion fails
-            }
-        }
-
-        // Extract variant image URLs for cleanup
-        if (product.product_variants && product.product_variants.length > 0) {
-            for (let i = 0; i < product.product_variants.length; i++) {
-                const variant = product.product_variants[i];
-                if (variant.images && variant.images.length > 0) {
-                    console.log(`Variant ${i} images to delete:`, variant.images);
-
-                    for (const imageUrl of variant.images) {
-                        if (imageUrl) {
-                            // Extract just the filename, not the full path
-                            const imageFileName = imageUrl.split("/").pop();
-                            const imagePath = path.join(uploadDir, imageFileName);
-
-                            console.log(`Attempting to delete variant image: ${imageFileName}`);
-                            console.log(`Full path: ${imagePath}`);
-                            console.log(`File exists: ${fs.existsSync(imagePath)}`);
-
-                            if (fs.existsSync(imagePath)) {
-                                try {
-                                    fs.unlinkSync(imagePath);
-                                    console.log('✅ Deleted variant image:', imageFileName);
-                                } catch (deleteError) {
-                                    console.error(`❌ Failed to delete variant image ${imageFileName}:`, deleteError.message);
-                                }
-                            } else {
-                                console.log(`⚠️ Variant image file not found: ${imageFileName}`);
-                            }
-                        } else {
-                            console.log(`⚠️ Empty image URL in variant ${i}`);
-                        }
-                    }
-                } else {
-                    console.log(`⚠️ No images found for variant ${i}`);
-                }
-            }
-        } else {
-            console.log('⚠️ No product variants found');
-        }
-
-        // Delete digital product file if it exists
-        if (product.product_type === 'digital' && product.file_path) {
-            const digitalFileName = `products/${product.file_path.split("/").pop()}`;
-            const digitalFilePath = path.join(uploadDir, digitalFileName);
-            if (fs.existsSync(digitalFilePath)) {
-                fs.unlinkSync(digitalFilePath);
-                console.log('✅ Deleted digital product file:', digitalFileName);
-            }
-        }
-
-        // Delete stock entries for this product
-        try {
-            const deletedStocks = await Stock.deleteMany({ productId: product._id });
-            console.log(`✅ Deleted ${deletedStocks.deletedCount} stock entries for product ${product.name}`);
-        } catch (stockError) {
-            console.error('❌ Error deleting stock entries:', stockError);
-            // Continue with product deletion even if stock deletion fails
-        }
-
-        // Delete the product from database
-        const deletedProduct = await Product.findOneAndDelete(productQuery);
-
-        if (!deletedProduct) {
-            return res.status(404).json({ success: false, error: "Product not found" });
-        }
-
-        console.log('✅ Successfully deleted product:', deletedProduct.name);
-
-        res.json({
-            success: true,
-            message: "Product and all associated files deleted successfully",
-            data: deletedProduct
-        });
+      // Try to create ObjectId first
+      if (req.params.id && req.params.id.length === 24 && /^[a-fA-F0-9]{24}$/.test(req.params.id)) {
+        productQuery._id = new mongoose.Types.ObjectId(req.params.id);
+      } else {
+        // For non-ObjectId strings, search by the string value directly
+        productQuery._id = req.params.id;
+      }
     } catch (err) {
-        console.error("Delete product error:", err);
-        res.status(500).json({
-            success: false,
-            error: "Failed to delete product",
-            details: process.env.NODE_ENV === 'development' ? err.message : undefined
-        });
+      // If ObjectId creation fails, treat as string ID
+      productQuery._id = req.params.id;
     }
+
+    // Find the product first to get its image URLs for cleanup
+    const product = await Product.findOne(productQuery);
+
+    if (!product) {
+      return res.status(404).json({ success: false, error: "Product not found" });
+    }
+
+    console.log('Found product to delete:', product.name);
+    console.log('Product image URLs:', product.image_url);
+
+    // Extract main product image URLs for cleanup
+    const mainImageFileNames = product.image_url
+      ?.map((url) => url.split("/").pop()) // Extract just the filename
+      .filter(Boolean) ?? [];
+
+    console.log('Main product image files to delete:', mainImageFileNames);
+
+    // Delete main product images
+    if (mainImageFileNames.length > 0) {
+      try {
+        for (const imageFileName of mainImageFileNames) {
+          const imagePath = path.join(uploadDir, imageFileName);
+          console.log(`Attempting to delete main product image: ${imageFileName}`);
+          console.log(`Full path: ${imagePath}`);
+          console.log(`File exists: ${fs.existsSync(imagePath)}`);
+
+          if (fs.existsSync(imagePath)) {
+            fs.unlinkSync(imagePath);
+            console.log('✅ Deleted main product image:', imageFileName);
+          } else {
+            console.log(`⚠️ Main product image file not found: ${imageFileName}`);
+          }
+        }
+      } catch (storageError) {
+        console.error("❌ Error deleting main product images:", storageError);
+        // Continue with product deletion even if image deletion fails
+      }
+    }
+
+    // Extract variant image URLs for cleanup
+    if (product.product_variants && product.product_variants.length > 0) {
+      for (let i = 0; i < product.product_variants.length; i++) {
+        const variant = product.product_variants[i];
+        if (variant.images && variant.images.length > 0) {
+          console.log(`Variant ${i} images to delete:`, variant.images);
+
+          for (const imageUrl of variant.images) {
+            if (imageUrl) {
+              // Extract just the filename, not the full path
+              const imageFileName = imageUrl.split("/").pop();
+              const imagePath = path.join(uploadDir, imageFileName);
+
+              console.log(`Attempting to delete variant image: ${imageFileName}`);
+              console.log(`Full path: ${imagePath}`);
+              console.log(`File exists: ${fs.existsSync(imagePath)}`);
+
+              if (fs.existsSync(imagePath)) {
+                try {
+                  fs.unlinkSync(imagePath);
+                  console.log('✅ Deleted variant image:', imageFileName);
+                } catch (deleteError) {
+                  console.error(`❌ Failed to delete variant image ${imageFileName}:`, deleteError.message);
+                }
+              } else {
+                console.log(`⚠️ Variant image file not found: ${imageFileName}`);
+              }
+            } else {
+              console.log(`⚠️ Empty image URL in variant ${i}`);
+            }
+          }
+        } else {
+          console.log(`⚠️ No images found for variant ${i}`);
+        }
+      }
+    } else {
+      console.log('⚠️ No product variants found');
+    }
+
+    // Delete digital product file if it exists
+    if (product.product_type === 'digital' && product.file_path) {
+      const digitalFileName = `products/${product.file_path.split("/").pop()}`;
+      const digitalFilePath = path.join(uploadDir, digitalFileName);
+      if (fs.existsSync(digitalFilePath)) {
+        fs.unlinkSync(digitalFilePath);
+        console.log('✅ Deleted digital product file:', digitalFileName);
+      }
+    }
+
+    // Delete stock entries for this product
+    try {
+      const deletedStocks = await Stock.deleteMany({ productId: product._id });
+      console.log(`✅ Deleted ${deletedStocks.deletedCount} stock entries for product ${product.name}`);
+    } catch (stockError) {
+      console.error('❌ Error deleting stock entries:', stockError);
+      // Continue with product deletion even if stock deletion fails
+    }
+
+    // Delete the product from database
+    const deletedProduct = await Product.findOneAndDelete(productQuery);
+
+    if (!deletedProduct) {
+      return res.status(404).json({ success: false, error: "Product not found" });
+    }
+
+    console.log('✅ Successfully deleted product:', deletedProduct.name);
+
+    res.json({
+      success: true,
+      message: "Product and all associated files deleted successfully",
+      data: deletedProduct
+    });
+  } catch (err) {
+    console.error("Delete product error:", err);
+    res.status(500).json({
+      success: false,
+      error: "Failed to delete product",
+      details: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
+  }
 });
 
 // BULK delete products
 router.delete("/bulk", async (req, res) => {
-    try {
-        const { ids } = req.body; // array of IDs
-        if (!ids || !Array.isArray(ids) || ids.length === 0)
-            return res.status(400).json({ success: false, error: "No product IDs provided" });
+  try {
+    const { ids } = req.body; // array of IDs
+    if (!ids || !Array.isArray(ids) || ids.length === 0)
+      return res.status(400).json({ success: false, error: "No product IDs provided" });
 
-        const objectIds = ids
-            .map(id => {
-                try {
-                    if (id && id.length === 24 && /^[a-fA-F0-9]{24}$/.test(id)) {
-                        return new mongoose.Types.ObjectId(id);
-                    }
-                    return id; // Keep as string if not ObjectId format
-                } catch {
-                    return null;
-                }
-            })
-            .filter(Boolean);
+    const objectIds = ids
+      .map(id => {
+        try {
+          if (id && id.length === 24 && /^[a-fA-F0-9]{24}$/.test(id)) {
+            return new mongoose.Types.ObjectId(id);
+          }
+          return id; // Keep as string if not ObjectId format
+        } catch {
+          return null;
+        }
+      })
+      .filter(Boolean);
 
-        if (objectIds.length === 0)
-            return res.status(400).json({ success: false, error: "No valid IDs provided" });
+    if (objectIds.length === 0)
+      return res.status(400).json({ success: false, error: "No valid IDs provided" });
 
-        // Fetch products to delete their associated files
-        const productsToDelete = await Product.find({ _id: { $in: objectIds } });
+    // Fetch products to delete their associated files
+    const productsToDelete = await Product.find({ _id: { $in: objectIds } });
 
-        console.log(`Bulk deleting ${productsToDelete.length} products`);
+    console.log(`Bulk deleting ${productsToDelete.length} products`);
 
-        // Delete associated files for each product
-        for (const product of productsToDelete) {
-            // Delete main product images
-            const mainImageFileNames = product.image_url
-                ?.map((url) => url.split("/").pop()) // Extract just the filename
-                .filter(Boolean) ?? [];
+    // Delete associated files for each product
+    for (const product of productsToDelete) {
+      // Delete main product images
+      const mainImageFileNames = product.image_url
+        ?.map((url) => url.split("/").pop()) // Extract just the filename
+        .filter(Boolean) ?? [];
 
-            for (const imageFileName of mainImageFileNames) {
+      for (const imageFileName of mainImageFileNames) {
+        const imagePath = path.join(uploadDir, imageFileName);
+        console.log(`Bulk delete - Attempting to delete main product image: ${imageFileName}`);
+        console.log(`Bulk delete - Full path: ${imagePath}`);
+        console.log(`Bulk delete - File exists: ${fs.existsSync(imagePath)}`);
+
+        if (fs.existsSync(imagePath)) {
+          fs.unlinkSync(imagePath);
+          console.log('✅ Bulk deleted main product image:', imageFileName);
+        } else {
+          console.log(`⚠️ Bulk main product image file not found: ${imageFileName}`);
+        }
+      }
+
+      // Delete variant images
+      if (product.product_variants && product.product_variants.length > 0) {
+        for (let i = 0; i < product.product_variants.length; i++) {
+          const variant = product.product_variants[i];
+          if (variant.images && variant.images.length > 0) {
+            console.log(`Bulk delete - Variant ${i} images to delete:`, variant.images);
+
+            for (const imageUrl of variant.images) {
+              if (imageUrl) {
+                // Extract just the filename, not the full path
+                const imageFileName = imageUrl.split("/").pop();
                 const imagePath = path.join(uploadDir, imageFileName);
-                console.log(`Bulk delete - Attempting to delete main product image: ${imageFileName}`);
+
+                console.log(`Bulk delete - Attempting to delete variant image: ${imageFileName}`);
                 console.log(`Bulk delete - Full path: ${imagePath}`);
                 console.log(`Bulk delete - File exists: ${fs.existsSync(imagePath)}`);
 
                 if (fs.existsSync(imagePath)) {
+                  try {
                     fs.unlinkSync(imagePath);
-                    console.log('✅ Bulk deleted main product image:', imageFileName);
+                    console.log('✅ Bulk deleted variant image:', imageFileName);
+                  } catch (deleteError) {
+                    console.error(`❌ Bulk failed to delete variant image ${imageFileName}:`, deleteError.message);
+                  }
                 } else {
-                    console.log(`⚠️ Bulk main product image file not found: ${imageFileName}`);
+                  console.log(`⚠️ Bulk variant image file not found: ${imageFileName}`);
                 }
+              } else {
+                console.log(`⚠️ Bulk empty image URL in variant ${i}`);
+              }
             }
-
-            // Delete variant images
-            if (product.product_variants && product.product_variants.length > 0) {
-                for (let i = 0; i < product.product_variants.length; i++) {
-                    const variant = product.product_variants[i];
-                    if (variant.images && variant.images.length > 0) {
-                        console.log(`Bulk delete - Variant ${i} images to delete:`, variant.images);
-
-                        for (const imageUrl of variant.images) {
-                            if (imageUrl) {
-                                // Extract just the filename, not the full path
-                                const imageFileName = imageUrl.split("/").pop();
-                                const imagePath = path.join(uploadDir, imageFileName);
-
-                                console.log(`Bulk delete - Attempting to delete variant image: ${imageFileName}`);
-                                console.log(`Bulk delete - Full path: ${imagePath}`);
-                                console.log(`Bulk delete - File exists: ${fs.existsSync(imagePath)}`);
-
-                                if (fs.existsSync(imagePath)) {
-                                    try {
-                                        fs.unlinkSync(imagePath);
-                                        console.log('✅ Bulk deleted variant image:', imageFileName);
-                                    } catch (deleteError) {
-                                        console.error(`❌ Bulk failed to delete variant image ${imageFileName}:`, deleteError.message);
-                                    }
-                                } else {
-                                    console.log(`⚠️ Bulk variant image file not found: ${imageFileName}`);
-                                }
-                            } else {
-                                console.log(`⚠️ Bulk empty image URL in variant ${i}`);
-                            }
-                        }
-                    } else {
-                        console.log(`⚠️ Bulk no images found for variant ${i}`);
-                    }
-                }
-            } else {
-                console.log('⚠️ Bulk no product variants found');
-            }
-
-            // Delete digital product file if it exists
-            if (product.product_type === 'digital' && product.file_path) {
-                const digitalFileName = `products/${product.file_path.split("/").pop()}`;
-                const digitalFilePath = path.join(uploadDir, digitalFileName);
-                if (fs.existsSync(digitalFilePath)) {
-                    fs.unlinkSync(digitalFilePath);
-                    console.log('✅ Deleted digital product file:', digitalFileName);
-                }
-            }
+          } else {
+            console.log(`⚠️ Bulk no images found for variant ${i}`);
+          }
         }
+      } else {
+        console.log('⚠️ Bulk no product variants found');
+      }
 
-        // Delete stock entries for all products
-        try {
-            const deletedStocks = await Stock.deleteMany({ productId: { $in: objectIds } });
-            console.log(`✅ Bulk deleted ${deletedStocks.deletedCount} stock entries for ${productsToDelete.length} products`);
-        } catch (stockError) {
-            console.error('❌ Error deleting stock entries in bulk:', stockError);
-            // Continue with product deletion even if stock deletion fails
+      // Delete digital product file if it exists
+      if (product.product_type === 'digital' && product.file_path) {
+        const digitalFileName = `products/${product.file_path.split("/").pop()}`;
+        const digitalFilePath = path.join(uploadDir, digitalFileName);
+        if (fs.existsSync(digitalFilePath)) {
+          fs.unlinkSync(digitalFilePath);
+          console.log('✅ Deleted digital product file:', digitalFileName);
         }
-
-        // Delete products from database
-        const result = await Product.deleteMany({ _id: { $in: objectIds } });
-
-        res.json({
-            success: true,
-            message: `${result.deletedCount} products and all associated files deleted successfully`,
-            deletedCount: result.deletedCount
-        });
-    } catch (err) {
-        console.error("Bulk delete products error:", err);
-        res.status(500).json({
-            success: false,
-            error: "Failed to delete products",
-            details: process.env.NODE_ENV === 'development' ? err.message : undefined
-        });
+      }
     }
+
+    // Delete stock entries for all products
+    try {
+      const deletedStocks = await Stock.deleteMany({ productId: { $in: objectIds } });
+      console.log(`✅ Bulk deleted ${deletedStocks.deletedCount} stock entries for ${productsToDelete.length} products`);
+    } catch (stockError) {
+      console.error('❌ Error deleting stock entries in bulk:', stockError);
+      // Continue with product deletion even if stock deletion fails
+    }
+
+    // Delete products from database
+    const result = await Product.deleteMany({ _id: { $in: objectIds } });
+
+    res.json({
+      success: true,
+      message: `${result.deletedCount} products and all associated files deleted successfully`,
+      deletedCount: result.deletedCount
+    });
+  } catch (err) {
+    console.error("Bulk delete products error:", err);
+    res.status(500).json({
+      success: false,
+      error: "Failed to delete products",
+      details: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
+  }
 });
 
 // PATCH toggle product published status
 router.patch("/toggle-status", async (req, res) => {
-    try {
-        const { id, variantId, published } = req.body;
+  try {
+    const { id, variantId, published } = req.body;
 
-        if (!id) {
-            return res.status(400).json({
-                success: false,
-                error: "Product ID is required"
-            });
-        }
-
-        // First, get the current product to check its current state
-        const currentProduct = await Product.findById(id);
-        if (!currentProduct) {
-            return res.status(404).json({
-                success: false,
-                error: "Product not found"
-            });
-        }
-
-        // If this is a variant product and we have a variantId
-        if (currentProduct.product_structure === 'variant' && variantId) {
-            // Find the variant in the product_variants array
-            const variantIndex = currentProduct.product_variants.findIndex(
-                v => v._id.toString() === variantId
-            );
-
-            if (variantIndex === -1) {
-                return res.status(404).json({
-                    success: false,
-                    error: "Variant not found"
-                });
-            }
-
-            // Update the variant's published status
-            currentProduct.product_variants[variantIndex].published = published;
-
-            // Update variant status based on stock and published status
-            const variant = currentProduct.product_variants[variantIndex];
-            if (published) {
-                // When publishing, determine status based on stock
-                if (variant.stock !== undefined && variant.minStock !== undefined) {
-                    variant.status = (variant.stock > variant.minStock)
-                        ? 'selling'
-                        : 'out_of_stock';
-                } else {
-                    // If stock values are not set, set to draft
-                    variant.status = 'draft';
-                }
-            } else {
-                // When unpublishing, set status to archived
-                variant.status = 'archived';
-            }
-
-            // Check if any variants are published to determine product status
-            const hasPublishedVariants = currentProduct.product_variants.some(v => v.published);
-            const hasStock = currentProduct.product_variants.some(v => v.published && v.status === 'selling');
-
-            // For variant products, only update the variants array
-            // Don't update the main product's status or published fields
-            const updateData = {
-                'product_variants': currentProduct.product_variants,
-                // Explicitly unset these fields for variant products
-                $unset: {
-                    status: "",
-                    published: ""
-                }
-            };
-
-            // Save the updated product
-            const updatedProduct = await Product.findByIdAndUpdate(
-                id,
-                updateData,
-                { new: true }
-            );
-
-            return res.json({
-                success: true,
-                data: updatedProduct,
-                message: published
-                    ? `Variant ${hasStock ? 'published' : 'published but out of stock'}`
-                    : 'Variant unpublished'
-            });
-        }
-
-        // For non-variant products (simple products)
-        const updateData = { published };
-
-        if (published) {
-            // When publishing, determine status based on stock
-            const baseStock = typeof currentProduct.baseStock === 'number' ? currentProduct.baseStock : 0;
-            const minStock = typeof currentProduct.minStock === 'number' ? currentProduct.minStock : 0;
-            const hasStock = baseStock > 0 && baseStock > minStock;
-
-            updateData.status = hasStock ? 'selling' : 'out_of_stock';
-            updateData['seo.robots'] = hasStock ? 'index,follow' : 'noindex,follow';
-        } else {
-            // When unpublishing, set status to archived
-            updateData.status = 'archived';
-            updateData['seo.robots'] = 'noindex,nofollow';
-        }
-
-        // Update the product
-        const product = await Product.findByIdAndUpdate(
-            id,
-            updateData,
-            { new: true }
-        );
-
-        res.json({
-            success: true,
-            data: product,
-            message: published
-                ? `Product ${updateData.status === 'out_of_stock' ? 'published but out of stock' : 'published successfully'}`
-                : 'Product archived'
-        });
-    } catch (err) {
-        console.error("Toggle product status error:", err);
-        res.status(500).json({
-            success: false,
-            error: "Failed to toggle product status",
-            details: process.env.NODE_ENV === 'development' ? err.message : undefined
-        });
+    if (!id) {
+      return res.status(400).json({
+        success: false,
+        error: "Product ID is required"
+      });
     }
+
+    // First, get the current product to check its current state
+    const currentProduct = await Product.findById(id);
+    if (!currentProduct) {
+      return res.status(404).json({
+        success: false,
+        error: "Product not found"
+      });
+    }
+
+    // If this is a variant product and we have a variantId
+    if (currentProduct.product_structure === 'variant' && variantId) {
+      // Find the variant in the product_variants array
+      const variantIndex = currentProduct.product_variants.findIndex(
+        v => v._id.toString() === variantId
+      );
+
+      if (variantIndex === -1) {
+        return res.status(404).json({
+          success: false,
+          error: "Variant not found"
+        });
+      }
+
+      // Update the variant's published status
+      currentProduct.product_variants[variantIndex].published = published;
+
+      // Update variant status based on stock and published status
+      const variant = currentProduct.product_variants[variantIndex];
+      if (published) {
+        // When publishing, determine status based on stock
+        if (variant.stock !== undefined && variant.minStock !== undefined) {
+          variant.status = (variant.stock > variant.minStock)
+            ? 'selling'
+            : 'out_of_stock';
+        } else {
+          // If stock values are not set, set to draft
+          variant.status = 'draft';
+        }
+      } else {
+        // When unpublishing, set status to archived
+        variant.status = 'archived';
+      }
+
+      // Check if any variants are published to determine product status
+      const hasPublishedVariants = currentProduct.product_variants.some(v => v.published);
+      const hasStock = currentProduct.product_variants.some(v => v.published && v.status === 'selling');
+
+      // For variant products, only update the variants array
+      // Don't update the main product's status or published fields
+      const updateData = {
+        'product_variants': currentProduct.product_variants,
+        // Explicitly unset these fields for variant products
+        $unset: {
+          status: "",
+          published: ""
+        }
+      };
+
+      // Save the updated product
+      const updatedProduct = await Product.findByIdAndUpdate(
+        id,
+        updateData,
+        { new: true }
+      );
+
+      return res.json({
+        success: true,
+        data: updatedProduct,
+        message: published
+          ? `Variant ${hasStock ? 'published' : 'published but out of stock'}`
+          : 'Variant unpublished'
+      });
+    }
+
+    // For non-variant products (simple products)
+    const updateData = { published };
+
+    if (published) {
+      // When publishing, determine status based on stock
+      const baseStock = typeof currentProduct.baseStock === 'number' ? currentProduct.baseStock : 0;
+      const minStock = typeof currentProduct.minStock === 'number' ? currentProduct.minStock : 0;
+      const hasStock = baseStock > 0 && baseStock > minStock;
+
+      updateData.status = hasStock ? 'selling' : 'out_of_stock';
+      updateData['seo.robots'] = hasStock ? 'index,follow' : 'noindex,follow';
+    } else {
+      // When unpublishing, set status to archived
+      updateData.status = 'archived';
+      updateData['seo.robots'] = 'noindex,nofollow';
+    }
+
+    // Update the product
+    const product = await Product.findByIdAndUpdate(
+      id,
+      updateData,
+      { new: true }
+    );
+
+    res.json({
+      success: true,
+      data: product,
+      message: published
+        ? `Product ${updateData.status === 'out_of_stock' ? 'published but out of stock' : 'published successfully'}`
+        : 'Product archived'
+    });
+  } catch (err) {
+    console.error("Toggle product status error:", err);
+    res.status(500).json({
+      success: false,
+      error: "Failed to toggle product status",
+      details: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
+  }
 });
 
 // GET all ratings for a product
 router.get("/:id/ratings", async (req, res) => {
-    try {
-        const { page = 1, limit = 10, sort = 'newest' } = req.query;
-        const productId = req.params.id;
+  try {
+    const { page = 1, limit = 10, sort = 'newest' } = req.query;
+    const productId = req.params.id;
 
-        const pageNum = parseInt(page);
-        const limitNum = parseInt(limit);
-        const skip = (pageNum - 1) * limitNum;
+    const pageNum = parseInt(page);
+    const limitNum = parseInt(limit);
+    const skip = (pageNum - 1) * limitNum;
 
-        // Build sort query
-        let sortQuery = {};
-        if (sort === 'newest') {
-            sortQuery = { created_at: -1 };
-        } else if (sort === 'oldest') {
-            sortQuery = { created_at: 1 };
-        } else if (sort === 'highest') {
-            sortQuery = { rating: -1 };
-        } else if (sort === 'lowest') {
-            sortQuery = { rating: 1 };
-        }
-
-        const Rating = require("../models/Rating");
-        const Customer = require("../models/Customer");
-
-        const ratings = await Rating.find({
-            product_id: new mongoose.Types.ObjectId(productId),
-            status: 'approved'
-        })
-            .populate({
-                path: 'customer_id',
-                model: Customer,
-                select: 'name email'
-            })
-            .sort(sortQuery)
-            .skip(skip)
-            .limit(limitNum);
-
-        const total = await Rating.countDocuments({
-            product_id: new mongoose.Types.ObjectId(productId),
-            status: 'approved'
-        });
-
-        // Calculate rating statistics
-        const ratingStats = await Rating.aggregate([
-            { $match: { product_id: new mongoose.Types.ObjectId(productId), status: 'approved' } },
-            {
-                $group: {
-                    _id: null,
-                    averageRating: { $avg: '$rating' },
-                    totalRatings: { $sum: 1 },
-                    ratingDistribution: {
-                        $push: '$rating'
-                    }
-                }
-            }
-        ]);
-
-        const stats = ratingStats[0] || {
-            averageRating: 0,
-            totalRatings: 0,
-            ratingDistribution: []
-        };
-
-        // Calculate distribution (1-5 stars)
-        const distribution = [1, 2, 3, 4, 5].map(rating => ({
-            rating,
-            count: stats.ratingDistribution.filter(r => r === rating).length
-        }));
-
-        res.json({
-            success: true,
-            data: ratings,
-            pagination: {
-                currentPage: pageNum,
-                totalPages: Math.ceil(total / limitNum),
-                totalItems: total,
-                hasNextPage: pageNum < Math.ceil(total / limitNum),
-                hasPrevPage: pageNum > 1
-            },
-            stats: {
-                averageRating: Math.round(stats.averageRating * 10) / 10,
-                totalRatings: stats.totalRatings,
-                distribution
-            }
-        });
-    } catch (err) {
-        console.error("Error fetching ratings:", err);
-        res.status(500).json({
-            success: false,
-            error: "Failed to fetch ratings"
-        });
+    // Build sort query
+    let sortQuery = {};
+    if (sort === 'newest') {
+      sortQuery = { created_at: -1 };
+    } else if (sort === 'oldest') {
+      sortQuery = { created_at: 1 };
+    } else if (sort === 'highest') {
+      sortQuery = { rating: -1 };
+    } else if (sort === 'lowest') {
+      sortQuery = { rating: 1 };
     }
+
+    const Rating = require("../models/Rating");
+    const Customer = require("../models/Customer");
+
+    const ratings = await Rating.find({
+      product_id: new mongoose.Types.ObjectId(productId),
+      status: 'approved'
+    })
+      .populate({
+        path: 'customer_id',
+        model: Customer,
+        select: 'name email'
+      })
+      .sort(sortQuery)
+      .skip(skip)
+      .limit(limitNum);
+
+    const total = await Rating.countDocuments({
+      product_id: new mongoose.Types.ObjectId(productId),
+      status: 'approved'
+    });
+
+    // Calculate rating statistics
+    const ratingStats = await Rating.aggregate([
+      { $match: { product_id: new mongoose.Types.ObjectId(productId), status: 'approved' } },
+      {
+        $group: {
+          _id: null,
+          averageRating: { $avg: '$rating' },
+          totalRatings: { $sum: 1 },
+          ratingDistribution: {
+            $push: '$rating'
+          }
+        }
+      }
+    ]);
+
+    const stats = ratingStats[0] || {
+      averageRating: 0,
+      totalRatings: 0,
+      ratingDistribution: []
+    };
+
+    // Calculate distribution (1-5 stars)
+    const distribution = [1, 2, 3, 4, 5].map(rating => ({
+      rating,
+      count: stats.ratingDistribution.filter(r => r === rating).length
+    }));
+
+    res.json({
+      success: true,
+      data: ratings,
+      pagination: {
+        currentPage: pageNum,
+        totalPages: Math.ceil(total / limitNum),
+        totalItems: total,
+        hasNextPage: pageNum < Math.ceil(total / limitNum),
+        hasPrevPage: pageNum > 1
+      },
+      stats: {
+        averageRating: Math.round(stats.averageRating * 10) / 10,
+        totalRatings: stats.totalRatings,
+        distribution
+      }
+    });
+  } catch (err) {
+    console.error("Error fetching ratings:", err);
+    res.status(500).json({
+      success: false,
+      error: "Failed to fetch ratings"
+    });
+  }
 });
 
 // POST a new rating/review
 router.post("/:id/ratings", async (req, res) => {
-    try {
-        const { customer_id, rating, review } = req.body;
-        const productId = req.params.id;
+  try {
+    const { customer_id, rating, review } = req.body;
+    const productId = req.params.id;
 
-        // Validate required fields
-        if (!customer_id || !rating) {
-            return res.status(400).json({
-                success: false,
-                error: "Customer ID and rating are required"
-            });
-        }
-
-        // Validate rating range
-        if (rating < 1 || rating > 5) {
-            return res.status(400).json({
-                success: false,
-                error: "Rating must be between 1 and 5"
-            });
-        }
-
-        // Find customer by firebase_uid to get ObjectId
-        const Customer = require("../models/Customer");
-        const customer = await Customer.findOne({ firebase_uid: customer_id });
-
-        if (!customer) {
-            return res.status(404).json({
-                success: false,
-                error: "Customer not found"
-            });
-        }
-
-        const customerObjectId = customer._id;
-
-        const Rating = require("../models/Rating");
-
-        // Check if user has already rated this product
-        const existingRating = await Rating.findOne({
-            customer_id: customerObjectId,
-            product_id: new mongoose.Types.ObjectId(productId)
-        });
-        if (existingRating) {
-            return res.status(400).json({
-                success: false,
-                error: "You have already rated this product"
-            });
-        }
-
-        // Check if customer has purchased this product (for verified purchase)
-        const Order = require("../models/Order");
-
-        const hasPurchased = await Order.findOne({
-            customer_id: customerObjectId,
-            status: { $in: ['processing', 'shipped', 'delivered'] }, // Include processing orders
-            'items.product_id': new mongoose.Types.ObjectId(productId)
-        });
-
-        // Block rating if user hasn't purchased the product
-        if (!hasPurchased) {
-            return res.status(403).json({
-                success: false,
-                error: "You can only rate products you have purchased"
-            });
-        }
-
-        // Create new rating
-        const newRating = new Rating({
-            customer_id: customerObjectId,
-            product_id: new mongoose.Types.ObjectId(productId),
-            rating: parseInt(rating),
-            review: review || '',
-            verified_purchase: !!hasPurchased, // Convert to boolean
-            status: 'approved' // Auto-approve for now, can be changed to pending for moderation
-        });
-
-        await newRating.save();
-
-        // Update product's average rating and counts
-        const Product = require("../models/Product");
-        const ratingStats = await Rating.aggregate([
-            { $match: { product_id: new mongoose.Types.ObjectId(productId), status: 'approved' } },
-            {
-                $group: {
-                    _id: null,
-                    averageRating: { $avg: '$rating' },
-                    totalRatings: { $sum: 1 },
-                    totalReviews: {
-                        $sum: {
-                            $cond: [{ $ne: ['$review', null] }, 1, 0]
-                        }
-                    }
-                }
-            }
-        ]);
-
-        const stats = ratingStats[0] || { averageRating: 0, totalRatings: 0, totalReviews: 0 };
-
-        await Product.findByIdAndUpdate(productId, {
-            averageRating: Math.round(stats.averageRating * 10) / 10,
-            totalRatings: stats.totalRatings,
-            totalReviews: stats.totalReviews
-        });
-
-        res.status(201).json({
-            success: true,
-            message: "Rating submitted successfully",
-            data: newRating
-        });
-    } catch (err) {
-        console.error("Error submitting rating:", err);
-        res.status(500).json({
-            success: false,
-            error: "Failed to submit rating"
-        });
+    // Validate required fields
+    if (!customer_id || !rating) {
+      return res.status(400).json({
+        success: false,
+        error: "Customer ID and rating are required"
+      });
     }
+
+    // Validate rating range
+    if (rating < 1 || rating > 5) {
+      return res.status(400).json({
+        success: false,
+        error: "Rating must be between 1 and 5"
+      });
+    }
+
+    // Find customer by firebase_uid to get ObjectId
+    const Customer = require("../models/Customer");
+    const customer = await Customer.findOne({ firebase_uid: customer_id });
+
+    if (!customer) {
+      return res.status(404).json({
+        success: false,
+        error: "Customer not found"
+      });
+    }
+
+    const customerObjectId = customer._id;
+
+    const Rating = require("../models/Rating");
+
+    // Check if user has already rated this product
+    const existingRating = await Rating.findOne({
+      customer_id: customerObjectId,
+      product_id: new mongoose.Types.ObjectId(productId)
+    });
+    if (existingRating) {
+      return res.status(400).json({
+        success: false,
+        error: "You have already rated this product"
+      });
+    }
+
+    // Check if customer has purchased this product (for verified purchase)
+    const Order = require("../models/Order");
+
+    const hasPurchased = await Order.findOne({
+      customer_id: customerObjectId,
+      status: { $in: ['processing', 'shipped', 'delivered'] }, // Include processing orders
+      'items.product_id': new mongoose.Types.ObjectId(productId)
+    });
+
+    // Block rating if user hasn't purchased the product
+    if (!hasPurchased) {
+      return res.status(403).json({
+        success: false,
+        error: "You can only rate products you have purchased"
+      });
+    }
+
+    // Create new rating
+    const newRating = new Rating({
+      customer_id: customerObjectId,
+      product_id: new mongoose.Types.ObjectId(productId),
+      rating: parseInt(rating),
+      review: review || '',
+      verified_purchase: !!hasPurchased, // Convert to boolean
+      status: 'approved' // Auto-approve for now, can be changed to pending for moderation
+    });
+
+    await newRating.save();
+
+    // Update product's average rating and counts
+    const Product = require("../models/Product");
+    const ratingStats = await Rating.aggregate([
+      { $match: { product_id: new mongoose.Types.ObjectId(productId), status: 'approved' } },
+      {
+        $group: {
+          _id: null,
+          averageRating: { $avg: '$rating' },
+          totalRatings: { $sum: 1 },
+          totalReviews: {
+            $sum: {
+              $cond: [{ $ne: ['$review', null] }, 1, 0]
+            }
+          }
+        }
+      }
+    ]);
+
+    const stats = ratingStats[0] || { averageRating: 0, totalRatings: 0, totalReviews: 0 };
+
+    await Product.findByIdAndUpdate(productId, {
+      averageRating: Math.round(stats.averageRating * 10) / 10,
+      totalRatings: stats.totalRatings,
+      totalReviews: stats.totalReviews
+    });
+
+    res.status(201).json({
+      success: true,
+      message: "Rating submitted successfully",
+      data: newRating
+    });
+  } catch (err) {
+    console.error("Error submitting rating:", err);
+    res.status(500).json({
+      success: false,
+      error: "Failed to submit rating"
+    });
+  }
 });
 
 // GET customer rating for a product
 router.get("/:id/customer-rating", async (req, res) => {
-    try {
-        const { customer_id } = req.query;
-        const productId = req.params.id;
+  try {
+    const { customer_id } = req.query;
+    const productId = req.params.id;
 
-        if (!customer_id) {
-            return res.json({
-                success: true,
-                data: null
-            });
-        }
-
-        const Customer = require("../models/Customer");
-        const customer = await Customer.findOne({ firebase_uid: customer_id });
-
-        if (!customer) {
-            return res.json({
-                success: true,
-                data: null
-            });
-        }
-
-        const Rating = require("../models/Rating");
-        const rating = await Rating.findOne({
-            customer_id: customer._id,
-            product_id: new mongoose.Types.ObjectId(productId)
-        });
-
-        res.json({
-            success: true,
-            data: rating
-        });
-    } catch (err) {
-        console.error("Error fetching customer rating:", err);
-        res.status(500).json({
-            success: false,
-            error: "Failed to fetch rating"
-        });
+    if (!customer_id) {
+      return res.json({
+        success: true,
+        data: null
+      });
     }
+
+    const Customer = require("../models/Customer");
+    const customer = await Customer.findOne({ firebase_uid: customer_id });
+
+    if (!customer) {
+      return res.json({
+        success: true,
+        data: null
+      });
+    }
+
+    const Rating = require("../models/Rating");
+    const rating = await Rating.findOne({
+      customer_id: customer._id,
+      product_id: new mongoose.Types.ObjectId(productId)
+    });
+
+    res.json({
+      success: true,
+      data: rating
+    });
+  } catch (err) {
+    console.error("Error fetching customer rating:", err);
+    res.status(500).json({
+      success: false,
+      error: "Failed to fetch rating"
+    });
+  }
 });
 
 module.exports = router;

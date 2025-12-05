@@ -70,7 +70,24 @@ export default function ProductFormSheet({
   const categoryRef = useRef<HTMLButtonElement>(null);
 
   // Handle both previewImage (legacy) and previewImages (new) props
-  const displayPreviewImages = previewImages || (previewImage ? [previewImage] : []);
+  const [existingImages, setExistingImages] = useState<string[]>(previewImages || (previewImage ? [previewImage] : []));
+  const displayPreviewImages = existingImages;
+
+  // Callback to remove an existing image
+  const handleRemovePreviewImage = (index: number) => {
+    setExistingImages(prev => prev.filter((_, i) => i !== index));
+  };
+
+  // Sync existingImages with props when they change (e.g. after data fetch)
+  useEffect(() => {
+    if (previewImages && previewImages.length > 0) {
+      console.log('🔄 Syncing existingImages with previewImages prop:', previewImages.length);
+      setExistingImages(previewImages);
+    } else if (previewImage) {
+      console.log('🔄 Syncing existingImages with previewImage prop:', previewImage);
+      setExistingImages([previewImage]);
+    }
+  }, [previewImages, previewImage]);
 
   const form = useForm<ProductFormData>({
     resolver: zodResolver(productFormSchema),
@@ -487,57 +504,19 @@ export default function ProductFormSheet({
     // Use the current form values instead of the potentially stale 'data' parameter
     const finalData = { ...data, ...currentFormData };
 
-    // Ensure productStructure is set correctly for digital products
-    if (finalData.productType === 'digital' && (!finalData.productStructure || finalData.productStructure !== 'simple')) {
-      finalData.productStructure = 'simple';
-      console.log('Set productStructure to "simple" for digital product in form submission');
+    // Add existing images to the final data so they are sent to the backend
+    // The backend expects 'existing_images' as a JSON string of URLs
+    if (existingImages && existingImages.length > 0) {
+      console.log('Adding existing images to submission:', existingImages);
+      // @ts-ignore - adding property that might not be in the type definition yet
+      finalData.existing_images = JSON.stringify(existingImages);
+    } else {
+      // Explicitly send empty string if no existing images, to signal removal of all previous images
+      // (unless new images are being uploaded, which are handled by the 'images' field)
+      console.log('No existing images to preserve');
+      // @ts-ignore
+      finalData.existing_images = "";
     }
-
-    // Ensure digital product fields are properly set for digital products
-    if (finalData.productType === 'digital') {
-      const currentFileSize = form.getValues('fileSize');
-      const currentDownloadFormat = form.getValues('downloadFormat');
-      const currentLicenseType = form.getValues('licenseType');
-      const currentDownloadLimit = form.getValues('downloadLimit');
-
-      console.log('=== DIGITAL PRODUCT FIELDS FROM FORM ===');
-      console.log('fileSize:', currentFileSize);
-      console.log('downloadFormat:', currentDownloadFormat);
-      console.log('licenseType:', currentLicenseType);
-      console.log('downloadLimit:', currentDownloadLimit);
-
-      if (currentFileSize !== undefined && currentFileSize !== '') {
-        finalData.fileSize = currentFileSize;
-        console.log('✅ Set fileSize in final data:', currentFileSize);
-      }
-      if (currentDownloadFormat && currentDownloadFormat !== '') {
-        finalData.downloadFormat = currentDownloadFormat;
-        console.log('✅ Set downloadFormat in final data:', currentDownloadFormat);
-      }
-      if (currentLicenseType && currentLicenseType !== '') {
-        finalData.licenseType = currentLicenseType;
-        console.log('✅ Set licenseType in final data:', currentLicenseType);
-      }
-      if (currentDownloadLimit !== undefined && currentDownloadLimit !== '') {
-        finalData.downloadLimit = currentDownloadLimit;
-        console.log('✅ Set downloadLimit in final data:', currentDownloadLimit);
-      }
-    }
-
-    // For variant products, remove pricing and stock fields that should only be for simple products
-    if (finalData.productStructure === 'variant') {
-      delete finalData.costPrice;
-      delete finalData.salesPrice;
-      delete finalData.stock;
-      delete finalData.minStockThreshold;
-    }
-
-    console.log('Final data being used:', finalData);
-    console.log('Final productStructure:', finalData.productStructure);
-
-    console.log('Categories field:', finalData.categories);
-    console.log('Variants field:', finalData.product_variants);
-    console.log('Images field:', finalData.images);
 
     // Ensure auto-generated values are set before submission
     const currentSlug = form.getValues('slug');
@@ -564,10 +543,10 @@ export default function ProductFormSheet({
     const isBaseInStock = (currentStock || 0) > (currentMinStock || 0);
     const hasVariantsInStock = currentVariants?.combinations && currentVariants.combinations.length > 0
       ? currentVariants.combinations.some((variant: any) =>
-          variant.stock !== undefined &&
-          variant.minStock !== undefined &&
-          variant.stock > variant.minStock
-        )
+        variant.stock !== undefined &&
+        variant.minStock !== undefined &&
+        variant.stock > variant.minStock
+      )
       : false;
 
     const isInStock = isBaseInStock || hasVariantsInStock;
@@ -713,308 +692,309 @@ export default function ProductFormSheet({
   return (
     <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
       {children}
-      
+
       <SheetContent className="w-[90%] max-w-5xl">
-          <Form {...form}>
-            <form
-              onSubmit={form.handleSubmit(onSubmit, onInvalid)}
-              className="size-full"
-            >
-              <FormSheetContent>
-                <FormSheetHeader>
-                  <div className="flex flex-col">
-                    <SheetTitle>{title}</SheetTitle>
-                    <SheetDescription>{description}</SheetDescription>
-                  </div>
-                </FormSheetHeader>
+        <Form {...form}>
+          <form
+            onSubmit={form.handleSubmit(onSubmit, onInvalid)}
+            className="size-full"
+          >
+            <FormSheetContent>
+              <FormSheetHeader>
+                <div className="flex flex-col">
+                  <SheetTitle>{title}</SheetTitle>
+                  <SheetDescription>{description}</SheetDescription>
+                </div>
+              </FormSheetHeader>
 
-                <FormSheetBody>
-                  <div
-                    className="space-y-6"
-                    ref={setContainer as LegacyRef<HTMLDivElement>}
-                  >
-                    <FormTextInput
+              <FormSheetBody>
+                <div
+                  className="space-y-6"
+                  ref={setContainer as LegacyRef<HTMLDivElement>}
+                >
+                  <FormTextInput
+                    control={form.control}
+                    name="name"
+                    label="Product Name"
+                    placeholder="Product Name / Title"
+                  />
+
+                  <FormProductTypeSelect
+                    control={form.control}
+                    name="productType"
+                    label="Product Type"
+                    placeholder="Select product type"
+                  />
+
+                  {/* Show product structure only for physical products */}
+                  {form.watch("productType") === "physical" && (
+                    <FormProductStructureSelect
                       control={form.control}
-                      name="name"
-                      label="Product Name"
-                      placeholder="Product Name / Title"
+                      name="productStructure"
+                      label="Product Structure"
+                      placeholder="Select product structure"
                     />
+                  )}
 
-                    <FormProductTypeSelect
+                  <FormSlugInput
+                    form={form}
+                    control={form.control}
+                    name="slug"
+                    label="Product Slug"
+                    placeholder="Product Slug"
+                    generateSlugFrom="name"
+                  />
+
+                  <FormTextarea
+                    control={form.control}
+                    name="description"
+                    label="Product Description"
+                    placeholder="Product Description"
+                  />
+
+                  {/* Show images only for simple products */}
+                  {form.watch("productStructure") === "simple" && (
+                    <FormMultipleImageInput
                       control={form.control}
-                      name="productType"
-                      label="Product Type"
-                      placeholder="Select product type"
+                      name="images"
+                      label="Product Images"
+                      previewImages={displayPreviewImages}
+                      onRemovePreviewImage={handleRemovePreviewImage}
                     />
+                  )}
 
-                    {/* Show product structure only for physical products */}
-                    {form.watch("productType") === "physical" && (
-                      <FormProductStructureSelect
+                  <FormTextInput
+                    control={form.control}
+                    name="sku"
+                    label="Product SKU"
+                    placeholder="Enter base SKU (e.g., TSHIRT)"
+                    transform="uppercase"
+                  />
+
+                  <FormMultipleCategorySubcategoryInput
+                    control={form.control}
+                    name="categories"
+                    setValue={form.setValue}
+                    watch={form.watch}
+                  />
+
+                  <FormTagsInput
+                    control={form.control}
+                    name="tags"
+                    label="Product Tags"
+                    placeholder="Add product tag"
+                    setValue={form.setValue}
+                  />
+
+                  {/* Show pricing only for simple products */}
+                  {form.watch("productStructure") === "simple" && (
+                    <>
+                      <FormPriceInput
                         control={form.control}
-                        name="productStructure"
-                        label="Product Structure"
-                        placeholder="Select product structure"
+                        name="costPrice"
+                        label="Cost Price"
+                        placeholder="Cost Price"
+                        min="0"
                       />
-                    )}
 
-                    <FormSlugInput
-                      form={form}
-                      control={form.control}
-                      name="slug"
-                      label="Product Slug"
-                      placeholder="Product Slug"
-                      generateSlugFrom="name"
-                    />
-
-                    <FormTextarea
-                      control={form.control}
-                      name="description"
-                      label="Product Description"
-                      placeholder="Product Description"
-                    />
-
-                    {/* Show images only for simple products */}
-                    {form.watch("productStructure") === "simple" && (
-                      <FormMultipleImageInput
+                      <FormPriceInput
                         control={form.control}
-                        name="images"
-                        label="Product Images"
-                        previewImages={displayPreviewImages}
+                        name="salesPrice"
+                        label="Sale Price"
+                        placeholder="Sale Price"
+                        min="0"
                       />
-                    )}
+                    </>
+                  )}
 
-                    <FormTextInput
-                      control={form.control}
-                      name="sku"
-                      label="Product SKU"
-                      placeholder="Enter base SKU (e.g., TSHIRT)"
-                      transform="uppercase"
-                    />
-
-                    <FormMultipleCategorySubcategoryInput
-                      control={form.control}
-                      name="categories"
-                      setValue={form.setValue}
-                      watch={form.watch}
-                    />
-
-                    <FormTagsInput
-                      control={form.control}
-                      name="tags"
-                      label="Product Tags"
-                      placeholder="Add product tag"
-                      setValue={form.setValue}
-                    />
-
-                    {/* Show pricing only for simple products */}
-                    {form.watch("productStructure") === "simple" && (
-                      <>
-                        <FormPriceInput
-                          control={form.control}
-                          name="costPrice"
-                          label="Cost Price"
-                          placeholder="Cost Price"
-                          min="0"
-                        />
-
-                        <FormPriceInput
-                          control={form.control}
-                          name="salesPrice"
-                          label="Sale Price"
-                          placeholder="Sale Price"
-                          min="0"
-                        />
-                      </>
-                    )}
-
-                    {/* Show stock fields only for simple physical products */}
-                    {form.watch("productStructure") === "simple" && form.watch("productType") === "physical" && (
-                      <>
-                        <FormTextInput
-                          control={form.control}
-                          name="stock"
-                          label="Base Stock"
-                          placeholder="Base stock quantity"
-                          type="number"
-                          min="0"
-                        />
-
-                        <FormTextInput
-                          control={form.control}
-                          name="minStockThreshold"
-                          label="Minimum Stock"
-                          placeholder="Minimum stock threshold"
-                          type="number"
-                          min="0"
-                        />
-
-                      </>
-                    )}
-                    {form.watch("productType") === "physical" && form.watch("productStructure") === "variant" && (
-                      <FormVariantManagement
+                  {/* Show stock fields only for simple physical products */}
+                  {form.watch("productStructure") === "simple" && form.watch("productType") === "physical" && (
+                    <>
+                      <FormTextInput
                         control={form.control}
-                        name="product_variants"
-                        label="Product Variants"
-                        baseSKU={form.watch("sku") || ""}
-                        baseSlug={form.watch("slug") || ""}
-                        productName={form.watch("name") || ""}
+                        name="stock"
+                        label="Base Stock"
+                        placeholder="Base stock quantity"
+                        type="number"
+                        min="0"
                       />
-                    )}
-                    {/* Digital Product Fields */}
-                    {form.watch("productType") === "digital" && (
-                      <div className="mt-4 space-y-6">
-                        <div className="border border-gray-200 rounded-lg p-6 bg-gray-50">
-                          <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                            </svg>
-                            Digital Product Configuration
-                          </h3>
 
-                          {/* File Upload Section */}
-                          <div className="mb-6">
-                            <h4 className="text-sm font-medium text-gray-700 mb-3">File Information</h4>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                              <FormTextInput
-                                control={form.control}
-                                name="fileUpload"
-                                label="Digital File"
-                                placeholder="Upload digital file (PDF, MP4, ZIP, CSV, JSON, etc.)"
-                                type="file"
-                                accept=".pdf,.doc,.docx,.txt,.csv,.json,.xml,.zip,.rar,.7z,.tar,.gz,.mp3,.mp4,.avi,.mov,.wmv,.flv,.webm,.jpg,.jpeg,.png,.gif,.svg,.webp"
-                                onChange={handleFileUpload}
-                              />
+                      <FormTextInput
+                        control={form.control}
+                        name="minStockThreshold"
+                        label="Minimum Stock"
+                        placeholder="Minimum stock threshold"
+                        type="number"
+                        min="0"
+                      />
 
-                              <FormTextInput
-                                control={form.control}
-                                name="fileSize"
-                                label="File Size (MB)"
-                                placeholder="Auto-calculated"
-                                type="number"
-                                readOnly
-                                className="bg-gray-100"
-                              />
-                            </div>
+                    </>
+                  )}
+                  {form.watch("productType") === "physical" && form.watch("productStructure") === "variant" && (
+                    <FormVariantManagement
+                      control={form.control}
+                      name="product_variants"
+                      label="Product Variants"
+                      baseSKU={form.watch("sku") || ""}
+                      baseSlug={form.watch("slug") || ""}
+                      productName={form.watch("name") || ""}
+                    />
+                  )}
+                  {/* Digital Product Fields */}
+                  {form.watch("productType") === "digital" && (
+                    <div className="mt-4 space-y-6">
+                      <div className="border border-gray-200 rounded-lg p-6 bg-gray-50">
+                        <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                          </svg>
+                          Digital Product Configuration
+                        </h3>
 
-                            <div className="mt-4">
-                              <FormTextInput
-                                control={form.control}
-                                name="downloadFormat"
-                                label="Download Format"
-                                placeholder="Auto-detected"
-                                readOnly
-                                className="bg-gray-100"
-                              />
-                            </div>
+                        {/* File Upload Section */}
+                        <div className="mb-6">
+                          <h4 className="text-sm font-medium text-gray-700 mb-3">File Information</h4>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <FormTextInput
+                              control={form.control}
+                              name="fileUpload"
+                              label="Digital File"
+                              placeholder="Upload digital file (PDF, MP4, ZIP, CSV, JSON, etc.)"
+                              type="file"
+                              accept=".pdf,.doc,.docx,.txt,.csv,.json,.xml,.zip,.rar,.7z,.tar,.gz,.mp3,.mp4,.avi,.mov,.wmv,.flv,.webm,.jpg,.jpeg,.png,.gif,.svg,.webp"
+                              onChange={handleFileUpload}
+                            />
+
+                            <FormTextInput
+                              control={form.control}
+                              name="fileSize"
+                              label="File Size (MB)"
+                              placeholder="Auto-calculated"
+                              type="number"
+                              readOnly
+                              className="bg-gray-100"
+                            />
                           </div>
 
-                          {/* Licensing Section */}
-                          <div className="pt-4 border-t border-gray-200">
-                            <h4 className="text-sm font-medium text-gray-700 mb-3">Licensing & Access</h4>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                              <FormTextInput
-                                control={form.control}
-                                name="licenseType"
-                                label="License Type"
-                                placeholder="e.g., Single Use, Commercial, etc."
-                              />
+                          <div className="mt-4">
+                            <FormTextInput
+                              control={form.control}
+                              name="downloadFormat"
+                              label="Download Format"
+                              placeholder="Auto-detected"
+                              readOnly
+                              className="bg-gray-100"
+                            />
+                          </div>
+                        </div>
 
-                              <FormTextInput
-                                control={form.control}
-                                name="downloadLimit"
-                                label="Download Limit"
-                                placeholder="Maximum downloads allowed"
-                                type="number"
-                                min="1"
-                              />
-                            </div>
+                        {/* Licensing Section */}
+                        <div className="pt-4 border-t border-gray-200">
+                          <h4 className="text-sm font-medium text-gray-700 mb-3">Licensing & Access</h4>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <FormTextInput
+                              control={form.control}
+                              name="licenseType"
+                              label="License Type"
+                              placeholder="e.g., Single Use, Commercial, etc."
+                            />
+
+                            <FormTextInput
+                              control={form.control}
+                              name="downloadLimit"
+                              label="Download Limit"
+                              placeholder="Maximum downloads allowed"
+                              type="number"
+                              min="1"
+                            />
                           </div>
                         </div>
                       </div>
-                    )}
+                    </div>
+                  )}
 
-                    <FormTextInput
-                      control={form.control}
-                      name="seoTitle"
-                      label="SEO Title"
-                      placeholder="SEO page title (optional)"
-                    />
+                  <FormTextInput
+                    control={form.control}
+                    name="seoTitle"
+                    label="SEO Title"
+                    placeholder="SEO page title (optional)"
+                  />
 
-                    <FormTextarea
-                      control={form.control}
-                      name="seoDescription"
-                      label="SEO Description"
-                      placeholder="SEO meta description (optional)"
-                    />
+                  <FormTextarea
+                    control={form.control}
+                    name="seoDescription"
+                    label="SEO Description"
+                    placeholder="SEO meta description (optional)"
+                  />
 
-                    <FormTagsInput
-                      control={form.control}
-                      name="seoKeywords"
-                      label="SEO Keywords"
-                      placeholder="Add SEO keyword"
-                      setValue={form.setValue}
-                    />
+                  <FormTagsInput
+                    control={form.control}
+                    name="seoKeywords"
+                    label="SEO Keywords"
+                    placeholder="Add SEO keyword"
+                    setValue={form.setValue}
+                  />
 
-                    <FormTextInput
-                      control={form.control}
-                      name="seoCanonical"
-                      label="Canonical URL"
-                      placeholder="Auto-generated based on product slug"
-                      readOnly
-                      className="bg-gray-50"
-                    />
+                  <FormTextInput
+                    control={form.control}
+                    name="seoCanonical"
+                    label="Canonical URL"
+                    placeholder="Auto-generated based on product slug"
+                    readOnly
+                    className="bg-gray-50"
+                  />
 
-                    <FormTextInput
-                      control={form.control}
-                      name="seoRobots"
-                      label="Robots Meta"
-                      placeholder="Auto-generated based on stock and published status"
-                      readOnly
-                      className="bg-gray-50"
-                    />
+                  <FormTextInput
+                    control={form.control}
+                    name="seoRobots"
+                    label="Robots Meta"
+                    placeholder="Auto-generated based on stock and published status"
+                    readOnly
+                    className="bg-gray-50"
+                  />
 
-                    <FormTextInput
-                      control={form.control}
-                      name="seoOgTitle"
-                      label="Open Graph Title"
-                      placeholder="Open Graph title for social media"
-                    />
+                  <FormTextInput
+                    control={form.control}
+                    name="seoOgTitle"
+                    label="Open Graph Title"
+                    placeholder="Open Graph title for social media"
+                  />
 
-                    <FormTextarea
-                      control={form.control}
-                      name="seoOgDescription"
-                      label="Open Graph Description"
-                      placeholder="Open Graph description for social media"
-                    />
+                  <FormTextarea
+                    control={form.control}
+                    name="seoOgDescription"
+                    label="Open Graph Description"
+                    placeholder="Open Graph description for social media"
+                  />
 
-                    <FormTextInput
-                      control={form.control}
-                      name="seoOgImage"
-                      label="Open Graph Image URL"
-                      placeholder={(() => {
-                        try {
-                          return getOgImagePreview() || "Auto-generated from product/variant images";
-                        } catch (error) {
-                          console.error('Error getting OG image preview:', error);
-                          return "Auto-generated from product/variant images";
-                        }
-                      })()}
-                      readOnly
-                      className="bg-gray-50"
-                    />
+                  <FormTextInput
+                    control={form.control}
+                    name="seoOgImage"
+                    label="Open Graph Image URL"
+                    placeholder={(() => {
+                      try {
+                        return getOgImagePreview() || "Auto-generated from product/variant images";
+                      } catch (error) {
+                        console.error('Error getting OG image preview:', error);
+                        return "Auto-generated from product/variant images";
+                      }
+                    })()}
+                    readOnly
+                    className="bg-gray-50"
+                  />
 
-                  </div>
-                </FormSheetBody>
+                </div>
+              </FormSheetBody>
 
-                <FormSheetFooter>
-                  <FormSubmitButton isPending={isPending} className="w-full">
-                    {submitButtonText}
-                  </FormSubmitButton>
-                </FormSheetFooter>
-              </FormSheetContent>
-            </form>
-          </Form>
-        </SheetContent>
-      </Sheet>
+              <FormSheetFooter>
+                <FormSubmitButton isPending={isPending} className="w-full">
+                  {submitButtonText}
+                </FormSubmitButton>
+              </FormSheetFooter>
+            </FormSheetContent>
+          </form>
+        </Form>
+      </SheetContent>
+    </Sheet>
   );
 }

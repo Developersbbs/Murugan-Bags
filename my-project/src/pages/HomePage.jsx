@@ -521,7 +521,7 @@ const HomePage = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-slate-50 overflow-x-hidden font-sans">
+    <div className="min-h-screen bg-slate-50 overflow-x-hidden font-sans -mt-20">
       {/* Offer Popup */}
       <OfferPopup />
 
@@ -677,9 +677,10 @@ const HomePage = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-8">
             {categories.map((category, index) => (
-              <div
+              <Link
                 key={index}
-                className="group relative overflow-hidden rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-3 bg-white cursor-pointer"
+                to={`/products?category=${encodeURIComponent(category.name)}`}
+                className="group relative overflow-hidden rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-3 bg-white cursor-pointer block"
                 style={{
                   animation: visibleSections.has('categories') ? `fadeInUp 0.6s ease-out ${index * 0.1}s both` : 'none'
                 }}
@@ -705,7 +706,7 @@ const HomePage = () => {
                     <p className="text-slate-300 text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300 transform translate-y-2 group-hover:translate-y-0">{category.description}</p>
                   </div>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         </div>

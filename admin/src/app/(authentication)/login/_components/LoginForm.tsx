@@ -58,9 +58,9 @@ export default function LoginForm() {
     },
     onError: (error: any) => {
       console.error("Login error:", error);
-      
+
       const errorMessage = error.message || "Failed to login";
-      
+
       // Handle specific validation errors
       if (errorMessage.toLowerCase().includes("email") || errorMessage.toLowerCase().includes("invalid")) {
         form.setError("email", {

@@ -5,7 +5,7 @@ import { useWishlist } from '../../context/WishlistContext';
 import toast from 'react-hot-toast';
 import LazyImage from '../common/LazyImage';
 
-const ProductCard = memo(({ product, viewMode = 'grid' }) => {
+const ProductCard = memo(({ product, viewMode = 'grid', className = '' }) => {
   const { addToCart, isInCart } = useCart();
   const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
   const navigate = useNavigate();
@@ -17,7 +17,7 @@ const ProductCard = memo(({ product, viewMode = 'grid' }) => {
   const toggleWishlist = async (e) => {
     e.preventDefault();
     e.stopPropagation();
-    
+
     try {
       if (productInWishlist) {
         await removeFromWishlist(product._id);
@@ -34,9 +34,9 @@ const ProductCard = memo(({ product, viewMode = 'grid' }) => {
   const handleAddToCart = async (e) => {
     e.preventDefault();
     e.stopPropagation();
-    
+
     if (isAddingToCart) return;
-    
+
     // Check if this is a variant product (handle both old and new structure)
     if (isVariantProduct && variantData) {
       // Add the specific variant directly to cart
@@ -50,7 +50,7 @@ const ProductCard = memo(({ product, viewMode = 'grid' }) => {
           description: product.originalDescription || product.description,
           categories: product.originalCategories || product.categories
         };
-        
+
         await addToCart(variantForCart, variantData, 1);
         toast.success('Added to cart');
       } catch (error) {
@@ -77,45 +77,46 @@ const ProductCard = memo(({ product, viewMode = 'grid' }) => {
     }
   };
 
-  const { 
-  _id, 
-  name, 
-  selling_price, 
-  price, 
-  image_url, 
-  averageRating, 
-  numReviews, 
-  salePrice, 
-  slug, 
-  product_variants, 
-  product_structure, 
-  parentProductId: originalParentProductId, 
-  isVariant,
-  _isVariant,
-  _variantData,
-  _parentProduct,
-  _originalProductId,
-  attributes,
-  sku,
-  stock,
-  status,
-  published
-} = product;
-  
+  const {
+    _id,
+    name,
+    selling_price,
+    price,
+    image_url,
+    averageRating,
+    numReviews,
+    salePrice,
+    slug,
+    product_variants,
+    product_structure,
+    parentProductId: originalParentProductId,
+    isVariant,
+    _isVariant,
+    _variantData,
+    _parentProduct,
+    _originalProductId,
+    attributes,
+    sku,
+    stock,
+    status,
+    published
+  } = product;
+
   // Determine the correct product link (handle both old and new structure)
   const isVariantProduct = isVariant || _isVariant;
   const variantData = _variantData || product.variantData;
   const parentProductId = _originalProductId || originalParentProductId;
-  const productLink = isVariantProduct ? `/product/${parentProductId}` : `/product/${slug || _id}`;
-  
+  // Prioritize parent ID if available (for variants), otherwise use slug or ID
+  const productLink = parentProductId ? `/product/${parentProductId}` : `/product/${slug || _id}`;
+
   // Handle different price field scenarios
   let displayPrice = null;
   let displayImage = null;
-  
+
   // For variant products (transformed), use variant-specific data
   if (isVariantProduct && variantData) {
     displayPrice = variantData.selling_price || variantData.salesPrice || selling_price || salePrice || price;
-    
+
     // Use variant image if available, otherwise fall back to main product image
     if (variantData.images && variantData.images.length > 0) {
       displayImage = variantData.images[0];
@@ -125,12 +126,12 @@ const ProductCard = memo(({ product, viewMode = 'grid' }) => {
   else if (product_structure === 'variant' && product_variants && product_variants.length > 0) {
     const firstVariant = product_variants[0];
     displayPrice = firstVariant.selling_price || firstVariant.salesPrice || firstVariant.cost_price;
-    
+
     // Use variant image if available, otherwise fall back to main product image
     if (firstVariant.images && firstVariant.images.length > 0) {
       displayImage = firstVariant.images[0];
     }
-  } 
+  }
   // Otherwise use the product's direct price fields
   else {
     displayPrice = salePrice || selling_price || price;
@@ -145,35 +146,35 @@ const ProductCard = memo(({ product, viewMode = 'grid' }) => {
     </svg>`;
     return `data:image/svg+xml;base64,${btoa(svg)}`;
   };
-  
+
   // Get the first valid image URL or use placeholder
   const getMainImage = () => {
     // For variant products, prioritize the first variant's image
     if (displayImage) {
       return displayImage.startsWith('http') ? displayImage : `/uploads/${displayImage}`;
     }
-    
+
     // Fall back to main product images
     if (!image_url || !Array.isArray(image_url) || image_url.length === 0) {
       return getPlaceholderImage();
     }
-    
+
     // Find the first image with a valid URL
     const validImage = image_url.find(img => img && (img.url || img));
     return validImage ? (validImage.url || validImage) : getPlaceholderImage();
   };
-  
+
   const mainImage = getMainImage();
   const ratingValue = averageRating || 0;
 
   // Format variant attributes for display
   const getVariantAttributes = () => {
     if (!isVariantProduct || !variantData || !variantData.attributes) return null;
-    
+
     const attrs = Object.entries(variantData.attributes).map(([key, value]) => {
       return `${key}: ${value}`;
     });
-    
+
     return attrs.length > 0 ? attrs.join(', ') : null;
   };
 
@@ -181,13 +182,13 @@ const ProductCard = memo(({ product, viewMode = 'grid' }) => {
 
   return viewMode === 'list' ? (
     // List View Layout
-    <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow duration-200 p-4">
+    <div className={`bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow duration-200 p-6 ${className}`}>
       <div className="flex items-center space-x-4">
         {/* Image */}
         <Link to={productLink} className="flex-shrink-0">
           <div className="relative w-24 h-24 bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg overflow-hidden">
-            <LazyImage 
-              src={mainImage} 
+            <LazyImage
+              src={mainImage}
               alt={name}
               className="w-full h-full object-contain p-2 hover:scale-105 transition-transform duration-200"
               placeholder={
@@ -209,7 +210,7 @@ const ProductCard = memo(({ product, viewMode = 'grid' }) => {
         {/* Content */}
         <div className="flex-1 min-w-0">
           <Link to={productLink}>
-            <h3 className="text-lg font-semibold text-gray-900 mb-1 line-clamp-2 hover:text-blue-600 transition-colors duration-200">
+            <h3 className="text-lg font-semibold text-gray-900 mb-1 line-clamp-2 hover:text-rose-600 transition-colors duration-200">
               {name}
             </h3>
           </Link>
@@ -217,7 +218,7 @@ const ProductCard = memo(({ product, viewMode = 'grid' }) => {
           {/* Variant Attributes */}
           {variantAttributes && (
             <div className="mb-2">
-              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-rose-50 text-rose-700 border border-rose-100">
                 {variantAttributes}
               </span>
             </div>
@@ -233,11 +234,10 @@ const ProductCard = memo(({ product, viewMode = 'grid' }) => {
           {/* Stock for variants */}
           {isVariantProduct && stock !== undefined && (
             <div className="mb-2">
-              <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                stock > 0 
-                  ? 'bg-green-100 text-green-800' 
-                  : 'bg-red-100 text-red-800'
-              }`}>
+              <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${stock > 0
+                ? 'bg-green-100 text-green-800'
+                : 'bg-red-100 text-red-800'
+                }`}>
                 {stock > 0 ? `In Stock (${stock})` : 'Out of Stock'}
               </span>
             </div>
@@ -247,10 +247,10 @@ const ProductCard = memo(({ product, viewMode = 'grid' }) => {
           <div className="flex items-center space-x-2 mb-2">
             <div className="flex items-center bg-yellow-50 px-2 py-1 rounded">
               {[...Array(5)].map((_, i) => (
-                <svg 
-                  key={i} 
-                  className={`w-3 h-3 ${i < Math.round(ratingValue) ? 'text-yellow-500' : 'text-gray-300'}`} 
-                  fill="currentColor" 
+                <svg
+                  key={i}
+                  className={`w-3 h-3 ${i < Math.round(ratingValue) ? 'text-yellow-500' : 'text-gray-300'}`}
+                  fill="currentColor"
                   viewBox="0 0 20 20"
                 >
                   <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
@@ -293,11 +293,10 @@ const ProductCard = memo(({ product, viewMode = 'grid' }) => {
         <div className="flex flex-col space-y-2">
           <button
             onClick={toggleWishlist}
-            className={`p-2 rounded-lg border transition-all duration-200 ${
-              productInWishlist 
-                ? 'bg-red-50 border-red-200 text-red-600' 
-                : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'
-            }`}
+            className={`p-2 rounded-lg border transition-all duration-200 ${productInWishlist
+              ? 'bg-red-50 border-red-200 text-red-600'
+              : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'
+              }`}
             title={productInWishlist ? 'Remove from wishlist' : 'Add to wishlist'}
           >
             <svg className="w-5 h-5" fill={productInWishlist ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
@@ -308,11 +307,10 @@ const ProductCard = memo(({ product, viewMode = 'grid' }) => {
           <button
             onClick={handleAddToCart}
             disabled={isAddingToCart || product.stockQuantity <= 0}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-              productInCart 
-                ? 'bg-green-600 text-white' 
-                : 'bg-blue-600 text-white hover:bg-blue-700'
-            } disabled:opacity-50 disabled:cursor-not-allowed`}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${productInCart
+              ? 'bg-green-600 text-white'
+              : 'bg-rose-600 text-white hover:bg-rose-700 shadow-md hover:shadow-lg'
+              } disabled:opacity-50 disabled:cursor-not-allowed`}
           >
             {isAddingToCart ? 'Adding...' : productInCart ? 'In Cart' : 'Add to Cart'}
           </button>
@@ -321,18 +319,18 @@ const ProductCard = memo(({ product, viewMode = 'grid' }) => {
     </div>
   ) : (
     // Grid View Layout (original design)
-    <div className="group bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-300 h-full flex flex-col border border-gray-100 hover:border-blue-200">
-      <Link to={`/product/${slug || _id}`} className="flex-1 flex flex-col">
-        <div className="relative flex items-center justify-center bg-gradient-to-br from-gray-50 via-white to-gray-100 h-72 overflow-hidden">
+    <div className={`group bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 h-full flex flex-col border border-gray-100 overflow-hidden ${className}`}>
+      <Link to={productLink} className="flex-1 flex flex-col">
+        <div className="relative flex items-center justify-center bg-gray-50 h-64 overflow-hidden group-hover:bg-gray-100 transition-colors duration-300">
           {/* Background Pattern */}
           <div className="absolute inset-0 opacity-5">
             <div className="absolute inset-0" style={{
               backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='0.1'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
             }}></div>
           </div>
-          
-          <LazyImage 
-            src={mainImage} 
+
+          <LazyImage
+            src={mainImage}
             alt={name}
             className="max-w-full max-h-full object-contain p-4 group-hover:scale-110 transition-transform duration-500 filter group-hover:brightness-110"
             placeholder={
@@ -343,16 +341,15 @@ const ProductCard = memo(({ product, viewMode = 'grid' }) => {
               </div>
             }
           />
-          
+
           {/* Wishlist and Sale Badge */}
           <div className="absolute top-4 right-4 flex flex-col space-y-2">
             <button
               onClick={toggleWishlist}
-              className={`p-3 rounded-full shadow-xl backdrop-blur-sm transition-all duration-300 transform hover:scale-125 ${
-                productInWishlist 
-                  ? 'bg-gradient-to-r from-red-500 to-pink-500 text-white animate-pulse' 
-                  : 'bg-white/95 text-gray-600 hover:bg-gradient-to-r hover:from-red-50 hover:to-pink-50 hover:text-red-500'
-              }`}
+              className={`p-3 rounded-full shadow-xl backdrop-blur-sm transition-all duration-300 transform hover:scale-125 ${productInWishlist
+                ? 'bg-gradient-to-r from-red-500 to-pink-500 text-white animate-pulse'
+                : 'bg-white/95 text-gray-600 hover:bg-gradient-to-r hover:from-red-50 hover:to-pink-50 hover:text-red-500'
+                }`}
               aria-label={productInWishlist ? 'Remove from wishlist' : 'Add to wishlist'}
             >
               <svg
@@ -379,14 +376,14 @@ const ProductCard = memo(({ product, viewMode = 'grid' }) => {
               </div>
             )}
           </div>
-          
+
           {/* Stock Status */}
           <div className="absolute top-4 left-4">
             <div className="bg-green-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg">
               ✓ In Stock
             </div>
           </div>
-          
+
           {/* Quick Action Buttons */}
           <div className="absolute bottom-4 left-4 right-4 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-4 group-hover:translate-y-0">
             <div className="flex justify-center space-x-2">
@@ -404,15 +401,15 @@ const ProductCard = memo(({ product, viewMode = 'grid' }) => {
             </div>
           </div>
         </div>
-        <div className="p-4 flex-1 flex flex-col">
-          <h3 className="text-lg font-semibold text-gray-900 mb-2 line-clamp-2 h-12 overflow-hidden group-hover:text-blue-600 transition-colors duration-200">
+        <div className="p-6 flex-1 flex flex-col">
+          <h3 className="text-lg font-bold text-gray-800 mb-2 line-clamp-2 h-14 overflow-hidden group-hover:text-rose-600 transition-colors duration-200 leading-snug">
             {name}
           </h3>
-          
+
           {/* Variant Attributes */}
           {variantAttributes && (
             <div className="mb-2">
-              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-rose-50 text-rose-700 border border-rose-100">
                 {variantAttributes}
               </span>
             </div>
@@ -428,16 +425,15 @@ const ProductCard = memo(({ product, viewMode = 'grid' }) => {
           {/* Stock for variants */}
           {isVariantProduct && stock !== undefined && (
             <div className="mb-2">
-              <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                stock > 0 
-                  ? 'bg-green-100 text-green-800' 
-                  : 'bg-red-100 text-red-800'
-              }`}>
+              <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${stock > 0
+                ? 'bg-green-100 text-green-800'
+                : 'bg-red-100 text-red-800'
+                }`}>
                 {stock > 0 ? `In Stock (${stock})` : 'Out of Stock'}
               </span>
             </div>
           )}
-          
+
           {/* Rating and Reviews */}
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center bg-gradient-to-r from-yellow-50 to-orange-50 px-2 py-1 rounded-lg">
@@ -445,9 +441,8 @@ const ProductCard = memo(({ product, viewMode = 'grid' }) => {
                 {[1, 2, 3, 4, 5].map((star) => (
                   <svg
                     key={star}
-                    className={`w-3 h-3 ${
-                      star <= Math.round(ratingValue) ? 'text-yellow-500' : 'text-gray-300'
-                    } transition-colors duration-200`}
+                    className={`w-3 h-3 ${star <= Math.round(ratingValue) ? 'text-yellow-500' : 'text-gray-300'
+                      } transition-colors duration-200`}
                     fill="currentColor"
                     viewBox="0 0 20 20"
                   >
@@ -466,7 +461,7 @@ const ProductCard = memo(({ product, viewMode = 'grid' }) => {
 
           {/* Product Features */}
           <div className="flex flex-wrap gap-1 mb-3">
-            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-semibold bg-rose-50 text-rose-700 border border-rose-100">
               <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
               </svg>
@@ -481,11 +476,11 @@ const ProductCard = memo(({ product, viewMode = 'grid' }) => {
           </div>
         </div>
       </Link>
-      
+
       {/* Pricing and Actions */}
-      <div className="px-4 pb-4">
+      <div className="px-6 pb-6">
         {/* Price Section */}
-        <div className="mb-4 bg-gradient-to-r from-gray-50 to-blue-50 p-3 rounded-xl border border-gray-200">
+        <div className="mb-4 bg-gray-50 p-3 rounded-xl border border-gray-100">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-baseline space-x-2">
               {/* Show original price with strikethrough if there's a sale */}
@@ -495,7 +490,7 @@ const ProductCard = memo(({ product, viewMode = 'grid' }) => {
                 </span>
               )}
               {/* Show current price */}
-              <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              <span className="text-2xl font-bold text-rose-600">
                 ₹{displayPrice ? Number(displayPrice).toFixed(2) : '0.00'}
               </span>
             </div>
@@ -510,7 +505,7 @@ const ProductCard = memo(({ product, viewMode = 'grid' }) => {
               </div>
             )}
           </div>
-          
+
           {/* Price Benefits */}
           <div className="flex items-center space-x-4 text-xs text-gray-600">
             <div className="flex items-center">
@@ -520,25 +515,24 @@ const ProductCard = memo(({ product, viewMode = 'grid' }) => {
               Free Shipping
             </div>
             <div className="flex items-center">
-              <svg className="w-3 h-3 mr-1 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+              <svg className="w-3 h-3 mr-1 text-rose-500" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
               </svg>
               COD Available
             </div>
           </div>
         </div>
-        
+
         {/* Action buttons */}
         <div className="flex space-x-3">
           {/* Add to Cart Button */}
           <button
             onClick={handleAddToCart}
             disabled={isAddingToCart}
-            className={`flex-1 px-6 py-4 rounded-2xl text-sm font-bold transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl ${
-              productInCart 
-                ? 'bg-gradient-to-r from-emerald-500 to-green-500 text-white border-2 border-emerald-300 shadow-emerald-200 hover:from-emerald-600 hover:to-green-600' 
-                : 'bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-700 hover:via-purple-700 hover:to-pink-700 text-white shadow-indigo-200/50'
-            } ${isAddingToCart ? 'opacity-50 cursor-not-allowed animate-pulse' : ''}`}
+            className={`flex-1 px-3 py-3 rounded-2xl text-sm font-bold transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl ${productInCart
+              ? 'bg-green-600 text-white border-2 border-green-500 hover:bg-green-700'
+              : 'bg-rose-600 hover:bg-rose-700 text-white shadow-md hover:shadow-lg'
+              } ${isAddingToCart ? 'opacity-50 cursor-not-allowed animate-pulse' : ''}`}
           >
             {isAddingToCart ? (
               <span className="flex items-center justify-center space-x-2">
@@ -561,17 +555,17 @@ const ProductCard = memo(({ product, viewMode = 'grid' }) => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
                 </svg>
                 <span>
-                  {(product.product_structure === 'variant' && product.product_variants && product.product_variants.length > 0) ? 
-                   'Add to Cart' : 'Add to Cart'}
+                  {(product.product_structure === 'variant' && product.product_variants && product.product_variants.length > 0) ?
+                    'Add to Cart' : 'Add to Cart'}
                 </span>
               </span>
             )}
           </button>
-          
+
           {/* View Details Button */}
-          <Link 
-            to={`/product/${slug || _id}`}
-            className="px-6 py-4 border-2 border-gray-200 hover:border-indigo-300 rounded-2xl text-sm font-bold text-gray-700 hover:text-indigo-600 hover:bg-indigo-50 transition-all duration-300 text-center flex items-center justify-center space-x-2 transform hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl"
+          <Link
+            to={productLink}
+            className="px-3 py-3 border border-gray-200 hover:border-rose-300 rounded-2xl text-sm font-bold text-gray-600 hover:text-rose-600 hover:bg-rose-50 transition-all duration-300 text-center flex items-center justify-center space-x-2 transform hover:scale-105 active:scale-95"
             onClick={(e) => e.stopPropagation()}
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -595,8 +589,8 @@ const ProductCard = memo(({ product, viewMode = 'grid' }) => {
             {/* Image */}
             <Link to={productLink} className="flex-shrink-0">
               <div className="relative w-24 h-24 bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg overflow-hidden">
-                <LazyImage 
-                  src={mainImage} 
+                <LazyImage
+                  src={mainImage}
                   alt={name}
                   className="w-full h-full object-contain p-2 hover:scale-105 transition-transform duration-200"
                   placeholder={
@@ -627,10 +621,10 @@ const ProductCard = memo(({ product, viewMode = 'grid' }) => {
               <div className="flex items-center space-x-2 mb-2">
                 <div className="flex items-center bg-yellow-50 px-2 py-1 rounded">
                   {[...Array(5)].map((_, i) => (
-                    <svg 
-                      key={i} 
-                      className={`w-3 h-3 ${i < Math.round(ratingValue) ? 'text-yellow-500' : 'text-gray-300'}`} 
-                      fill="currentColor" 
+                    <svg
+                      key={i}
+                      className={`w-3 h-3 ${i < Math.round(ratingValue) ? 'text-yellow-500' : 'text-gray-300'}`}
+                      fill="currentColor"
                       viewBox="0 0 20 20"
                     >
                       <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
@@ -673,11 +667,10 @@ const ProductCard = memo(({ product, viewMode = 'grid' }) => {
             <div className="flex flex-col space-y-2">
               <button
                 onClick={toggleWishlist}
-                className={`p-2 rounded-lg border transition-all duration-200 ${
-                  productInWishlist 
-                    ? 'bg-red-50 border-red-200 text-red-600' 
-                    : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'
-                }`}
+                className={`p-2 rounded-lg border transition-all duration-200 ${productInWishlist
+                  ? 'bg-red-50 border-red-200 text-red-600'
+                  : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'
+                  }`}
                 title={productInWishlist ? 'Remove from wishlist' : 'Add to wishlist'}
               >
                 <svg className="w-5 h-5" fill={productInWishlist ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
@@ -688,15 +681,14 @@ const ProductCard = memo(({ product, viewMode = 'grid' }) => {
               <button
                 onClick={handleAddToCart}
                 disabled={isAddingToCart || product.stockQuantity <= 0}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                  productInCart 
-                    ? 'bg-green-600 text-white' 
-                    : 'bg-blue-600 text-white hover:bg-blue-700'
-                } disabled:opacity-50 disabled:cursor-not-allowed`}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${productInCart
+                  ? 'bg-green-600 text-white'
+                  : 'bg-blue-600 text-white hover:bg-blue-700'
+                  } disabled:opacity-50 disabled:cursor-not-allowed`}
               >
-                {isAddingToCart ? 'Adding...' : productInCart ? 'In Cart' : 
-                 (product.product_structure === 'variant' && product.product_variants && product.product_variants.length > 0) ? 
-                 'Select Options' : 'Add to Cart'}
+                {isAddingToCart ? 'Adding...' : productInCart ? 'In Cart' :
+                  (product.product_structure === 'variant' && product.product_variants && product.product_variants.length > 0) ?
+                    'Select Options' : 'Add to Cart'}
               </button>
             </div>
           </div>
@@ -704,7 +696,7 @@ const ProductCard = memo(({ product, viewMode = 'grid' }) => {
       ) : (
         // Grid View Layout (original design)
         <div className="group bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-300 h-full flex flex-col border border-gray-100 hover:border-blue-200">
-          <Link to={`/product/${slug || _id}`} className="flex-1 flex flex-col">
+          <Link to={productLink} className="flex-1 flex flex-col">
             <div className="relative flex items-center justify-center bg-gradient-to-br from-gray-50 via-white to-gray-100 h-72 overflow-hidden">
               {/* Background Pattern */}
               <div className="absolute inset-0 opacity-5">
@@ -712,9 +704,9 @@ const ProductCard = memo(({ product, viewMode = 'grid' }) => {
                   backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='0.1'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
                 }}></div>
               </div>
-              
-              <LazyImage 
-                src={mainImage} 
+
+              <LazyImage
+                src={mainImage}
                 alt={name}
                 className="max-w-full max-h-full object-contain p-4 group-hover:scale-110 transition-transform duration-500 filter group-hover:brightness-110"
                 placeholder={
@@ -725,16 +717,15 @@ const ProductCard = memo(({ product, viewMode = 'grid' }) => {
                   </div>
                 }
               />
-              
+
               {/* Wishlist and Sale Badge */}
               <div className="absolute top-4 right-4 flex flex-col space-y-2">
                 <button
                   onClick={toggleWishlist}
-                  className={`p-3 rounded-full shadow-xl backdrop-blur-sm transition-all duration-300 transform hover:scale-125 ${
-                    productInWishlist 
-                      ? 'bg-gradient-to-r from-red-500 to-pink-500 text-white animate-pulse' 
-                      : 'bg-white/95 text-gray-600 hover:bg-gradient-to-r hover:from-red-50 hover:to-pink-50 hover:text-red-500'
-                  }`}
+                  className={`p-3 rounded-full shadow-xl backdrop-blur-sm transition-all duration-300 transform hover:scale-125 ${productInWishlist
+                    ? 'bg-gradient-to-r from-red-500 to-pink-500 text-white animate-pulse'
+                    : 'bg-white/95 text-gray-600 hover:bg-gradient-to-r hover:from-red-50 hover:to-pink-50 hover:text-red-500'
+                    }`}
                   aria-label={productInWishlist ? 'Remove from wishlist' : 'Add to wishlist'}
                 >
                   <svg
@@ -761,14 +752,14 @@ const ProductCard = memo(({ product, viewMode = 'grid' }) => {
                   </div>
                 )}
               </div>
-              
+
               {/* Stock Status */}
               <div className="absolute top-4 left-4">
                 <div className="bg-green-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg">
                   ✓ In Stock
                 </div>
               </div>
-              
+
               {/* Quick Action Buttons */}
               <div className="absolute bottom-4 left-4 right-4 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-4 group-hover:translate-y-0">
                 <div className="flex justify-center space-x-2">
@@ -790,7 +781,7 @@ const ProductCard = memo(({ product, viewMode = 'grid' }) => {
               <h3 className="text-lg font-semibold text-gray-900 mb-2 line-clamp-2 h-12 overflow-hidden group-hover:text-blue-600 transition-colors duration-200">
                 {name}
               </h3>
-              
+
               {/* Rating and Reviews */}
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center bg-gradient-to-r from-yellow-50 to-orange-50 px-2 py-1 rounded-lg">
@@ -798,9 +789,8 @@ const ProductCard = memo(({ product, viewMode = 'grid' }) => {
                     {[1, 2, 3, 4, 5].map((star) => (
                       <svg
                         key={star}
-                        className={`w-3 h-3 ${
-                          star <= Math.round(ratingValue) ? 'text-yellow-500' : 'text-gray-300'
-                        } transition-colors duration-200`}
+                        className={`w-3 h-3 ${star <= Math.round(ratingValue) ? 'text-yellow-500' : 'text-gray-300'
+                          } transition-colors duration-200`}
                         fill="currentColor"
                         viewBox="0 0 20 20"
                       >
@@ -834,7 +824,7 @@ const ProductCard = memo(({ product, viewMode = 'grid' }) => {
               </div>
             </div>
           </Link>
-          
+
           {/* Pricing and Actions */}
           <div className="px-4 pb-4">
             {/* Price Section */}
@@ -843,10 +833,10 @@ const ProductCard = memo(({ product, viewMode = 'grid' }) => {
                 <div className="flex items-baseline space-x-2">
                   {/* Show original price with strikethrough if there's a sale */}
                   {(salePrice || (product_structure === 'variant' && product_variants?.[0]?.selling_price && product_variants[0].cost_price > product_variants[0].selling_price)) && (
-                  <span className="text-lg text-gray-400 line-through font-medium">
-                    ₹{product_structure === 'variant' ? product_variants?.[0]?.cost_price?.toFixed(2) : selling_price?.toFixed(2) || price?.toFixed(2) || '0.00'}
-                  </span>
-                )}
+                    <span className="text-lg text-gray-400 line-through font-medium">
+                      ₹{product_structure === 'variant' ? product_variants?.[0]?.cost_price?.toFixed(2) : selling_price?.toFixed(2) || price?.toFixed(2) || '0.00'}
+                    </span>
+                  )}
                   {/* Show current price */}
                   <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                     ₹{displayPrice ? Number(displayPrice).toFixed(2) : '0.00'}
@@ -863,7 +853,7 @@ const ProductCard = memo(({ product, viewMode = 'grid' }) => {
                   </div>
                 )}
               </div>
-              
+
               {/* Price Benefits */}
               <div className="flex items-center space-x-4 text-xs text-gray-600">
                 <div className="flex items-center">
@@ -880,18 +870,17 @@ const ProductCard = memo(({ product, viewMode = 'grid' }) => {
                 </div>
               </div>
             </div>
-            
+
             {/* Action buttons */}
             <div className="flex space-x-3">
               {/* Add to Cart Button */}
               <button
                 onClick={handleAddToCart}
                 disabled={isAddingToCart}
-                className={`flex-1 px-6 py-4 rounded-2xl text-sm font-bold transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl ${
-                  productInCart 
-                    ? 'bg-gradient-to-r from-emerald-500 to-green-500 text-white border-2 border-emerald-300 shadow-emerald-200 hover:from-emerald-600 hover:to-green-600' 
-                    : 'bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-700 hover:via-purple-700 hover:to-pink-700 text-white shadow-indigo-200/50'
-                } ${isAddingToCart ? 'opacity-50 cursor-not-allowed animate-pulse' : ''}`}
+                className={`flex-1 px-6 py-4 rounded-2xl text-sm font-bold transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl ${productInCart
+                  ? 'bg-gradient-to-r from-emerald-500 to-green-500 text-white border-2 border-emerald-300 shadow-emerald-200 hover:from-emerald-600 hover:to-green-600'
+                  : 'bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-700 hover:via-purple-700 hover:to-pink-700 text-white shadow-indigo-200/50'
+                  } ${isAddingToCart ? 'opacity-50 cursor-not-allowed animate-pulse' : ''}`}
               >
                 {isAddingToCart ? (
                   <span className="flex items-center justify-center space-x-2">
@@ -914,16 +903,16 @@ const ProductCard = memo(({ product, viewMode = 'grid' }) => {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
                     </svg>
                     <span>
-                      {(product.product_structure === 'variant' && product.product_variants && product.product_variants.length > 0) ? 
-                       'Select Options' : 'Add to Cart'}
+                      {(product.product_structure === 'variant' && product.product_variants && product.product_variants.length > 0) ?
+                        'Select Options' : 'Add to Cart'}
                     </span>
                   </span>
                 )}
               </button>
-              
+
               {/* View Details Button */}
-              <Link 
-                to={`/product/${slug || _id}`}
+              <Link
+                to={productLink}
                 className="px-6 py-4 border-2 border-gray-200 hover:border-indigo-300 rounded-2xl text-sm font-bold text-gray-700 hover:text-indigo-600 hover:bg-indigo-50 transition-all duration-300 text-center flex items-center justify-center space-x-2 transform hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl"
                 onClick={(e) => e.stopPropagation()}
               >

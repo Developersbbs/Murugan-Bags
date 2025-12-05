@@ -7,7 +7,7 @@ const ProductDetailPage = () => {
   const [cartUpdated, setCartUpdated] = useState(false);
   const { id } = useParams();
   const navigate = useNavigate();
-  
+
   // Validate the ID/slug
   const isValidId = useMemo(() => {
     // Check if ID exists and is not empty string
@@ -16,39 +16,46 @@ const ProductDetailPage = () => {
     }
     return true;
   }, [id]);
-  
+
   // Try to fetch by slug first if the ID is not a valid MongoDB ID
   const isMongoId = useMemo(() => {
     if (!isValidId) return false;
     // Simple check for MongoDB ID format (24 hex characters)
     return /^[0-9a-fA-F]{24}$/.test(id);
   }, [id, isValidId]);
-  
-  const { 
-    data: productBySlug, 
+
+  const {
+    data: productBySlug,
     isError: slugError,
     isSuccess: slugSuccess,
     isLoading: isLoadingSlug
-  } = useGetProductBySlugQuery(id, { 
+  } = useGetProductBySlugQuery(id, {
     skip: !isValidId || isMongoId // Skip if ID is a MongoDB ID
   });
-  
+
   // If slug fetch fails or if it's a MongoDB ID, try by ID
-  const { 
-    data: productById, 
+  const {
+    data: productById,
     isError: idError,
     isSuccess: idSuccess,
     isLoading: isLoadingId
-  } = useGetProductByIdQuery(id, { 
+  } = useGetProductByIdQuery(id, {
     skip: !isValidId || (!isMongoId && !slugError) // Skip if not a MongoDB ID and slug didn't error
   });
 
   useEffect(() => {
-    // If ID is invalid or both fetches fail, redirect to 404
-    if (!isValidId || (slugError && (idError || !isMongoId))) {
+    // Only redirect to 404 if:
+    // 1. ID is invalid, OR
+    // 2. For non-MongoDB IDs: slug query failed, OR
+    // 3. For MongoDB IDs: ID query failed
+    const shouldRedirect = !isValidId ||
+      (!isMongoId && slugError) ||
+      (isMongoId && idError);
+
+    if (shouldRedirect) {
       navigate('/404');
     }
-  }, [slugError, idError, id, navigate, isValidId, isMongoId]);
+  }, [slugError, idError, id, navigate, isValidId, isMongoId, slugSuccess, idSuccess, isLoadingSlug, isLoadingId, productBySlug, productById]);
 
   // Determine which product data to use
   const product = productBySlug?.data || productById?.data;
@@ -73,7 +80,7 @@ const ProductDetailPage = () => {
           <div className="text-red-500 text-5xl mb-4">⚠️</div>
           <h1 className="text-2xl font-bold text-gray-800">Product Not Found</h1>
           <p className="text-gray-600 mt-2">The product you're looking for doesn't exist or has been removed.</p>
-          <button 
+          <button
             onClick={() => navigate('/products')}
             className="mt-6 px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
           >
@@ -86,9 +93,9 @@ const ProductDetailPage = () => {
 
   return (
     <div className="bg-gray-50 min-h-screen">
-      <ProductDetails 
-        product={product} 
-        isLoading={isLoading} 
+      <ProductDetails
+        product={product}
+        isLoading={isLoading}
         isError={isError}
         onCartUpdate={() => setCartUpdated(prev => !prev)}
       />

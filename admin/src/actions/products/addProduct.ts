@@ -1,7 +1,6 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-
 import { productFormSchema } from "@/app/(dashboard)/products/_components/form/schema";
 import { formatValidationErrors } from "@/helpers/formatValidationErrors";
 import { ProductServerActionResponse } from "@/types/server-action";
@@ -21,26 +20,19 @@ export async function addProduct(
   }
 
   // Get images directly from FormData (they're already File objects)
-  const images: File[] = [];
-  let imageIndex = 0;
-  while (formData.has(`images[${imageIndex}]`)) {
-    const imageFile = formData.get(`images[${imageIndex}]`);
-    if (imageFile instanceof File) {
-      images.push(imageFile);
-    }
-    imageIndex++;
-  }
+  // objectToFormData appends multiple files with the same key 'images'
+  const images = formData.getAll('images').filter((item): item is File => item instanceof File);
   console.log('Extracted images from FormData:', images.length, 'files');
 
   // For variant products, check if there are variant images if no main images
   const productStructure = formData.get("product_structure") as string;
   let hasVariantImages = false;
-  
+
   if (images.length === 0 && productStructure === 'variant') {
     // Check for variant images
     let comboIndex = 0;
     let fileIndex = 0;
-    
+
     while (true) {
       const file = formData.get(`variantImages[${comboIndex}][${fileIndex}]`);
       if (!file || !(file instanceof File)) {
@@ -56,9 +48,9 @@ export async function addProduct(
         continue;
       }
       hasVariantImages = true;
-      fileIndex++;
+      break; // Found at least one, that's enough for validation
     }
-    
+
     console.log('Found variant images:', hasVariantImages);
   }
 
@@ -66,7 +58,7 @@ export async function addProduct(
   if (images.length === 0 && !hasVariantImages) {
     return {
       validationErrors: {
-        images: productStructure === 'variant' 
+        images: productStructure === 'variant'
           ? "At least one product image or variant image is required"
           : "At least one product image is required",
       },
@@ -122,21 +114,29 @@ export async function addProduct(
   let fileIndex = 0;
 
   console.log('🚨 FRONTEND ACTION: Starting variant image extraction...');
-  console.log('🚨 FRONTEND ACTION: FormData has method check for variantImages[0][0]:', formData.has('variantImages[0][0]'));
 
   while (true) {
     const file = formData.get(`variantImages[${comboIndex}][${fileIndex}]`);
-    console.log(`🚨 FRONTEND ACTION: Checking variantImages[${comboIndex}][${fileIndex}]:`, 
-      file instanceof File ? `File(${file.name}, ${file.size} bytes)` : file);
-    
+
     if (!file || !(file instanceof File)) {
       // Check if there are more combinations
       if (fileIndex === 0) {
-        console.log(`🚨 FRONTEND ACTION: No files found for variantImages[${comboIndex}][0], breaking loop`);
-        break; // No more combinations
+        // If we checked index 0 and found nothing, check a few more combo indices just in case
+        // But usually if combo 0 is missing, we might be done, or we need to skip
+        // The previous logic was:
+        comboIndex++;
+        if (comboIndex > 50) break; // Safety limit
+        fileIndex = 0;
+
+        // Check if the next combo exists in variants data to decide whether to continue
+        if (variants && variants.combinations && comboIndex >= variants.combinations.length) {
+          break;
+        }
+        continue;
       }
       comboIndex++;
       fileIndex = 0;
+      if (comboIndex > 50) break; // Safety limit
       continue;
     }
 
@@ -149,18 +149,9 @@ export async function addProduct(
   }
 
   console.log('🚨 FRONTEND ACTION: Found variant image files:', variantImageFiles);
-  console.log('🚨 FRONTEND ACTION: FormData keys for debugging:');
-  // Convert FormData entries to array for iteration (TypeScript compatibility)
-  const formDataEntries = Array.from(formData.entries());
-  formDataEntries.forEach(([key, value]) => {
-    if (key.includes('variantImages') || key.includes('images')) {
-      console.log(`  ${key}:`, value instanceof File ? `File(${value.name}, ${value.size} bytes)` : value);
-    }
-  });
 
   // Parse product structure from FormData (snake_case)
   const productStructureValue = formData.get("product_structure");
-  console.log('🚨 FRONTEND ACTION: Received product_structure from FormData:', productStructureValue);
 
   const parsedData = productFormSchema.safeParse({
     productType: formData.get("productType"),
@@ -221,7 +212,7 @@ export async function addProduct(
     // Upload variant images to Firebase and map URLs by combination index
     const variantImageUrls: Record<string, string[]> = {};
     console.log('🚨 FRONTEND ACTION: Starting Firebase upload for variant images:', Object.keys(variantImageFiles));
-    
+
     await Promise.all(
       Object.entries(variantImageFiles).map(async ([comboIdx, files]) => {
         console.log(`🚨 FRONTEND ACTION: Uploading ${files.length} files for variant ${comboIdx}`);
@@ -238,31 +229,17 @@ export async function addProduct(
     // Replace variant combination File references with URL strings
     if (variants && variants.combinations && variants.combinations.length > 0) {
       console.log('🚨 DEBUG: Starting variant image merge process');
-      console.log('🚨 DEBUG: Original variants combinations length:', variants.combinations.length);
-      console.log('🚨 DEBUG: variantImageUrls keys:', Object.keys(variantImageUrls));
-      
+
       variants.combinations = variants.combinations.map((combination: any, index: number) => {
-        console.log(`🚨 DEBUG: Processing combination ${index}:`, {
-          combinationName: combination.name,
-          combinationImages: combination.images,
-          variantImageUrlsForIndex: variantImageUrls[index.toString()]
-        });
-        
         const urlList = variantImageUrls[index.toString()] || [];
         const existingUrls = (combination.images || []).filter((img: any) => typeof img === "string");
-        
-        console.log(`🚨 DEBUG: Combination ${index} merge details:`, {
-          urlList,
-          existingUrls,
-          finalImages: [...existingUrls, ...urlList]
-        });
-        
+
         return {
           ...combination,
           images: [...existingUrls, ...urlList],
         };
       });
-      
+
       console.log('🚨 DEBUG: Updated variants.combinations:', variants.combinations);
     }
 
@@ -274,23 +251,14 @@ export async function addProduct(
     backendFormData.append("description", parsedData.data.description);
     backendFormData.append("sku", parsedData.data.sku);
 
-    console.log('🚨 DEBUG: Categories check:', {
-        hasCategories: parsedData.data.categories && parsedData.data.categories.length > 0,
-        categories: parsedData.data.categories,
-        categoriesType: typeof parsedData.data.categories
-    });
-    
     if (parsedData.data.categories && parsedData.data.categories.length > 0) {
-        console.log('🚨 DEBUG: Adding categories to FormData:', parsedData.data.categories);
-        backendFormData.append("categories", JSON.stringify(parsedData.data.categories));
-    } else {
-        console.log('🚨 DEBUG: No categories to add');
+      backendFormData.append("categories", JSON.stringify(parsedData.data.categories));
     }
 
     // Send cost_price and selling_price only for simple products
     if (parsedData.data.productStructure === "simple") {
-        backendFormData.append("cost_price", parsedData.data.costPrice.toString());
-        backendFormData.append("selling_price", parsedData.data.salesPrice.toString());
+      backendFormData.append("cost_price", parsedData.data.costPrice.toString());
+      backendFormData.append("selling_price", parsedData.data.salesPrice.toString());
     }
 
     // Send stock and min stock threshold
@@ -373,31 +341,29 @@ export async function addProduct(
       backendFormData.append("seo_og_image", parsedData.data.seoOgImage);
     }
 
-// Slug
-if (parsedData.data.slug) {
-backendFormData.append("slug", parsedData.data.slug);
-}
+    // Slug
+    if (parsedData.data.slug) {
+      backendFormData.append("slug", parsedData.data.slug);
+    }
 
-// Add variants if provided
-if (parsedData.data.product_variants) {
-// Use the updated variants object with Firebase URLs instead of the original parsedData
-console.log('Adding variants to backend FormData:', variants);
-backendFormData.append("product_variants", JSON.stringify(variants));
-}
+    // Add variants if provided
+    if (parsedData.data.product_variants) {
+      backendFormData.append("product_variants", JSON.stringify(variants));
+    }
 
-// Add uploaded image URLs to request body
-// For variant products, only use main product images (not variant images)
-let finalImageUrls = productImageUrls;
-  
-// For variant products, don't copy variant images to main image_url field
-// Variant images should only be stored in the variant's images array
-if (parsedData.data.productStructure === 'variant') {
-console.log('Variant product: using only main product images:', finalImageUrls.length);
-// For variant products, main image_url should be empty unless there are actual main product images
-finalImageUrls = [];
-}
-  
-backendFormData.append("image_url", JSON.stringify(finalImageUrls));
+    // Add uploaded image URLs to request body
+    // For variant products, only use main product images (not variant images)
+    let finalImageUrls = productImageUrls;
+
+    // For variant products, don't copy variant images to main image_url field
+    // Variant images should only be stored in the variant's images array
+    if (parsedData.data.productStructure === 'variant') {
+      console.log('Variant product: using only main product images:', finalImageUrls.length);
+      // For variant products, main image_url should be empty unless there are actual main product images
+      finalImageUrls = [];
+    }
+
+    backendFormData.append("image_url", JSON.stringify(finalImageUrls));
 
     // Add digital file if provided
     if (parsedData.data.fileUpload instanceof File) {
@@ -405,17 +371,10 @@ backendFormData.append("image_url", JSON.stringify(finalImageUrls));
       backendFormData.append("fileUpload", parsedData.data.fileUpload);
     }
 
-    // Debug FormData contents
-    console.log('FormData contents being sent to backend:');
-    backendFormData.forEach((value, key) => {
-      console.log(`${key}:`, value instanceof File ? `${value.name} (${value.size} bytes)` : value);
-    });
-
     // Send to backend API
     const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/products`, {
       method: "POST",
       body: backendFormData,
-      // Don't set Content-Type - let browser set multipart/form-data automatically
     });
 
     const result = await response.json();

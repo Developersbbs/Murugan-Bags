@@ -20,11 +20,11 @@ export interface ProductVariantCombination {
   name: string; // Auto-generated from product name + variant attributes
   sku: string;
   slug: string; // Required for URL-friendly identification
-  
+
   // Use ONLY camelCase for frontend - backend will transform
   costPrice?: number;
   salesPrice?: number;
-  
+
   stock?: number;
   minStock?: number;
   images?: (string | File)[];
@@ -44,21 +44,21 @@ export interface ProductVariantData {
 // Default variant attributes for physical products
 export const DEFAULT_VARIANT_ATTRIBUTES: Omit<ProductVariantAttribute, 'id'>[] = [
   {
-    name: 'Size',
+    name: 'size',
     type: 'select',
     required: false,
     options: ['XS', 'S', 'M', 'L', 'XL', 'XXL'],
     allowCustom: true,
   },
   {
-    name: 'Color',
+    name: 'color',
     type: 'select',
     required: false,
     options: ['Red', 'Blue', 'Green', 'Black', 'White', 'Yellow', 'Purple', 'Orange'],
     allowCustom: true,
   },
   {
-    name: 'Material',
+    name: 'material',
     type: 'select',
     required: false,
     options: ['Cotton', 'Polyester', 'Wool', 'Silk', 'Linen', 'Denim', 'Leather'],
@@ -208,11 +208,25 @@ export class VariantManager {
   }
 
   static createAttribute(name: string, type: ProductVariantAttribute['type'] = 'text'): ProductVariantAttribute {
+    // Get default options for common attributes
+    const getDefaultOptions = (attrName: string): string[] => {
+      const normalizedName = attrName.toLowerCase();
+      if (normalizedName === 'size') {
+        return ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
+      } else if (normalizedName === 'color') {
+        return ['Red', 'Blue', 'Green', 'Black', 'White', 'Yellow', 'Purple', 'Orange'];
+      } else if (normalizedName === 'material') {
+        return ['Cotton', 'Polyester', 'Wool', 'Silk', 'Linen', 'Denim', 'Leather'];
+      }
+      return [];
+    };
+
     return {
       id: `attr-${name.toLowerCase()}`, // Use consistent ID generation
       name,
       type,
       required: false,
+      options: type === 'select' || type === 'multiselect' ? getDefaultOptions(name) : undefined,
       allowCustom: type !== 'number', // Allow custom for text, select, and multiselect, but not number
     };
   }

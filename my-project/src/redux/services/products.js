@@ -2,7 +2,7 @@ import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 
 export const productsApi = createApi({
   reducerPath: 'productsApi',
-  baseQuery: fetchBaseQuery({ 
+  baseQuery: fetchBaseQuery({
     baseUrl: `${import.meta.env.VITE_API_URL}`,
     prepareHeaders: (headers) => {
       const token = localStorage.getItem('token');
@@ -36,6 +36,10 @@ export const productsApi = createApi({
     }),
     getCategories: builder.query({
       query: () => 'products/categories',
+    }),
+    getProductColors: builder.query({
+      query: () => 'products/colors',
+      providesTags: ['Product'],
     }),
     createProduct: builder.mutation({
       query: (product) => ({
@@ -71,6 +75,7 @@ export const {
   useGetProductQuery,
   useGetProductBySlugQuery,
   useGetCategoriesQuery,
+  useGetProductColorsQuery,
   useCreateProductMutation,
   useUpdateProductMutation,
   useDeleteProductMutation,

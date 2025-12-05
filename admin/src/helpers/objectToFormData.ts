@@ -22,7 +22,7 @@ export function objectToFormData(obj: Record<string, any>, namespace = ''): Form
 
     const formKey = namespace ? `${namespace}.${key}` : key;
     console.log('Processing key:', key, 'value:', value, 'formKey:', formKey);
-    
+
 
     // Special handling for productStructure - convert to snake_case for backend
     if (key === 'productStructure') {
@@ -130,20 +130,18 @@ export function objectToFormData(obj: Record<string, any>, namespace = ''): Form
       formData.append(key, JSON.stringify(value));
       return;
     }
-
-    // Handle images array - append each file with indexed key names
+    // Handle images array - append each file with same key name 'images'
     if (key === 'images' && Array.isArray(value)) {
       console.log('Processing images array:', value);
       value.forEach((item, index) => {
         if (item instanceof File) {
-          formData.append(`images[${index}]`, item);
-          console.log(`Added image[${index}]:`, item.name);
+          formData.append('images', item);
+          console.log(`Added image:`, item.name);
         }
       });
       return;
     }
 
-    // Handle arrays (like subcategories) - convert to individual fields
     if (Array.isArray(value)) {
       console.log('Processing array for key:', key, value);
       value.forEach((item, index) => {
@@ -192,16 +190,14 @@ export function objectToFormData(obj: Record<string, any>, namespace = ''): Form
     console.log(key, '=', value instanceof File ? `File(${value.name}, ${value.size} bytes)` : value);
   }
 
-  // Additional debug: Check if variant image files are actually in FormData
-  console.log('🚨 DEBUG: Checking for variant image files in FormData:');
-  let variantImageCount = 0;
-  for (const [key, value] of Array.from(formData.entries())) {
-    if (key.startsWith('variantImages[') && value instanceof File) {
-      variantImageCount++;
-      console.log(`🚨 Found variant image file: ${key} = ${value.name} (${value.size} bytes)`);
-    }
+  // Explicitly handle existing_images if it was added to the object but missed by the loop
+  // @ts-ignore
+  if (obj.existing_images !== undefined && !formData.has('existing_images')) {
+    // @ts-ignore
+    console.log('🚨 FRONTEND: Explicitly adding existing_images:', obj.existing_images);
+    // @ts-ignore
+    formData.append('existing_images', String(obj.existing_images));
   }
-  console.log(`🚨 Total variant image files found: ${variantImageCount}`);
 
   return formData;
 }

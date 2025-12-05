@@ -1,4 +1,5 @@
 import { Control, FieldValues, Path, UseFormReturn } from "react-hook-form";
+import { useEffect, useRef } from "react";
 
 import {
   FormField,
@@ -28,13 +29,46 @@ function FormSlugInput<TFormData extends FieldValues>({
   generateSlugFrom,
   placeholder,
 }: FormSlugInputProps<TFormData>) {
+  const manuallyEditedRef = useRef(false);
+  const previousSlugRef = useRef("");
+
   const handleGenerateSlug = () => {
     const sourceField = typeof generateSlugFrom === 'function' ? generateSlugFrom() : generateSlugFrom;
     generateSlugField(form, {
       sourceField,
       targetField: name,
     });
+    manuallyEditedRef.current = false;
   };
+
+  // Auto-generate slug when source field changes
+  useEffect(() => {
+    const sourceField = typeof generateSlugFrom === 'function' ? generateSlugFrom() : generateSlugFrom;
+    const subscription = form.watch((value, { name: changedField }) => {
+      if (changedField === sourceField) {
+        const currentSlug = form.getValues(name as any);
+
+        // Only auto-generate if slug is empty or hasn't been manually edited
+        if (!currentSlug || !manuallyEditedRef.current) {
+          generateSlugField(form, {
+            sourceField,
+            targetField: name,
+          });
+          previousSlugRef.current = form.getValues(name as any);
+        }
+      }
+
+      // Track manual edits to the slug field
+      if (changedField === name) {
+        const currentSlug = form.getValues(name as any);
+        if (currentSlug !== previousSlugRef.current) {
+          manuallyEditedRef.current = true;
+        }
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [form, generateSlugFrom, name]);
 
   return (
     <FormField

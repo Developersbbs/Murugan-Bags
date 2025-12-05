@@ -21,15 +21,8 @@ export async function editProduct(
   }
 
   // Get images directly from FormData (they're already File objects)
-  const images: File[] = [];
-  let imageIndex = 0;
-  while (formData.has(`images[${imageIndex}]`)) {
-    const imageFile = formData.get(`images[${imageIndex}]`);
-    if (imageFile instanceof File) {
-      images.push(imageFile);
-    }
-    imageIndex++;
-  }
+  // objectToFormData appends multiple files with the same key 'images'
+  const images = formData.getAll('images').filter((item): item is File => item instanceof File);
 
   // Parse tags and SEO keywords
   const tagsJson = formData.get("tags");
@@ -214,11 +207,17 @@ export async function editProduct(
 
     // Add images if provided
     if (parsedData.data.images && parsedData.data.images.length > 0) {
-      parsedData.data.images.forEach((imageFile, index) => {
+      parsedData.data.images.forEach((imageFile) => {
         if (imageFile instanceof File) {
-          backendFormData.append(`images[${index}]`, imageFile);
+          backendFormData.append('images', imageFile);
         }
       });
+    }
+
+    // Add existing images if provided
+    const existingImages = formData.get("existing_images");
+    if (existingImages) {
+      backendFormData.append("existing_images", existingImages);
     }
 
     // Add digital file if provided

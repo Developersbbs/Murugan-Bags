@@ -8,10 +8,10 @@ const variantSchema = new mongoose.Schema({
   selling_price: { type: Number, required: true },
   stock: { type: Number },
   minStock: { type: Number },
-  status: { 
-    type: String, 
-    enum: ['selling', 'out_of_stock', 'draft', 'archived'], 
-    default: 'selling' 
+  status: {
+    type: String,
+    enum: ['selling', 'out_of_stock', 'draft', 'archived', 'low_stock'],
+    default: 'selling'
   },
   images: [{ type: String }],
   attributes: {
@@ -30,10 +30,10 @@ const productSchema = new mongoose.Schema(
     name: { type: String, required: true },
     slug: { type: String, required: true, unique: true },
     description: { type: String },
-    product_type: { 
-      type: String, 
-      enum: ["physical", "digital"], 
-      default: "physical" 
+    product_type: {
+      type: String,
+      enum: ["physical", "digital"],
+      default: "physical"
     },
 
     // Category & Subcategory links
@@ -61,7 +61,7 @@ const productSchema = new mongoose.Schema(
       type: Number,
       min: 0,
       validate: {
-        validator: function(value) {
+        validator: function (value) {
           // For simple products, cost_price is required
           if (this.product_structure === 'simple') {
             return value !== undefined && value !== null && value >= 0;
@@ -69,7 +69,7 @@ const productSchema = new mongoose.Schema(
           // For variable products, cost_price should not be set (variants handle pricing)
           return value === undefined || value === null;
         },
-        message: function() {
+        message: function () {
           if (this.product_structure === 'simple') {
             return 'Cost price is required for simple products';
           } else {
@@ -82,7 +82,7 @@ const productSchema = new mongoose.Schema(
       type: Number,
       min: 0,
       validate: {
-        validator: function(value) {
+        validator: function (value) {
           // For simple products, selling_price is required
           if (this.product_structure === 'simple') {
             return value !== undefined && value !== null && value >= 0;
@@ -90,7 +90,7 @@ const productSchema = new mongoose.Schema(
           // For variable products, selling_price should not be set (variants handle pricing)
           return value === undefined || value === null;
         },
-        message: function() {
+        message: function () {
           if (this.product_structure === 'simple') {
             return 'Selling price is required for simple products';
           } else {
@@ -101,19 +101,19 @@ const productSchema = new mongoose.Schema(
     },
     baseStock: { type: Number },
     minStock: { type: Number },
-    
+
     // Rating and review fields
     averageRating: { type: Number, default: 0, min: 0, max: 5 },
     totalRatings: { type: Number, default: 0, min: 0 }, // Count of star ratings
     totalReviews: { type: Number, default: 0, min: 0 }, // Count of actual text reviews
-    
+
     // Status field is only used for simple products
-    status: { 
-      type: String, 
-      enum: ['selling', 'out_of_stock', 'draft', 'archived'], 
+    status: {
+      type: String,
+      enum: ['selling', 'out_of_stock', 'draft', 'archived', 'low_stock'],
       default: 'draft',
-      required: function() { return this.product_structure === 'simple'; },
-      select: function() { return this.product_structure === 'simple'; }
+      required: function () { return this.product_structure === 'simple'; },
+      select: function () { return this.product_structure === 'simple'; }
     },
     product_structure: {
       type: String,
@@ -149,23 +149,23 @@ const productSchema = new mongoose.Schema(
     },
 
     // Product visibility - only used for simple products
-    published: { 
-      type: Boolean, 
+    published: {
+      type: Boolean,
       default: false,
-      required: function() { return this.product_structure === 'simple'; },
-      select: function() { return this.product_structure === 'simple'; }
+      required: function () { return this.product_structure === 'simple'; },
+      select: function () { return this.product_structure === 'simple'; }
     }
   },
-  { 
-    timestamps: { 
-      createdAt: 'created_at', 
-      updatedAt: 'updated_at' 
-    } 
+  {
+    timestamps: {
+      createdAt: 'created_at',
+      updatedAt: 'updated_at'
+    }
   }
 );
 
 // Pre-save hook to set status, validate variant SKUs, and auto-generate meta tags
-productSchema.pre('save', function(next) {
+productSchema.pre('save', function (next) {
   // Digital products are always available (no stock management)
   if (this.product_type === 'digital') {
     this.status = 'selling';
@@ -345,7 +345,7 @@ productSchema.pre('save', function(next) {
 });
 
 // Add validation for digital products
-productSchema.pre('validate', function(next) {
+productSchema.pre('validate', function (next) {
   if (this.product_type === 'digital') {
     // For digital products, digital fields are required but can be set later
     // Allow creation without file initially - files can be uploaded via separate endpoint

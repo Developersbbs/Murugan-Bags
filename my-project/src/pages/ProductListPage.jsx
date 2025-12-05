@@ -19,43 +19,46 @@ const ProductListPage = () => {
   const [filters, setFilters] = useState({
     category: null,
     subcategory: null,
-    priceRange: { min: 0, max: 10000 },
+    priceRange: { min: 0, max: 100000 }, // Increased max price to accommodate all products
     rating: null,
     inStock: false,
+    color: null,
   });
-  
+
   // Fetch all products with error handling
-  const { data: apiResponse, isLoading, error, isError } = useGetProductsQuery({ 
+  const { data: apiResponse, isLoading, error, isError } = useGetProductsQuery({
     limit: 1000,
-    sort: sortOption === 'featured' ? '-createdAt' : 
-          sortOption === 'price-low' ? 'price' :
-          sortOption === 'price-high' ? '-price' :
+    sort: sortOption === 'featured' ? '-createdAt' :
+      sortOption === 'price-low' ? 'price' :
+        sortOption === 'price-high' ? '-price' :
           '-createdAt' // default to newest
   });
-  
+
   // Sync filters state with URL parameters
   useEffect(() => {
     const categoryParam = searchParams.get('category');
     const subcategoryParam = searchParams.get('subcategory');
     const ratingParam = searchParams.get('rating');
+    const colorParam = searchParams.get('color');
     const searchParam = searchParams.get('search');
-    
+
     setFilters(prev => ({
       ...prev,
       category: categoryParam || null,
       subcategory: subcategoryParam || null,
       rating: ratingParam ? parseInt(ratingParam) : null,
+      color: colorParam || null,
     }));
-    
+
     // Set search term from URL if present
     if (searchParam) {
       setSearchTerm(searchParam);
     }
-    
+
     // Reset to first page when filters change
     setCurrentPage(1);
   }, [searchParams]);
-  
+
   // Log the API response to debug
   useEffect(() => {
     console.log('API Response:', apiResponse);
@@ -63,7 +66,7 @@ const ProductListPage = () => {
       console.error('Error fetching products:', error);
     }
   }, [apiResponse, isError, error]);
-  
+
   // Extract products from the API response and expand variants
   const allProducts = React.useMemo(() => {
     try {
@@ -72,9 +75,9 @@ const ProductListPage = () => {
         console.log('No valid API response or error occurred');
         return [];
       }
-      
+
       let products = [];
-      
+
       // Check different possible response structures
       if (Array.isArray(apiResponse)) {
         if (apiResponse.length > 0) {
@@ -82,7 +85,7 @@ const ProductListPage = () => {
         }
         products = apiResponse.filter(p => p && typeof p === 'object');
       }
-      
+
       else if (apiResponse && typeof apiResponse === 'object') {
         // Handle success response with data
         if (apiResponse.success && apiResponse.data) {
@@ -96,12 +99,12 @@ const ProductListPage = () => {
             products = apiResponse.data.data.filter(p => p && typeof p === 'object');
           }
         }
-        
+
         // Handle direct products array
         else if (Array.isArray(apiResponse.products)) {
           products = apiResponse.products.filter(p => p && typeof p === 'object');
         }
-        
+
         // Handle direct data array
         else if (apiResponse.data) {
           if (Array.isArray(apiResponse.data)) {
@@ -112,9 +115,12 @@ const ProductListPage = () => {
           }
         }
       }
-      
-      console.warn('Unexpected API response structure:', apiResponse);
-      
+
+      // Log warning only if we couldn't extract products
+      if (products.length === 0 && apiResponse) {
+        console.warn('Unexpected API response structure:', apiResponse);
+      }
+
       // Transform products data to show variants as separate items (like admin)
       const transformedProducts = [];
       products.forEach(product => {
@@ -161,16 +167,16 @@ const ProductListPage = () => {
           });
         }
       });
-      
+
       console.log('Transformed products count:', transformedProducts.length);
       return transformedProducts;
-      
+
     } catch (error) {
       console.error('Error processing API response:', error);
       return [];
     }
   }, [apiResponse, isError]);
-  
+
   // Get active filters for display
   const activeFilters = useMemo(() => {
     const filters = [];
@@ -184,64 +190,68 @@ const ProductListPage = () => {
   // Destructure the memoized values
   const { products, totalPages, totalItems } = useMemo(() => {
     if (!allProducts || allProducts.length === 0) {
-      console.log('No products found or products array is empty');
       return { products: [], totalPages: 0, totalItems: 0 };
     }
-    
-    console.log('Filtering products. Total products:', allProducts.length);
-    
+
     // Apply filters
     let products = allProducts.filter(product => {
-      if (!product || typeof product !== 'object') return false; // Skip invalid products
-      
+      if (!product || typeof product !== 'object') return false;
+
       // Ensure product has required fields
       if (!product.name) {
-        console.warn('Product missing name:', product);
         return false;
       }
+
       // Search term filter
-      const matchesSearch = searchTerm === '' || 
+      const matchesSearch = searchTerm === '' ||
         product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         product.description?.toLowerCase().includes(searchTerm.toLowerCase());
-      
+
       // Category filter
-      const matchesCategory = !filters.category || 
-        (product.categories && product.categories.some(cat => 
-          cat.category?.name === filters.category || 
+      const matchesCategory = !filters.category ||
+        (product.categories && product.categories.some(cat =>
+          cat.category?.name === filters.category ||
           cat.category?._id === filters.category
         ));
-      
+
       // Subcategory filter
-      const matchesSubcategory = !filters.subcategory || 
-        (product.categories && product.categories.some(cat => 
-          cat.subcategories?.some(sub => 
-            sub.name === filters.subcategory || 
+      const matchesSubcategory = !filters.subcategory ||
+        (product.categories && product.categories.some(cat =>
+          cat.subcategories?.some(sub =>
+            sub.name === filters.subcategory ||
             sub._id === filters.subcategory
           )
         ));
-      
+
       // Price range filter - try multiple price fields
       const price = Number(product.selling_price || product.salePrice || product.price || product.mrp || 0);
       const minPrice = Number(filters.priceRange.min);
       const maxPrice = Number(filters.priceRange.max);
       const matchesPrice = price >= minPrice && price <= maxPrice;
-      
+
       // Rating filter
       const rating = Number(product.rating || product.averageRating || product.starRating || 0);
       const matchesRating = !filters.rating || rating >= filters.rating;
-      
+
+      // Color filter
+      const matchesColor = !filters.color ||
+        (product.color && product.color.toLowerCase() === filters.color.toLowerCase()) ||
+        (product.attributes?.color && product.attributes.color.toLowerCase() === filters.color.toLowerCase());
+
       // In stock filter
-      const matchesInStock = !filters.inStock || 
-        (product.stockQuantity > 0) || 
+      const matchesInStock = !filters.inStock ||
+        (product.stockQuantity > 0) ||
+        (product.baseStock > 0) ||
+        (product.stock > 0) ||
         (product.variants && product.variants.some(v => v.stock > 0));
-      
-      return matchesSearch && matchesCategory && matchesSubcategory && 
-             matchesPrice && matchesRating && matchesInStock;
+
+      return matchesSearch && matchesCategory && matchesSubcategory &&
+        matchesPrice && matchesRating && matchesColor && matchesInStock;
     });
 
     // Apply sorting
     products = [...products].sort((a, b) => {
-      switch(sortOption) {
+      switch (sortOption) {
         case 'price-low':
           return Number(a.selling_price || a.salePrice || a.price || a.mrp || 0) - Number(b.selling_price || b.salePrice || b.price || b.mrp || 0);
         case 'price-high':
@@ -262,19 +272,19 @@ const ProductListPage = () => {
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
     const paginatedProducts = products.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
-    return { 
+    return {
       products: paginatedProducts.map(product => ({
         ...product,
         // Ensure image URLs are properly formatted
-        images: product.images?.map(img => 
+        images: product.images?.map(img =>
           img.startsWith('http') ? img : `/uploads/${img}`
         ) || []
-      })), 
-      totalPages, 
-      totalItems: products.length 
+      })),
+      totalPages,
+      totalItems: products.length
     };
   }, [allProducts, searchTerm, filters, sortOption, currentPage]);
-  
+
   const clearFilter = (type, e) => {
     e.preventDefault();
     if (type === 'category') {
@@ -299,6 +309,13 @@ const ProductListPage = () => {
       const newSearchParams = new URLSearchParams(searchParams);
       newSearchParams.delete('rating');
       navigate({ search: newSearchParams.toString() });
+    } else if (type === 'color') {
+      setFilters(prev => ({ ...prev, color: null }));
+      setCurrentPage(1);
+      // Update URL
+      const newSearchParams = new URLSearchParams(searchParams);
+      newSearchParams.delete('color');
+      navigate({ search: newSearchParams.toString() });
     } else if (type === 'search') {
       setSearchTerm('');
       setCurrentPage(1);
@@ -319,7 +336,7 @@ const ProductListPage = () => {
     setCurrentPage(newPage);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
-  
+
   const handleSearch = (e) => {
     e.preventDefault();
     // Search is handled by the filteredProducts memo
@@ -335,7 +352,7 @@ const ProductListPage = () => {
       </div>
     );
   }
-  
+
   if (isError) {
     return (
       <div className="container mx-auto px-4 py-12">
@@ -343,7 +360,7 @@ const ProductListPage = () => {
           <h3 className="text-lg font-medium mb-2">Error loading products</h3>
           <p className="text-sm text-gray-600">Failed to load products. Please try again later.</p>
           <p className="text-xs text-gray-500 mt-2">Error: {error?.data?.message || error?.error || 'Unknown error'}</p>
-          <button 
+          <button
             onClick={() => window.location.reload()}
             className="mt-4 px-4 py-2 bg-red-100 text-red-700 rounded-md hover:bg-red-200 text-sm font-medium"
           >
@@ -360,7 +377,7 @@ const ProductListPage = () => {
         <div className="text-center text-red-500 py-8 bg-red-50 rounded-lg border border-red-200">
           <h3 className="text-lg font-medium mb-2">Error loading products</h3>
           <p className="text-sm text-gray-600">Please try again later or refresh the page.</p>
-          <button 
+          <button
             onClick={() => window.location.reload()}
             className="mt-4 px-4 py-2 bg-red-100 text-red-700 rounded-md hover:bg-red-200 text-sm font-medium"
           >
@@ -373,7 +390,7 @@ const ProductListPage = () => {
 
   return (
     <div className="bg-white min-h-screen">
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-8 gap-4">
           <div>
             <h1 className="text-2xl md:text-3xl font-bold text-gray-900">All Products</h1>
@@ -382,7 +399,7 @@ const ProductListPage = () => {
               {searchTerm && ` for "${searchTerm}"`}
             </p>
           </div>
-          
+
           {/* Search bar */}
           <form onSubmit={handleSearch} className="w-full md:w-1/3">
             <div className="relative">
@@ -398,7 +415,7 @@ const ProductListPage = () => {
               />
             </div>
           </form>
-          
+
           {/* Sort options */}
           <div className="flex items-center space-x-4">
             <label htmlFor="sort" className="text-sm font-medium text-gray-700 mr-2">
@@ -422,22 +439,20 @@ const ProductListPage = () => {
             <div className="flex rounded-lg border border-gray-300 overflow-hidden">
               <button
                 onClick={() => setViewMode('grid')}
-                className={`p-2 ${
-                  viewMode === 'grid'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-white text-gray-600 hover:bg-gray-50'
-                } transition-colors duration-200`}
+                className={`p-2 ${viewMode === 'grid'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-white text-gray-600 hover:bg-gray-50'
+                  } transition-colors duration-200`}
                 title="Grid View"
               >
                 <Grid3X3 className="w-5 h-5" />
               </button>
               <button
                 onClick={() => setViewMode('list')}
-                className={`p-2 ${
-                  viewMode === 'list'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-white text-gray-600 hover:bg-gray-50'
-                } transition-colors duration-200`}
+                className={`p-2 ${viewMode === 'list'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-white text-gray-600 hover:bg-gray-50'
+                  } transition-colors duration-200`}
                 title="List View"
               >
                 <List className="w-5 h-5" />
@@ -446,7 +461,7 @@ const ProductListPage = () => {
           </div>
         </div>
       </div>
-      
+
       {/* Mobile filter button */}
       <div className="lg:hidden mb-6">
         <button
@@ -463,19 +478,19 @@ const ProductListPage = () => {
           )}
         </button>
       </div>
-      
+
       {/* Active filters */}
       {activeFilters.length > 0 && (
         <div className="mb-6">
           <h3 className="text-sm font-medium text-gray-700 mb-2">Active filters:</h3>
           <div className="flex flex-wrap gap-2">
             {activeFilters.map((filter, i) => (
-              <span 
+              <span
                 key={i}
                 className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
               >
                 {filter.type}: {filter.value}
-                <button 
+                <button
                   onClick={(e) => clearFilter(filter.type, e)}
                   className="ml-1.5 inline-flex items-center justify-center h-4 w-4 rounded-full bg-blue-200 hover:bg-blue-300"
                 >
@@ -486,18 +501,18 @@ const ProductListPage = () => {
           </div>
         </div>
       )}
-      
-      <div className="lg:grid lg:grid-cols-4 lg:gap-8">
+
+      <div className="lg:grid lg:grid-cols-5 lg:gap-6">
         {/* Filters sidebar */}
-        <div className="hidden lg:block space-y-6 sticky top-4 self-start">
-          <SidebarFilters 
+        <div className="hidden lg:block space-y-6 sticky top-24 self-start">
+          <SidebarFilters
             filters={filters}
             onFilterChange={(newFilters) => setFilters(prev => ({ ...prev, ...newFilters }))}
           />
         </div>
-        
+
         {/* Product grid */}
-        <div className="lg:col-span-3">
+        <div className="lg:col-span-4">
           {products && products.length > 0 ? (
             <>
               <div className={
@@ -519,7 +534,7 @@ const ProductListPage = () => {
                   </div>
                 ))}
               </div>
-              
+
               {/* Pagination */}
               {totalPages > 1 && (
                 <div className="mt-12 flex items-center justify-between border-t border-gray-200 px-4 py-3 sm:px-6">
@@ -559,7 +574,7 @@ const ProductListPage = () => {
                           <span className="sr-only">Previous</span>
                           <ChevronLeft className="h-5 w-5" aria-hidden="true" />
                         </button>
-                        
+
                         {/* Page numbers */}
                         {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
                           // Show first page, last page, current page, and pages around current page
@@ -573,22 +588,21 @@ const ProductListPage = () => {
                           } else {
                             pageNum = currentPage - 2 + i;
                           }
-                          
+
                           return (
                             <button
                               key={pageNum}
                               onClick={() => handlePageChange(pageNum)}
-                              className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ${
-                                currentPage === pageNum
-                                  ? 'z-10 bg-blue-600 text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600'
-                                  : 'text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:outline-offset-0'
-                              }`}
+                              className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ${currentPage === pageNum
+                                ? 'z-10 bg-blue-600 text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600'
+                                : 'text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:outline-offset-0'
+                                }`}
                             >
                               {pageNum}
                             </button>
                           );
                         })}
-                        
+
                         <button
                           onClick={() => handlePageChange(currentPage + 1)}
                           disabled={currentPage === totalPages}
