@@ -132,6 +132,12 @@ const productSchema = new mongoose.Schema(
     license_type: { type: String },
     download_limit: { type: Number },
 
+    // Additional Product Details
+    warranty: { type: String },
+    isCodAvailable: { type: Boolean, default: true },
+    isFreeShipping: { type: Boolean, default: false },
+    showRatings: { type: Boolean, default: true },
+
     // Variants (with publish control)
     product_variants: [variantSchema],
 

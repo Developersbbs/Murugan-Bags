@@ -1,7 +1,7 @@
 import { initializeApp } from 'firebase/app';
-import { 
-  getAuth, 
-  RecaptchaVerifier, 
+import {
+  getAuth,
+  RecaptchaVerifier,
   GoogleAuthProvider,
   signInWithPopup,
   signInWithPhoneNumber,
@@ -18,12 +18,12 @@ import { getStorage } from 'firebase/storage';
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyADnJHyEKUEwOj_TJcGTFpAJLQPD2M4T88",
-  authDomain: "ecommerce-53a0d.firebaseapp.com",
-  projectId: "ecommerce-53a0d",
-  storageBucket: "ecommerce-53a0d.firebasestorage.app",
-  messagingSenderId: "896726317637",
-  appId: "1:896726317637:web:7710231fda10d88a65012c"
+  apiKey: "AIzaSyCJexHhgYNkQMoVMpFnAzuAWqhhQ09sLDc",
+  authDomain: "murugan-bags.firebaseapp.com",
+  projectId: "murugan-bags",
+  storageBucket: "murugan-bags.firebasestorage.app",
+  messagingSenderId: "763190159570",
+  appId: "1:763190159570:web:3a780f3a523de8c00d250b"
 };
 
 // Initialize Firebase
@@ -50,10 +50,10 @@ googleProvider.setCustomParameters({
 // Set auth language to avoid CORS issues
 auth.languageCode = 'en';
 
-export { 
-  auth, 
+export {
+  auth,
   storage,
-  RecaptchaVerifier, 
+  RecaptchaVerifier,
   googleProvider,
   signInWithPopup,
   signInWithPhoneNumber,

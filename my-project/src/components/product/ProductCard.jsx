@@ -99,7 +99,11 @@ const ProductCard = memo(({ product, viewMode = 'grid', className = '' }) => {
     sku,
     stock,
     status,
-    published
+    published,
+    warranty,
+    isCodAvailable,
+    isFreeShipping,
+    showRatings
   } = product;
 
   // Determine the correct product link (handle both old and new structure)
@@ -180,6 +184,20 @@ const ProductCard = memo(({ product, viewMode = 'grid', className = '' }) => {
 
   const variantAttributes = getVariantAttributes();
 
+  const handleShare = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const fullUrl = `${window.location.origin}${productLink}`;
+
+    navigator.clipboard.writeText(fullUrl).then(() => {
+      toast.success('Product link copied to clipboard!');
+    }).catch((err) => {
+      console.error('Failed to copy: ', err);
+      toast.error('Failed to copy link');
+    });
+  };
+
   return viewMode === 'list' ? (
     // List View Layout
     <div className={`bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow duration-200 p-6 ${className}`}>
@@ -244,24 +262,26 @@ const ProductCard = memo(({ product, viewMode = 'grid', className = '' }) => {
           )}
 
           {/* Rating and Reviews */}
-          <div className="flex items-center space-x-2 mb-2">
-            <div className="flex items-center bg-yellow-50 px-2 py-1 rounded">
-              {[...Array(5)].map((_, i) => (
-                <svg
-                  key={i}
-                  className={`w-3 h-3 ${i < Math.round(ratingValue) ? 'text-yellow-500' : 'text-gray-300'}`}
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                >
-                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                </svg>
-              ))}
-              <span className="text-xs font-medium text-gray-700 ml-1">
-                {ratingValue > 0 ? ratingValue.toFixed(1) : '0.0'}
-              </span>
+          {showRatings !== false && (
+            <div className="flex items-center space-x-2 mb-2">
+              <div className="flex items-center bg-yellow-50 px-2 py-1 rounded">
+                {[...Array(5)].map((_, i) => (
+                  <svg
+                    key={i}
+                    className={`w-3 h-3 ${i < Math.round(ratingValue) ? 'text-yellow-500' : 'text-gray-300'}`}
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                  </svg>
+                ))}
+                <span className="text-xs font-medium text-gray-700 ml-1">
+                  {ratingValue > 0 ? ratingValue.toFixed(1) : '0.0'}
+                </span>
+              </div>
+              <span className="text-xs text-gray-500">({numReviews || 0} reviews)</span>
             </div>
-            <span className="text-xs text-gray-500">({numReviews || 0} reviews)</span>
-          </div>
+          )}
 
           {/* Price */}
           <div className="flex items-center space-x-3 mb-3">
@@ -302,17 +322,6 @@ const ProductCard = memo(({ product, viewMode = 'grid', className = '' }) => {
             <svg className="w-5 h-5" fill={productInWishlist ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
             </svg>
-          </button>
-
-          <button
-            onClick={handleAddToCart}
-            disabled={isAddingToCart || product.stockQuantity <= 0}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${productInCart
-              ? 'bg-green-600 text-white'
-              : 'bg-rose-600 text-white hover:bg-rose-700 shadow-md hover:shadow-lg'
-              } disabled:opacity-50 disabled:cursor-not-allowed`}
-          >
-            {isAddingToCart ? 'Adding...' : productInCart ? 'In Cart' : 'Add to Cart'}
           </button>
         </div>
       </div>
@@ -379,9 +388,15 @@ const ProductCard = memo(({ product, viewMode = 'grid', className = '' }) => {
 
           {/* Stock Status */}
           <div className="absolute top-4 left-4">
-            <div className="bg-green-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg">
-              ✓ In Stock
-            </div>
+            {(stock !== undefined && stock <= 0) || (status === 'out_of_stock') ? (
+              <div className="bg-gray-800 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg uppercase">
+                SOLD OUT
+              </div>
+            ) : (
+              <div className="bg-green-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg">
+                ✓ In Stock
+              </div>
+            )}
           </div>
 
           {/* Quick Action Buttons */}
@@ -393,7 +408,11 @@ const ProductCard = memo(({ product, viewMode = 'grid', className = '' }) => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                 </svg>
               </button>
-              <button className="bg-white/90 backdrop-blur-sm p-2 rounded-lg shadow-lg hover:bg-white transition-colors duration-200">
+              <button
+                onClick={handleShare}
+                className="bg-white/90 backdrop-blur-sm p-2 rounded-lg shadow-lg hover:bg-white transition-colors duration-200"
+                title="Copy Link"
+              >
                 <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
                 </svg>
@@ -435,29 +454,31 @@ const ProductCard = memo(({ product, viewMode = 'grid', className = '' }) => {
           )}
 
           {/* Rating and Reviews */}
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center bg-gradient-to-r from-yellow-50 to-orange-50 px-2 py-1 rounded-lg">
-              <div className="flex items-center mr-2">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <svg
-                    key={star}
-                    className={`w-3 h-3 ${star <= Math.round(ratingValue) ? 'text-yellow-500' : 'text-gray-300'
-                      } transition-colors duration-200`}
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                  </svg>
-                ))}
+          {showRatings !== false && (
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center bg-gradient-to-r from-yellow-50 to-orange-50 px-2 py-1 rounded-lg">
+                <div className="flex items-center mr-2">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <svg
+                      key={star}
+                      className={`w-3 h-3 ${star <= Math.round(ratingValue) ? 'text-yellow-500' : 'text-gray-300'
+                        } transition-colors duration-200`}
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                    </svg>
+                  ))}
+                </div>
+                <span className="text-xs font-bold text-gray-700">
+                  {ratingValue > 0 ? ratingValue.toFixed(1) : '0.0'}
+                </span>
               </div>
-              <span className="text-xs font-bold text-gray-700">
-                {ratingValue > 0 ? ratingValue.toFixed(1) : '0.0'}
-              </span>
+              <div className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+                {numReviews || 0} reviews
+              </div>
             </div>
-            <div className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
-              {numReviews || 0} reviews
-            </div>
-          </div>
+          )}
 
           {/* Product Features */}
           <div className="flex flex-wrap gap-1 mb-3">
@@ -467,12 +488,14 @@ const ProductCard = memo(({ product, viewMode = 'grid', className = '' }) => {
               </svg>
               Fast Delivery
             </span>
-            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-              <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-              </svg>
-              Warranty
-            </span>
+            {warranty && (
+              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+                {warranty}
+              </span>
+            )}
           </div>
         </div>
       </Link>
@@ -508,71 +531,38 @@ const ProductCard = memo(({ product, viewMode = 'grid', className = '' }) => {
 
           {/* Price Benefits */}
           <div className="flex items-center space-x-4 text-xs text-gray-600">
-            <div className="flex items-center">
-              <svg className="w-3 h-3 mr-1 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-              </svg>
-              Free Shipping
-            </div>
-            <div className="flex items-center">
-              <svg className="w-3 h-3 mr-1 text-rose-500" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
-              </svg>
-              COD Available
-            </div>
+            {isFreeShipping !== false && (
+              <div className="flex items-center">
+                <svg className="w-3 h-3 mr-1 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+                Free Shipping
+              </div>
+            )}
+            {isCodAvailable !== false && (
+              <div className="flex items-center">
+                <svg className="w-3 h-3 mr-1 text-rose-500" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+                </svg>
+                COD Available
+              </div>
+            )}
           </div>
         </div>
 
         {/* Action buttons */}
-        <div className="flex space-x-3">
-          {/* Add to Cart Button */}
-          <button
-            onClick={handleAddToCart}
-            disabled={isAddingToCart}
-            className={`flex-1 px-3 py-3 rounded-2xl text-sm font-bold transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl ${productInCart
-              ? 'bg-green-600 text-white border-2 border-green-500 hover:bg-green-700'
-              : 'bg-rose-600 hover:bg-rose-700 text-white shadow-md hover:shadow-lg'
-              } ${isAddingToCart ? 'opacity-50 cursor-not-allowed animate-pulse' : ''}`}
-          >
-            {isAddingToCart ? (
-              <span className="flex items-center justify-center space-x-2">
-                <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                <span>Adding...</span>
-              </span>
-            ) : productInCart ? (
-              <span className="flex items-center justify-center space-x-2">
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                </svg>
-                <span>In Cart</span>
-              </span>
-            ) : (
-              <span className="flex items-center justify-center space-x-2">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-                </svg>
-                <span>
-                  {(product.product_structure === 'variant' && product.product_variants && product.product_variants.length > 0) ?
-                    'Add to Cart' : 'Add to Cart'}
-                </span>
-              </span>
-            )}
-          </button>
-
+        <div className="flex">
           {/* View Details Button */}
           <Link
             to={productLink}
-            className="px-3 py-3 border border-gray-200 hover:border-rose-300 rounded-2xl text-sm font-bold text-gray-600 hover:text-rose-600 hover:bg-rose-50 transition-all duration-300 text-center flex items-center justify-center space-x-2 transform hover:scale-105 active:scale-95"
+            className="w-full px-3 py-3 bg-rose-600 hover:bg-rose-700 text-white rounded-2xl text-sm font-bold transition-all duration-300 text-center flex items-center justify-center space-x-2 transform hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl"
             onClick={(e) => e.stopPropagation()}
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
             </svg>
-            <span>View</span>
+            <span>View Details</span>
           </Link>
         </div>
       </div>
@@ -755,9 +745,15 @@ const ProductCard = memo(({ product, viewMode = 'grid', className = '' }) => {
 
               {/* Stock Status */}
               <div className="absolute top-4 left-4">
-                <div className="bg-green-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg">
-                  ✓ In Stock
-                </div>
+                {(stock !== undefined && stock <= 0) || (status === 'out_of_stock') ? (
+                  <div className="bg-gray-800 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg uppercase">
+                    SOLD OUT
+                  </div>
+                ) : (
+                  <div className="bg-green-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg">
+                    ✓ In Stock
+                  </div>
+                )}
               </div>
 
               {/* Quick Action Buttons */}

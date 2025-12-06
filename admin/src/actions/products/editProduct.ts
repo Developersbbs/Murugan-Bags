@@ -93,12 +93,15 @@ export async function editProduct(
     size: formData.get("size") || undefined,
     material: formData.get("material") || undefined,
     brand: formData.get("brand") || undefined,
-    warranty: formData.get("warranty") || undefined,
     fileUpload: formData.get("fileUpload") || undefined,
     fileSize: formData.get("fileSize") || undefined,
     downloadFormat: formData.get("downloadFormat") || undefined,
     licenseType: formData.get("licenseType") || undefined,
     downloadLimit: formData.get("downloadLimit") || undefined,
+    warranty: formData.get("warranty") || undefined,
+    isCodAvailable: formData.get("isCodAvailable") === 'true',
+    isFreeShipping: formData.get("isFreeShipping") === 'true',
+    showRatings: formData.get("showRatings") === 'true',
     tags: tags,
     seoTitle: formData.get("seoTitle") || undefined,
     seoDescription: formData.get("seoDescription") || undefined,
@@ -164,6 +167,16 @@ export async function editProduct(
     }
     if (parsedData.data.downloadLimit) {
       backendFormData.append("download_limit", parsedData.data.downloadLimit.toString());
+    }
+
+    if (parsedData.data.isCodAvailable !== undefined) {
+      backendFormData.append("isCodAvailable", parsedData.data.isCodAvailable.toString());
+    }
+    if (parsedData.data.isFreeShipping !== undefined) {
+      backendFormData.append("isFreeShipping", parsedData.data.isFreeShipping.toString());
+    }
+    if (parsedData.data.showRatings !== undefined) {
+      backendFormData.append("showRatings", parsedData.data.showRatings.toString());
     }
     if (parsedData.data.tags !== undefined) {
       backendFormData.append("tags", JSON.stringify(parsedData.data.tags || []));

@@ -32,8 +32,19 @@ export function ImagePlaceholder({
     );
   }
 
-  // Ensure src is a string and not being modified
-  const imageSrc = typeof src === 'string' ? src : '';
+  // Ensure src is a valid string
+  const imageSrc = typeof src === 'string' ? src : (typeof src === 'object' && 'src' in src ? src.src : '');
+
+  // If imageSrc is still empty or invalid, show placeholder
+  if (!imageSrc || imageSrc.trim() === '') {
+    return (
+      <div className={cn("relative size-8 bg-muted rounded-full flex items-center justify-center", containerClassName)}>
+        <span className="text-xs font-medium text-muted-foreground">
+          {alt?.charAt(0)?.toUpperCase() || "?"}
+        </span>
+      </div>
+    );
+  }
 
   return (
     <div className={cn("relative size-8", containerClassName)}>

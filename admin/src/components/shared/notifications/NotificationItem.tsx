@@ -48,13 +48,19 @@ export default function NotificationItem({ notification }: Props) {
   return (
     <div className="flex items-center justify-between p-3 border-t border-t-border first:border-t-0 sm:gap-x-2">
       <div className="flex items-center gap-x-3">
-        <Image
-          src={notification.image_url && notification.image_url.trim() !== '' ? notification.image_url : '/placeholder-avatar.jpg'}
-          alt={notification.title}
-          width={30}
-          height={30}
-          className="size-[1.875rem] rounded-full flex-shrink-0 self-start mt-1.5 sm:mt-0 sm:self-center"
-        />
+        {notification.image_url && notification.image_url.trim() !== '' ? (
+          <Image
+            src={notification.image_url}
+            alt={notification.title}
+            width={30}
+            height={30}
+            className="size-[1.875rem] rounded-full flex-shrink-0 self-start mt-1.5 sm:mt-0 sm:self-center"
+          />
+        ) : (
+          <div className="size-[1.875rem] rounded-full flex-shrink-0 self-start mt-1.5 sm:mt-0 sm:self-center bg-gray-200 flex items-center justify-center">
+            <span className="text-xs text-gray-500">N</span>
+          </div>
+        )}
 
         <div className="flex flex-col">
           <Typography

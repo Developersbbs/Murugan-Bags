@@ -139,6 +139,9 @@ export const productFormSchema = z
     material: z.string().optional(),
     brand: z.string().optional(),
     warranty: z.string().optional(),
+    isCodAvailable: z.boolean().default(true),
+    isFreeShipping: z.boolean().default(false),
+    showRatings: z.boolean().default(true),
     // Digital product fields
     fileUpload: z.instanceof(File).optional(),
     fileSize: z.coerce.number().min(0).optional(),

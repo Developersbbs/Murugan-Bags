@@ -504,7 +504,7 @@ const ProductListPage = () => {
 
       <div className="lg:grid lg:grid-cols-5 lg:gap-6">
         {/* Filters sidebar */}
-        <div className="hidden lg:block space-y-6 sticky top-24 self-start">
+        <div className="hidden lg:block space-y-6 sticky top-24 self-start pl-4">
           <SidebarFilters
             filters={filters}
             onFilterChange={(newFilters) => setFilters(prev => ({ ...prev, ...newFilters }))}

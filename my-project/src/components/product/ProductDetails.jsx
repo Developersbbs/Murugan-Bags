@@ -286,7 +286,7 @@ const ProductDetails = ({ product, isLoading, isError, onCartUpdate }) => {
                 disabled={displayProduct.product_type === 'physical' && displayStock <= 0}
                 className={`px-6 py-2 rounded-md text-white font-medium ${displayProduct.product_type === 'physical' && displayStock <= 0
                   ? 'bg-gray-300 cursor-not-allowed'
-                  : 'bg-indigo-600 hover:bg-indigo-700'
+                  : 'bg-rose-600 hover:bg-rose-700'
                   }`}
               >
                 Add to Cart
@@ -336,9 +336,9 @@ const ProductDetails = ({ product, isLoading, isError, onCartUpdate }) => {
               <button
                 onClick={handleAddToCart}
                 disabled={displayProduct.product_type === 'physical' && displayStock <= 0}
-                className={`flex-1 flex items-center justify-center rounded-sm border border-transparent px-6 py-4 text-base font-medium text-white shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 ${displayProduct.product_type === 'physical' && displayStock <= 0
-                  ? 'bg-gray-300 cursor-not-allowed'
-                  : 'bg-[#ff9f00] hover:bg-[#f39700] focus:ring-[#ff9f00]'
+                className={`flex-1 flex items-center justify-center rounded-sm border px-6 py-4 text-base font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 ${displayProduct.product_type === 'physical' && displayStock <= 0
+                  ? 'bg-gray-300 text-white border-transparent cursor-not-allowed'
+                  : 'bg-white border-2 border-rose-600 text-rose-600 hover:bg-rose-50 focus:ring-rose-500'
                   }`}
               >
                 <ShoppingCartIcon className="h-5 w-5 mr-2" />
@@ -355,7 +355,7 @@ const ProductDetails = ({ product, isLoading, isError, onCartUpdate }) => {
                 disabled={displayProduct.product_type === 'physical' && displayStock <= 0}
                 className={`flex-1 flex items-center justify-center rounded-sm border border-transparent px-6 py-4 text-base font-medium text-white shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 ${displayProduct.product_type === 'physical' && displayStock <= 0
                   ? 'bg-gray-300 cursor-not-allowed'
-                  : 'bg-[#fb641b] hover:bg-[#f05e16] focus:ring-[#fb641b]'
+                  : 'bg-rose-600 hover:bg-rose-700 focus:ring-rose-600'
                   }`}
               >
                 <CurrencyDollarIcon className="h-5 w-5 mr-2" />
@@ -369,22 +369,24 @@ const ProductDetails = ({ product, isLoading, isError, onCartUpdate }) => {
             <h1 className="text-xl sm:text-2xl font-medium text-gray-900">{displayProduct.name}</h1>
 
             {/* Reviews */}
-            <div className="mt-3">
-              <h3 className="sr-only">Reviews</h3>
-              <div className="flex items-center">
-                <div className="flex items-center bg-green-600 px-2 py-0.5 rounded text-white text-sm font-bold">
-                  {displayProduct?.averageRating || 0} <StarSolidIcon className="h-3 w-3 ml-1 text-white" />
+            {displayProduct.showRatings !== false && (
+              <div className="mt-3">
+                <h3 className="sr-only">Reviews</h3>
+                <div className="flex items-center">
+                  <div className="flex items-center bg-green-600 px-2 py-0.5 rounded text-white text-sm font-bold">
+                    {displayProduct?.averageRating || 0} <StarSolidIcon className="h-3 w-3 ml-1 text-white" />
+                  </div>
+                  <p className="sr-only">{displayProduct?.averageRating || 0} out of 5 stars</p>
+                  <a href="#ratings" className="ml-3 text-sm font-medium text-gray-500 hover:text-gray-600">
+                    {displayProduct?.totalReviews > 0 && (
+                      <span className="text-gray-500 font-medium">
+                        {displayProduct?.totalReviews} Ratings & Reviews
+                      </span>
+                    )}
+                  </a>
                 </div>
-                <p className="sr-only">{displayProduct?.averageRating || 0} out of 5 stars</p>
-                <a href="#ratings" className="ml-3 text-sm font-medium text-gray-500 hover:text-gray-600">
-                  {displayProduct?.totalReviews > 0 && (
-                    <span className="text-gray-500 font-medium">
-                      {displayProduct?.totalReviews} Ratings & Reviews
-                    </span>
-                  )}
-                </a>
               </div>
-            </div>
+            )}
 
             {/* Price */}
             <div className="mt-4 flex items-center">
@@ -500,17 +502,27 @@ const ProductDetails = ({ product, isLoading, isError, onCartUpdate }) => {
                 <span>100% Authentic</span>
               </div>
               <div className="flex items-center space-x-2 text-sm text-gray-600">
-                <TruckIcon className="h-5 w-5 text-blue-600" />
-                <span>Free Delivery</span>
-              </div>
-              <div className="flex items-center space-x-2 text-sm text-gray-600">
-                <CurrencyDollarIcon className="h-5 w-5 text-blue-600" />
-                <span>Cash on Delivery</span>
-              </div>
-              <div className="flex items-center space-x-2 text-sm text-gray-600">
                 <CheckBadgeIcon className="h-5 w-5 text-blue-600" />
                 <span>Quality Checked</span>
               </div>
+              {displayProduct.isFreeShipping !== false && (
+                <div className="flex items-center space-x-2 text-sm text-gray-600">
+                  <TruckIcon className="h-5 w-5 text-green-600" />
+                  <span>Free Delivery</span>
+                </div>
+              )}
+              {displayProduct.isCodAvailable !== false && (
+                <div className="flex items-center space-x-2 text-sm text-gray-600">
+                  <CurrencyDollarIcon className="h-5 w-5 text-rose-600" />
+                  <span>Cash on Delivery</span>
+                </div>
+              )}
+              {displayProduct.warranty && (
+                <div className="flex items-center space-x-2 text-sm text-gray-600">
+                  <ShieldCheckIcon className="h-5 w-5 text-green-600" />
+                  <span>{displayProduct.warranty}</span>
+                </div>
+              )}
             </div>
 
             {/* Tabbed Information Section */}
@@ -601,9 +613,9 @@ const ProductDetails = ({ product, isLoading, isError, onCartUpdate }) => {
               <button
                 onClick={handleAddToCart}
                 disabled={displayProduct.product_type === 'physical' && displayStock <= 0}
-                className={`flex-1 flex items-center justify-center rounded-sm border border-transparent px-4 py-3 text-sm font-medium text-white shadow-sm ${displayProduct.product_type === 'physical' && displayStock <= 0
-                  ? 'bg-gray-300 cursor-not-allowed'
-                  : 'bg-white text-black border-gray-300'
+                className={`flex-1 flex items-center justify-center rounded-sm border px-4 py-3 text-sm font-medium shadow-sm ${displayProduct.product_type === 'physical' && displayStock <= 0
+                  ? 'bg-gray-300 text-white border-transparent cursor-not-allowed'
+                  : 'bg-white text-rose-600 border-2 border-rose-600'
                   }`}
               >
                 {displayProduct.product_type === 'physical' && displayStock <= 0
@@ -618,7 +630,7 @@ const ProductDetails = ({ product, isLoading, isError, onCartUpdate }) => {
                 disabled={displayProduct.product_type === 'physical' && displayStock <= 0}
                 className={`flex-1 flex items-center justify-center rounded-sm border border-transparent px-4 py-3 text-sm font-medium text-white shadow-sm ${displayProduct.product_type === 'physical' && displayStock <= 0
                   ? 'bg-gray-300 cursor-not-allowed'
-                  : 'bg-[#fb641b]'
+                  : 'bg-rose-600 hover:bg-rose-700'
                   }`}
               >
                 Buy Now

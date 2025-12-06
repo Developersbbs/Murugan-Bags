@@ -12,28 +12,28 @@ const router = express.Router();
 router.get('/check-email', async (req, res) => {
   try {
     const { email } = req.query;
-    
+
     if (!email) {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'Email is required' 
+      return res.status(400).json({
+        success: false,
+        error: 'Email is required'
       });
     }
 
-    const customer = await Customer.findOne({ 
-      email: email.toLowerCase() 
+    const customer = await Customer.findOne({
+      email: email.toLowerCase()
     }).select('_id email');
 
-    return res.json({ 
-      success: true, 
-      exists: !!customer 
+    return res.json({
+      success: true,
+      exists: !!customer
     });
-    
+
   } catch (error) {
     console.error('Error checking email:', error);
-    return res.status(500).json({ 
-      success: false, 
-      error: 'Server error while checking email' 
+    return res.status(500).json({
+      success: false,
+      error: 'Server error while checking email'
     });
   }
 });
@@ -41,15 +41,21 @@ router.get('/check-email', async (req, res) => {
 // Initialize Firebase Admin if not already done
 if (!admin.apps.length) {
   if (!process.env.FIREBASE_PROJECT_ID || !process.env.FIREBASE_CLIENT_EMAIL || !process.env.FIREBASE_PRIVATE_KEY) {
-    console.error('Missing Firebase Admin environment variables. Please check your .env file.');
+    console.error('⚠️ Missing Firebase Admin environment variables. Firebase features will be disabled.');
   } else {
-    admin.initializeApp({
-      credential: admin.credential.cert({
-        projectId: process.env.FIREBASE_PROJECT_ID,
-        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-        privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n')
-      })
-    });
+    try {
+      admin.initializeApp({
+        credential: admin.credential.cert({
+          projectId: process.env.FIREBASE_PROJECT_ID,
+          clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+          privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n')
+        })
+      });
+      console.log('✅ Firebase Admin initialized successfully in customers route');
+    } catch (error) {
+      console.error('❌ Failed to initialize Firebase Admin in customers route:', error.message);
+      console.error('Firebase features will be disabled. Please check your Firebase credentials in .env file.');
+    }
   }
 }
 
@@ -67,7 +73,7 @@ router.post('/firebase/register', async (req, res) => {
     // const firebaseUid = decodedToken.uid;
 
     // Check if user already exists
-    let customer = await Customer.findOne({ 
+    let customer = await Customer.findOne({
       $or: [
         { firebase_uid: firebaseUid },
         { email: email?.toLowerCase() },
@@ -78,13 +84,13 @@ router.post('/firebase/register', async (req, res) => {
     if (customer) {
       // Update existing user with any new information
       const updateData = {};
-      
+
       if (email && !customer.email) updateData.email = email.toLowerCase();
       if (displayName && !customer.name) updateData.name = displayName;
       if (phoneNumber && !customer.phone) updateData.phone = phoneNumber;
       if (photoURL && !customer.image_url) updateData.image_url = photoURL;
       if (providerId === 'google.com' && !customer.google_id) updateData.google_id = firebaseUid;
-      
+
       if (Object.keys(updateData).length > 0) {
         customer = await Customer.findByIdAndUpdate(
           customer._id,
@@ -106,7 +112,7 @@ router.post('/firebase/register', async (req, res) => {
         created_at: new Date(),
         updated_at: new Date()
       });
-      
+
       await customer.save();
     }
 
@@ -115,10 +121,10 @@ router.post('/firebase/register', async (req, res) => {
     res.status(200).json({ success: true, data: customerData });
   } catch (error) {
     console.error('Error in Firebase user registration:', error);
-    res.status(500).json({ 
-      success: false, 
+    res.status(500).json({
+      success: false,
       error: 'Failed to register user',
-      details: error.message 
+      details: error.message
     });
   }
 });
@@ -127,11 +133,11 @@ router.post('/firebase/register', async (req, res) => {
 router.get("/", async (req, res) => {
   try {
     const { page = 1, limit = 10, search } = req.query;
-    
+
     const pageNum = parseInt(page);
     const limitNum = parseInt(limit);
     const skip = (pageNum - 1) * limitNum;
-    
+
     // Build filter query
     let filter = {};
     if (search) {
@@ -141,16 +147,16 @@ router.get("/", async (req, res) => {
         { phone: { $regex: search, $options: "i" } }
       ];
     }
-    
+
     // Execute queries
     const customers = await Customer.find(filter)
       .sort({ created_at: -1 })
       .skip(skip)
       .limit(limitNum);
-      
+
     const total = await Customer.countDocuments(filter);
     const totalPages = Math.ceil(total / limitNum);
-    
+
     res.json({
       success: true,
       data: customers,
@@ -177,7 +183,7 @@ router.get("/:id/orders", async (req, res) => {
       })
       .select('-__v')
       .sort({ created_at: -1 });
-      
+
     res.json({
       success: true,
       data: orders.map(order => ({
@@ -200,12 +206,12 @@ router.get("/:id/orders", async (req, res) => {
 router.get("/:id/wishlist", async (req, res) => {
   try {
     const customerId = req.params.id;
-    
+
     // Find wishlist for this customer
     let wishlist = await Wishlist.findOne({ customer_id: customerId })
       .populate('items.product_id', 'name slug selling_price image_url category')
       .lean();
-    
+
     if (!wishlist) {
       // Return empty wishlist if none exists
       return res.json({
@@ -216,7 +222,7 @@ router.get("/:id/wishlist", async (req, res) => {
         }
       });
     }
-    
+
     // Transform items to match frontend interface
     const transformedItems = wishlist.items.map(item => ({
       _id: item._id,
@@ -227,7 +233,7 @@ router.get("/:id/wishlist", async (req, res) => {
       discounted_price: item.discounted_price,
       created_at: item.added_at || item.created_at
     }));
-    
+
     res.json({
       success: true,
       data: {
@@ -245,12 +251,12 @@ router.get("/:id/wishlist", async (req, res) => {
 router.get("/:id/cart", async (req, res) => {
   try {
     const customerId = req.params.id;
-    
+
     // Find cart for this customer
     let cart = await Cart.findOne({ customer_id: customerId })
       .populate('items.product_id', 'name slug selling_price image_url category')
       .lean();
-    
+
     if (!cart) {
       // Return empty cart if none exists
       return res.json({
@@ -262,7 +268,7 @@ router.get("/:id/cart", async (req, res) => {
         }
       });
     }
-    
+
     // Transform items to match frontend interface
     const transformedItems = cart.items.map(item => ({
       _id: item._id,
@@ -275,7 +281,7 @@ router.get("/:id/cart", async (req, res) => {
       variant: item.variant || null,
       created_at: item.added_at || item.created_at
     }));
-    
+
     res.json({
       success: true,
       data: {
@@ -295,13 +301,13 @@ router.get("/:id/cart", async (req, res) => {
 router.get('/firebase/:uid', async (req, res) => {
   try {
     const { uid } = req.params;
-    
+
     if (!uid) {
       return res.status(400).json({ success: false, error: 'Firebase UID is required' });
     }
 
     const customer = await Customer.findOne({ firebase_uid: uid });
-    
+
     if (!customer) {
       return res.status(404).json({ success: false, error: 'Customer not found' });
     }
@@ -368,50 +374,54 @@ router.get("/:_id", async (req, res) => {
     const customer = await Customer.findOne({ _id: req.params._id })
       .select('-password -__v')
       .lean();
-      
+
     if (!customer) {
-      return res.status(404).json({ 
-        success: false, 
-        error: "Customer not found" 
+      return res.status(404).json({
+        success: false,
+        error: "Customer not found"
       });
     }
-    
+
     // Get customer's orders
     const orders = await Order.find({ customer_id: customer._id })
       .select('-__v')
       .sort({ created_at: -1 })
       .limit(5)
       .lean();
-    
+
     // Calculate order statistics
     // Update the statistics calculation in the /:_id route
-const orderStats = {
-  total_orders: await Order.countDocuments({ customer_id: customer._id }),
-  total_spent: await Order.aggregate([
-    { $match: { customer_id: customer._id } },
-    { $group: { _id: null, total: { $sum: "$total_amount" } } }
-  ]).then(res => res[0]?.total || 0),
-  last_order: orders[0]?.created_at || null,
-  order_statuses: await Order.aggregate([
-    { $match: { customer_id: customer._id } },
-    { $group: { 
-        _id: "$status", 
-        count: { $sum: 1 },
-        total: { $sum: "$total_amount" }
-    }},
-    { $project: { 
-        _id: 0, 
-        status: "$_id", 
-        count: 1,
-        total: 1 
-    }}
-  ]).then(res => 
-    res.reduce((acc, { status, count, total }) => ({
-      ...acc,
-      [status]: { count, total: total || 0 }
-    }), {})
-  )
-};
+    const orderStats = {
+      total_orders: await Order.countDocuments({ customer_id: customer._id }),
+      total_spent: await Order.aggregate([
+        { $match: { customer_id: customer._id } },
+        { $group: { _id: null, total: { $sum: "$total_amount" } } }
+      ]).then(res => res[0]?.total || 0),
+      last_order: orders[0]?.created_at || null,
+      order_statuses: await Order.aggregate([
+        { $match: { customer_id: customer._id } },
+        {
+          $group: {
+            _id: "$status",
+            count: { $sum: 1 },
+            total: { $sum: "$total_amount" }
+          }
+        },
+        {
+          $project: {
+            _id: 0,
+            status: "$_id",
+            count: 1,
+            total: 1
+          }
+        }
+      ]).then(res =>
+        res.reduce((acc, { status, count, total }) => ({
+          ...acc,
+          [status]: { count, total: total || 0 }
+        }), {})
+      )
+    };
 
     // Prepare response
     const response = {
@@ -426,12 +436,12 @@ const orderStats = {
         }
       }
     };
-    
+
     res.json(response);
   } catch (err) {
     console.error('Error fetching customer details:', err);
-    res.status(500).json({ 
-      success: false, 
+    res.status(500).json({
+      success: false,
       error: 'Internal server error',
       details: process.env.NODE_ENV === 'development' ? err.message : undefined
     });

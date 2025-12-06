@@ -28,6 +28,7 @@ import {
   FormSlugInput,
   FormTextarea,
   FormTagsInput,
+  FormSwitch,
   FormProductTypeSelect,
   FormVariantManagement,
   FormProductStructureSelect,
@@ -110,6 +111,9 @@ export default function ProductFormSheet({
       material: "",
       brand: "",
       warranty: "",
+      isCodAvailable: true,
+      isFreeShipping: false,
+      showRatings: true,
       fileUpload: undefined,
       fileSize: undefined,
       downloadFormat: "",
@@ -176,6 +180,9 @@ export default function ProductFormSheet({
         material: "",
         brand: "",
         warranty: "",
+        isCodAvailable: true,
+        isFreeShipping: false,
+        showRatings: true,
         fileUpload: undefined,
         fileSize: undefined,
         downloadFormat: "",
@@ -615,6 +622,9 @@ export default function ProductFormSheet({
               material: "",
               brand: "",
               warranty: "",
+              isCodAvailable: true,
+              isFreeShipping: false,
+              showRatings: true,
               fileUpload: undefined,
               fileSize: undefined,
               downloadFormat: "",
@@ -785,6 +795,32 @@ export default function ProductFormSheet({
                     placeholder="Add product tag"
                     setValue={form.setValue}
                   />
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormTextInput
+                      control={form.control}
+                      name="warranty"
+                      label="Warranty"
+                      placeholder="e.g., 1 Year Warranty"
+                    />
+                    <div className="space-y-4 pt-2">
+                      <FormSwitch
+                        control={form.control}
+                        name="isCodAvailable"
+                        label="COD Available"
+                      />
+                      <FormSwitch
+                        control={form.control}
+                        name="isFreeShipping"
+                        label="Free Shipping"
+                      />
+                      <FormSwitch
+                        control={form.control}
+                        name="showRatings"
+                        label="Show Ratings"
+                      />
+                    </div>
+                  </div>
 
                   {/* Show pricing only for simple products */}
                   {form.watch("productStructure") === "simple" && (

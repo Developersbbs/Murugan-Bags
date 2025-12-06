@@ -189,6 +189,10 @@ export function EditProductSheet({ product, children }: Props) {
     seoOgTitle: product.seo?.ogTitle || "",
     seoOgDescription: product.seo?.ogDescription || "",
     seoOgImage: product.seo?.ogImage || "",
+    warranty: product.warranty || "",
+    isCodAvailable: product.isCodAvailable !== undefined ? product.isCodAvailable : true,
+    isFreeShipping: product.isFreeShipping !== undefined ? product.isFreeShipping : false,
+    showRatings: product.showRatings !== undefined ? product.showRatings : true,
     // Add the transformed variant data
     product_variants: formVariants,
   }), [product, formVariants]);

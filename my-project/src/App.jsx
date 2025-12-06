@@ -37,6 +37,7 @@ const AuthCartDebug = lazy(() => import('./components/debug/AuthCartDebug'));
 
 // Lazy load global handler
 const GlobalLoginPromptHandler = lazy(() => import('./components/common/GlobalLoginPromptHandler'));
+const CartSidebar = lazy(() => import('./components/cart/CartSidebar'));
 
 // Preload critical pages after initial load
 const preloadCriticalPages = () => {
@@ -306,6 +307,7 @@ const App = () => {
                 {/* <CartWishlistDebug /> */}
               </Suspense>
             )}
+            <CartSidebar />
           </WishlistProvider>
         </CartProvider>
       </Suspense>

@@ -26,8 +26,8 @@ export default function Profile() {
     return null;
   }
   const profileImageUrl = profile?.image_url && profile.image_url !== '' && (!Array.isArray(profile.image_url) || profile.image_url.length > 0)
-  ? (Array.isArray(profile.image_url) ? profile.image_url[0] : profile.image_url)
-  : undefined;
+    ? (Array.isArray(profile.image_url) ? profile.image_url[0] : profile.image_url)
+    : undefined;
   console.log("Profile image URL:", profileImageUrl);
   console.log("Profile image_url from context:", profile?.image_url);
 
@@ -60,14 +60,16 @@ export default function Profile() {
       <DropdownMenu modal={false}>
         <DropdownMenuTrigger className="rounded-full ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2">
           <Avatar>
-            <AvatarImage
-              src={profileImageUrl}
-              alt={profile?.name ?? "User avatar"}
-              onError={(e) => {
-                console.error("Avatar image failed to load:", profileImageUrl);
-                console.error("Error event:", e);
-              }}
-            />
+            {profileImageUrl && (
+              <AvatarImage
+                src={profileImageUrl}
+                alt={profile?.name ?? "User avatar"}
+                onError={(e) => {
+                  console.error("Avatar image failed to load:", profileImageUrl);
+                  console.error("Error event:", e);
+                }}
+              />
+            )}
             <AvatarFallback>{getInitials(profile?.name)}</AvatarFallback>
           </Avatar>
         </DropdownMenuTrigger>

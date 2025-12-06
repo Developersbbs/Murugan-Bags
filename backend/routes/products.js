@@ -706,6 +706,9 @@ router.post("/", uploadDigitalFile, async (req, res) => {
     if (req.body.material) productData.material = req.body.material;
     if (req.body.brand) productData.brand = req.body.brand;
     if (req.body.warranty) productData.warranty = req.body.warranty;
+    if (req.body.isCodAvailable !== undefined) productData.isCodAvailable = req.body.isCodAvailable === 'true' || req.body.isCodAvailable === true;
+    if (req.body.isFreeShipping !== undefined) productData.isFreeShipping = req.body.isFreeShipping === 'true' || req.body.isFreeShipping === true;
+    if (req.body.showRatings !== undefined) productData.showRatings = req.body.showRatings === 'true' || req.body.showRatings === true;
 
     // Digital product fields - map frontend camelCase to backend snake_case
     // IMPORTANT: Set these BEFORE creating the Product instance
@@ -1317,6 +1320,9 @@ router.put("/:id", uploadDigitalFile, async (req, res) => {
     if (req.body.material !== undefined) updateData.material = req.body.material;
     if (req.body.brand !== undefined) updateData.brand = req.body.brand;
     if (req.body.warranty !== undefined) updateData.warranty = req.body.warranty;
+    if (req.body.isCodAvailable !== undefined) updateData.isCodAvailable = req.body.isCodAvailable === 'true' || req.body.isCodAvailable === true;
+    if (req.body.isFreeShipping !== undefined) updateData.isFreeShipping = req.body.isFreeShipping === 'true' || req.body.isFreeShipping === true;
+    if (req.body.showRatings !== undefined) updateData.showRatings = req.body.showRatings === 'true' || req.body.showRatings === true;
 
     if (productType === 'digital') {
       if (digitalFile) {

@@ -74,16 +74,16 @@ export interface CategoryDropdown {
 
 // Product Types
 export interface ProductCategoryInfo {
-    category: {
-      _id: string;
-      name: string;
-      slug: string;
-    };
-    subcategories: {
-      _id: string;
-      name: string;
-    }[];
-  }
+  category: {
+    _id: string;
+    name: string;
+    slug: string;
+  };
+  subcategories: {
+    _id: string;
+    name: string;
+  }[];
+}
 
 export interface Product {
   _id: string;
@@ -128,6 +128,11 @@ export interface Product {
   download_format?: string;
   license_type?: string;
   download_limit?: number;
+  // New fields
+  warranty?: string;
+  isCodAvailable?: boolean;
+  isFreeShipping?: boolean;
+  showRatings?: boolean;
 }
 
 export interface ProductDetails extends Product {

@@ -56,7 +56,7 @@ const Header = () => {
   const isHome = location.pathname === '/';
 
   // Use new Context-based cart and wishlist
-  const { itemCount: cartItemCount } = useCart();
+  const { itemCount: cartItemCount, openSidebar } = useCart();
   const { itemCount: wishlistCount } = useWishlist();
   const { isAuthenticated, user, backendUser, backendUserLoading, loading } = useSelector((state) => state.auth);
 
@@ -317,14 +317,14 @@ const Header = () => {
                 )}
               </Link>
 
-              <Link to="/cart" className={`relative p-2.5 rounded-full transition-all duration-300 group cursor-pointer ${iconClass}`} title="Cart">
+              <button onClick={() => openSidebar()} className={`relative p-2.5 rounded-full transition-all duration-300 group cursor-pointer ${iconClass}`} title="Cart">
                 <FaShoppingCart className="h-5 w-5 group-hover:scale-110 transition-transform duration-200" />
                 {cartItemCount > 0 && (
                   <span className="absolute -top-1 -right-1 bg-rose-500 text-white text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center animate-pulse shadow-lg">
                     {cartItemCount}
                   </span>
                 )}
-              </Link>
+              </button>
             </div>
 
             {loading || backendUserLoading ? (
@@ -526,10 +526,10 @@ const Header = () => {
                     <div className="flex items-center"><FaHeart className="mr-3 opacity-70" /> Wishlist</div>
                     {wishlistCount > 0 && <span className="bg-rose-500 text-white text-xs font-bold rounded-full px-2 py-0.5">{wishlistCount}</span>}
                   </Link>
-                  <Link to="/cart" className="px-3 py-3 text-slate-700 hover:bg-rose-50 hover:text-rose-600 rounded-xl flex items-center justify-between cursor-pointer font-medium" onClick={() => setIsMobileMenuOpen(false)}>
+                  <button onClick={() => { setIsMobileMenuOpen(false); openSidebar(); }} className="px-3 py-3 text-slate-700 hover:bg-rose-50 hover:text-rose-600 rounded-xl flex items-center justify-between cursor-pointer font-medium">
                     <div className="flex items-center"><FaShoppingCart className="mr-3 opacity-70" /> Cart</div>
                     {cartItemCount > 0 && <span className="bg-rose-500 text-white text-xs font-bold rounded-full px-2 py-0.5">{cartItemCount}</span>}
-                  </Link>
+                  </button>
                   <button onClick={() => { setIsMobileMenuOpen(false); handleLogout(); }} className="w-full text-left px-3 py-3 text-rose-600 hover:bg-rose-50 rounded-xl font-medium mt-2">
                     Logout
                   </button>
@@ -543,6 +543,7 @@ const Header = () => {
           </div>
         )}
       </div>
+
     </header>
   );
 };

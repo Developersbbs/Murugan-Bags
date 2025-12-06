@@ -66,6 +66,11 @@ const cartReducer = (state, action) => {
         ...state,
         loading: action.payload
       };
+    case 'SET_SIDEBAR':
+      return {
+        ...state,
+        isSidebarOpen: action.payload
+      };
     default:
       return state;
   }
@@ -75,7 +80,8 @@ const cartReducer = (state, action) => {
 const initialState = {
   items: [],
   itemCount: 0,
-  loading: true
+  loading: true,
+  isSidebarOpen: false
 };
 
 // Cart Provider Component
@@ -105,17 +111,17 @@ export const CartProvider = ({ children }) => {
       authLoading,
       isAuthenticated
     });
-    
+
     // Don't process if still loading authentication
     if (authLoading) {
       console.log('CartContext: Auth still loading, waiting...');
       return;
     }
-    
+
     if (user && user.uid && isAuthenticated) {
       // User logged in - load from MongoDB with debouncing
       console.log('CartContext: User authenticated, scheduling cart load for:', user.uid);
-      
+
       // Debounce cart loading to avoid multiple rapid calls
       const loadTimer = setTimeout(() => {
         if (user && user.uid && isAuthenticated) {
@@ -123,7 +129,7 @@ export const CartProvider = ({ children }) => {
           handleUserLogin();
         }
       }, 500); // 500ms debounce
-      
+
       return () => clearTimeout(loadTimer);
     } else {
       // User logged out or not authenticated - load guest cart
@@ -157,21 +163,21 @@ export const CartProvider = ({ children }) => {
       console.log('No valid user found, skipping cart load');
       return;
     }
-    
+
     console.log('User logged in, loading cart from MongoDB for user:', user.uid, 'retry:', retryCount);
     dispatch({ type: CART_ACTIONS.SET_LOADING, payload: true });
-    
+
     try {
       // Get guest cart for migration
       const guestCart = getGuestCart();
       console.log('Guest cart items to migrate:', guestCart.length);
-      
+
       // Load existing cart from backend MongoDB
       const backendCart = await cartAPI.getCart();
-      
+
       if (backendCart.success && backendCart.data && backendCart.data.items && backendCart.data.items.length > 0) {
         console.log('Cart loaded from MongoDB:', backendCart.data.items.length, 'items');
-        
+
         // Transform backend cart format to frontend format
         const transformedItems = backendCart.data.items.map(item => ({
           id: item.product_id._id || item.product_id,
@@ -183,9 +189,9 @@ export const CartProvider = ({ children }) => {
           variant: item.variant_attributes || {},
           stock: item.product_id.stock || 999
         }));
-        
+
         dispatch({ type: CART_ACTIONS.SET_CART, payload: transformedItems });
-        
+
         // Migrate guest cart items if any
         if (guestCart.length > 0) {
           console.log('User has existing MongoDB cart AND guest cart - migrating guest items...');
@@ -206,11 +212,11 @@ export const CartProvider = ({ children }) => {
       }
     } catch (error) {
       console.error('Error loading cart from MongoDB:', error);
-      
+
       // Check if it's an authentication error
       if (error.response && (error.response.status === 401 || error.response.status === 403)) {
         console.warn('Authentication error loading cart, user may need to re-login');
-        
+
         // Retry once after a short delay for auth errors
         if (retryCount === 0) {
           console.log('Retrying cart load after auth error...');
@@ -229,7 +235,7 @@ export const CartProvider = ({ children }) => {
           toast.error('Failed to load cart data');
         }
       }
-      
+
       // Start with empty cart on final error
       dispatch({ type: CART_ACTIONS.CLEAR_CART });
     } finally {
@@ -242,11 +248,11 @@ export const CartProvider = ({ children }) => {
     try {
       console.log('Starting guest cart migration:', guestCartItems.length, 'items');
       let migratedCount = 0;
-      
+
       for (const guestItem of guestCartItems) {
         try {
           console.log('Migrating guest cart item:', guestItem);
-          
+
           const cartItem = {
             product_id: guestItem.id,
             quantity: guestItem.quantity,
@@ -256,11 +262,11 @@ export const CartProvider = ({ children }) => {
             product_image: guestItem.image,
             variant_attributes: guestItem.variant || {}
           };
-          
+
           console.log('Sending cart item to backend:', cartItem);
           const response = await cartAPI.addToCart(cartItem);
           console.log('Backend response for cart migration:', response);
-          
+
           if (response.success) {
             migratedCount++;
             console.log('Successfully migrated guest cart item:', guestItem.name);
@@ -271,9 +277,9 @@ export const CartProvider = ({ children }) => {
           console.error('Failed to migrate guest cart item - exception:', guestItem.name, error);
         }
       }
-      
+
       console.log('Guest cart migration completed:', migratedCount, 'of', guestCartItems.length, 'items migrated');
-      
+
       // Reload cart to show migrated items
       if (migratedCount > 0) {
         // Load the updated cart from backend without recursion
@@ -281,7 +287,7 @@ export const CartProvider = ({ children }) => {
           console.log('Reloading cart from backend after migration...');
           const backendCart = await cartAPI.getCart();
           console.log('Backend cart response after migration:', backendCart);
-          
+
           if (backendCart.success && backendCart.data && backendCart.data.items) {
             const transformedItems = backendCart.data.items.map(item => ({
               id: item.product_id._id || item.product_id,
@@ -295,7 +301,7 @@ export const CartProvider = ({ children }) => {
             }));
             console.log('Setting cart with transformed items:', transformedItems);
             dispatch({ type: CART_ACTIONS.SET_CART, payload: transformedItems });
-            
+
             // Clear guest cart only after successful reload
             console.log('Clearing guest cart after successful reload');
             clearGuestCart();
@@ -319,13 +325,13 @@ export const CartProvider = ({ children }) => {
   const addToCart = async (product, variant = null, quantity = 1) => {
     try {
       console.log('CartContext: Adding to cart:', product._id);
-      
+
       // For authenticated users, add directly to MongoDB
       if (user && user.uid) {
         // Enhanced price validation with better fallbacks
         const basePrice = product.selling_price || product.price || product.mrp || 1;
         const discountedPrice = product.salePrice || product.selling_price || product.price || product.mrp || basePrice;
-        
+
         const cartItem = {
           product_id: product._id,
           quantity: quantity,
@@ -335,7 +341,7 @@ export const CartProvider = ({ children }) => {
           product_image: (product.image_url && product.image_url[0]) || product.images?.[0]?.url || null,
           variant_attributes: variant || {}
         };
-        
+
         console.log('CartContext: Sending cart item:', cartItem);
         console.log('CartContext: Original product data:', {
           _id: product._id,
@@ -345,7 +351,7 @@ export const CartProvider = ({ children }) => {
           salePrice: product.salePrice,
           mrp: product.mrp
         });
-        
+
         // Enhanced validation with detailed error messages
         if (!cartItem.product_id) {
           throw new Error('Product ID is required');
@@ -367,9 +373,9 @@ export const CartProvider = ({ children }) => {
           console.warn('CartContext: Product has zero or negative discounted price, using price as fallback');
           cartItem.discounted_price = cartItem.price;
         }
-        
+
         const response = await cartAPI.addToCart(cartItem);
-        
+
         if (response.success && response.data && response.data.items) {
           // Update local state with backend response
           const backendCartItems = response.data.items.map(item => ({
@@ -382,7 +388,7 @@ export const CartProvider = ({ children }) => {
             variant: item.variant_attributes || {},
             stock: item.product_id.stock || 999
           }));
-          
+
           dispatch({ type: CART_ACTIONS.SET_CART, payload: backendCartItems });
           console.log('CartContext: Item added to MongoDB cart successfully');
         }
@@ -392,7 +398,7 @@ export const CartProvider = ({ children }) => {
         const updatedGuestCart = addToGuestCart(product, variant, quantity);
         dispatch({ type: CART_ACTIONS.SET_CART, payload: updatedGuestCart });
         console.log('CartContext: Item added to guest cart successfully');
-        
+
         // Show a subtle notification about signing in for better experience
         toast.success('Item added to cart! Sign in to save across devices.', {
           duration: 3000,
@@ -409,11 +415,11 @@ export const CartProvider = ({ children }) => {
   const removeFromCart = async (itemId) => {
     try {
       console.log('CartContext: Removing from cart:', itemId);
-      
+
       // For authenticated users, remove from MongoDB
       if (user && user.uid) {
         const response = await cartAPI.removeFromCart(itemId);
-        
+
         if (response.success) {
           // Reload cart from backend to ensure consistency
           await handleUserLogin();
@@ -440,11 +446,11 @@ export const CartProvider = ({ children }) => {
   const updateQuantity = async (itemId, quantity) => {
     try {
       console.log('CartContext: Updating cart item quantity:', itemId, quantity);
-      
+
       // For authenticated users, update in MongoDB
       if (user && user.uid) {
         const response = await cartAPI.updateCartItem(itemId, quantity);
-        
+
         if (response.success) {
           // Reload cart from backend to ensure consistency
           await handleUserLogin();
@@ -471,11 +477,11 @@ export const CartProvider = ({ children }) => {
   const clearCart = async (forceLocalClear = false) => {
     try {
       console.log('CartContext: Clearing cart');
-      
+
       // For authenticated users, clear MongoDB cart
       if (user && user.uid && !forceLocalClear) {
         const response = await cartAPI.clearCart();
-        
+
         if (response.success) {
           dispatch({ type: CART_ACTIONS.CLEAR_CART });
           console.log('CartContext: MongoDB cart cleared successfully');
@@ -488,7 +494,7 @@ export const CartProvider = ({ children }) => {
       }
     } catch (error) {
       console.error('CartContext: Error clearing cart:', error);
-      
+
       // If it's a 404 or network error, but we know the cart should be cleared (e.g., after order placement),
       // force clear the local cart state
       if (forceLocalClear || error.response?.status === 404 || !error.response) {
@@ -514,15 +520,15 @@ export const CartProvider = ({ children }) => {
   };
 
   const isInCart = (productId, variantAttributes = {}) => {
-    return state.items.some(item => 
-      item.id === productId && 
+    return state.items.some(item =>
+      item.id === productId &&
       JSON.stringify(item.variant || {}) === JSON.stringify(variantAttributes)
     );
   };
 
   const getItemQuantity = (productId, variantAttributes = {}) => {
-    const item = state.items.find(item => 
-      item.id === productId && 
+    const item = state.items.find(item =>
+      item.id === productId &&
       JSON.stringify(item.variant || {}) === JSON.stringify(variantAttributes)
     );
     return item ? item.quantity : 0;
@@ -533,23 +539,28 @@ export const CartProvider = ({ children }) => {
     items: state.items,
     itemCount: state.itemCount,
     loading: state.loading,
-    
+
     // Actions
     addToCart,
     removeFromCart,
     updateQuantity,
     clearCart,
-    
+
     // Computed values
     getTotal,
     getDiscountedTotal,
     isInCart,
     getItemQuantity,
-    
+
     // Utility
     isUsingCookies: false, // No longer using cookies, only MongoDB
     isAuthenticated: !!(user && user.uid), // Helper to check if user is authenticated
-    isGuestMode: !(user && user.uid) // Helper to check if in guest mode
+    isGuestMode: !(user && user.uid), // Helper to check if in guest mode
+
+    // Sidebar State
+    isSidebarOpen: state.isSidebarOpen || false,
+    openSidebar: () => dispatch({ type: 'SET_SIDEBAR', payload: true }),
+    closeSidebar: () => dispatch({ type: 'SET_SIDEBAR', payload: false })
   };
 
   return (
