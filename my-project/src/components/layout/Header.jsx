@@ -57,7 +57,7 @@ const Header = () => {
 
   // Use new Context-based cart and wishlist
   const { itemCount: cartItemCount, openSidebar } = useCart();
-  const { itemCount: wishlistCount } = useWishlist();
+  const { itemCount: wishlistCount, openSidebar: openWishlistSidebar } = useWishlist();
   const { isAuthenticated, user, backendUser, backendUserLoading, loading } = useSelector((state) => state.auth);
 
   const dispatch = useDispatch();
@@ -308,14 +308,14 @@ const Header = () => {
             </form>
 
             <div className="flex items-center space-x-2">
-              <Link to="/wishlist" className={`relative p-2.5 rounded-full transition-all duration-300 group cursor-pointer ${iconClass}`} title="Wishlist">
+              <button onClick={() => openWishlistSidebar()} className={`relative p-2.5 rounded-full transition-all duration-300 group cursor-pointer ${iconClass}`} title="Wishlist">
                 <FaHeart className="h-5 w-5 group-hover:scale-110 transition-transform duration-200" />
                 {wishlistCount > 0 && (
                   <span className="absolute -top-1 -right-1 bg-rose-500 text-white text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center animate-pulse shadow-lg">
                     {wishlistCount}
                   </span>
                 )}
-              </Link>
+              </button>
 
               <button onClick={() => openSidebar()} className={`relative p-2.5 rounded-full transition-all duration-300 group cursor-pointer ${iconClass}`} title="Cart">
                 <FaShoppingCart className="h-5 w-5 group-hover:scale-110 transition-transform duration-200" />

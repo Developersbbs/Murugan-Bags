@@ -20,7 +20,10 @@ const WISHLIST_ACTIONS = {
   ADD_ITEM: 'ADD_ITEM',
   REMOVE_ITEM: 'REMOVE_ITEM',
   CLEAR_WISHLIST: 'CLEAR_WISHLIST',
-  SET_LOADING: 'SET_LOADING'
+  SET_LOADING: 'SET_LOADING',
+  TOGGLE_SIDEBAR: 'TOGGLE_SIDEBAR',
+  OPEN_SIDEBAR: 'OPEN_SIDEBAR',
+  CLOSE_SIDEBAR: 'CLOSE_SIDEBAR'
 };
 
 // Wishlist Reducer
@@ -56,6 +59,21 @@ const wishlistReducer = (state, action) => {
         ...state,
         loading: action.payload
       };
+    case WISHLIST_ACTIONS.TOGGLE_SIDEBAR:
+      return {
+        ...state,
+        isSidebarOpen: !state.isSidebarOpen
+      };
+    case WISHLIST_ACTIONS.OPEN_SIDEBAR:
+      return {
+        ...state,
+        isSidebarOpen: true
+      };
+    case WISHLIST_ACTIONS.CLOSE_SIDEBAR:
+      return {
+        ...state,
+        isSidebarOpen: false
+      };
     default:
       return state;
   }
@@ -65,7 +83,8 @@ const wishlistReducer = (state, action) => {
 const initialState = {
   items: [],
   itemCount: 0,
-  loading: true
+  loading: true,
+  isSidebarOpen: false
 };
 
 // Wishlist Provider Component
@@ -95,13 +114,13 @@ export const WishlistProvider = ({ children }) => {
       authLoading,
       isAuthenticated
     });
-    
+
     // Don't process if still loading authentication
     if (authLoading) {
       console.log('WishlistContext: Auth still loading, waiting...');
       return;
     }
-    
+
     if (user && user.uid && isAuthenticated) {
       // User logged in - migrate guest wishlist and load from MongoDB
       console.log('WishlistContext: User authenticated, migrating guest wishlist and loading from MongoDB for:', user.uid);
@@ -138,21 +157,21 @@ export const WishlistProvider = ({ children }) => {
       console.log('No valid user found, skipping wishlist load');
       return;
     }
-    
+
     console.log('User logged in, loading wishlist from MongoDB for user:', user.uid, 'retry:', retryCount);
     dispatch({ type: WISHLIST_ACTIONS.SET_LOADING, payload: true });
-    
+
     try {
       // Get guest wishlist for migration
       const guestWishlist = getGuestWishlist();
       console.log('Guest wishlist items to migrate:', guestWishlist.length);
-      
+
       // Load existing wishlist from backend MongoDB
       const backendWishlistResponse = await wishlistAPI.getWishlist();
-      
+
       if (backendWishlistResponse.success && backendWishlistResponse.data && backendWishlistResponse.data.items && backendWishlistResponse.data.items.length > 0) {
         console.log('Wishlist loaded from MongoDB:', backendWishlistResponse.data.items.length, 'items');
-        
+
         const backendWishlistItems = backendWishlistResponse.data.items.map(item => ({
           _id: item.product_id._id || item.product_id,
           id: item.product_id._id || item.product_id, // Keep both for compatibility
@@ -161,9 +180,9 @@ export const WishlistProvider = ({ children }) => {
           image: item.product_image,
           wishlistItemId: item._id
         }));
-        
+
         dispatch({ type: WISHLIST_ACTIONS.SET_WISHLIST, payload: backendWishlistItems });
-        
+
         // Migrate guest wishlist items if any
         if (guestWishlist.length > 0) {
           console.log('Migrating guest wishlist items to MongoDB...');
@@ -181,11 +200,11 @@ export const WishlistProvider = ({ children }) => {
       }
     } catch (error) {
       console.error('Error loading wishlist from MongoDB:', error);
-      
+
       // Check if it's an authentication error
       if (error.response && (error.response.status === 401 || error.response.status === 403)) {
         console.warn('Authentication error loading wishlist, user may need to re-login');
-        
+
         // Retry once after a short delay for auth errors
         if (retryCount === 0) {
           console.log('Retrying wishlist load after auth error...');
@@ -204,7 +223,7 @@ export const WishlistProvider = ({ children }) => {
           toast.error('Failed to load wishlist data');
         }
       }
-      
+
       // Start with empty wishlist on final error
       dispatch({ type: WISHLIST_ACTIONS.CLEAR_WISHLIST });
     } finally {
@@ -217,11 +236,11 @@ export const WishlistProvider = ({ children }) => {
     try {
       console.log('Starting guest wishlist migration:', guestWishlistItems.length, 'items');
       let migratedCount = 0;
-      
+
       for (const guestItem of guestWishlistItems) {
         try {
           console.log('Migrating guest wishlist item:', guestItem);
-          
+
           const wishlistItem = {
             product_id: guestItem._id || guestItem.id,
             product_name: guestItem.name,
@@ -229,11 +248,11 @@ export const WishlistProvider = ({ children }) => {
             price: guestItem.price,
             discounted_price: guestItem.price // Use same price as discounted for guest items
           };
-          
+
           console.log('Sending wishlist item to backend:', wishlistItem);
           const response = await wishlistAPI.addToWishlist(wishlistItem);
           console.log('Backend response for wishlist migration:', response);
-          
+
           if (response.success) {
             migratedCount++;
             console.log('Successfully migrated guest wishlist item:', guestItem.name);
@@ -244,9 +263,9 @@ export const WishlistProvider = ({ children }) => {
           console.error('Failed to migrate guest wishlist item - exception:', guestItem.name, error);
         }
       }
-      
+
       console.log('Guest wishlist migration completed:', migratedCount, 'of', guestWishlistItems.length, 'items migrated');
-      
+
       // Reload wishlist to show migrated items
       if (migratedCount > 0) {
         // Load the updated wishlist from backend without recursion
@@ -254,7 +273,7 @@ export const WishlistProvider = ({ children }) => {
           console.log('Reloading wishlist from backend after migration...');
           const backendWishlistResponse = await wishlistAPI.getWishlist();
           console.log('Backend wishlist response after migration:', backendWishlistResponse);
-          
+
           if (backendWishlistResponse.success && backendWishlistResponse.data && backendWishlistResponse.data.items) {
             const backendWishlistItems = backendWishlistResponse.data.items.map(item => ({
               _id: item.product_id._id || item.product_id,
@@ -266,7 +285,7 @@ export const WishlistProvider = ({ children }) => {
             }));
             console.log('Setting wishlist with transformed items:', backendWishlistItems);
             dispatch({ type: WISHLIST_ACTIONS.SET_WISHLIST, payload: backendWishlistItems });
-            
+
             // Clear guest wishlist only after successful reload
             console.log('Clearing guest wishlist after successful reload');
             clearGuestWishlist();
@@ -290,13 +309,13 @@ export const WishlistProvider = ({ children }) => {
   const addToWishlist = async (product) => {
     try {
       console.log('WishlistContext: Adding to wishlist:', product._id);
-      
+
       // For authenticated users, add directly to MongoDB
       if (user && user.uid) {
         // Enhanced price validation with better fallbacks
         const basePrice = product.selling_price || product.price || product.mrp || 1;
         const discountedPrice = product.salePrice || product.selling_price || product.price || product.mrp || basePrice;
-        
+
         const wishlistItem = {
           product_id: product._id,
           product_name: product.name || 'Unknown Product',
@@ -304,7 +323,7 @@ export const WishlistProvider = ({ children }) => {
           price: basePrice,
           discounted_price: discountedPrice
         };
-        
+
         console.log('WishlistContext: Sending wishlist item:', wishlistItem);
         console.log('WishlistContext: Original product data:', {
           _id: product._id,
@@ -314,7 +333,7 @@ export const WishlistProvider = ({ children }) => {
           salePrice: product.salePrice,
           mrp: product.mrp
         });
-        
+
         // Enhanced validation with detailed error messages
         if (!wishlistItem.product_id) {
           throw new Error('Product ID is required');
@@ -336,9 +355,9 @@ export const WishlistProvider = ({ children }) => {
           console.warn('WishlistContext: Product has zero or negative discounted price, using price as fallback');
           wishlistItem.discounted_price = wishlistItem.price;
         }
-        
+
         const response = await wishlistAPI.addToWishlist(wishlistItem);
-        
+
         if (response.success && response.data && response.data.items) {
           // Update local state with backend response
           const backendWishlistItems = response.data.items.map(item => ({
@@ -349,7 +368,7 @@ export const WishlistProvider = ({ children }) => {
             image: item.product_image,
             wishlistItemId: item._id
           }));
-          
+
           dispatch({ type: WISHLIST_ACTIONS.SET_WISHLIST, payload: backendWishlistItems });
           console.log('WishlistContext: Item added to MongoDB wishlist successfully');
         }
@@ -359,7 +378,7 @@ export const WishlistProvider = ({ children }) => {
         const updatedGuestWishlist = addToGuestWishlist(product);
         dispatch({ type: WISHLIST_ACTIONS.SET_WISHLIST, payload: updatedGuestWishlist });
         console.log('WishlistContext: Item added to guest wishlist successfully');
-        
+
         // Show a subtle notification about signing in for better experience
         toast.success('Item added to wishlist! Sign in to save across devices.', {
           duration: 3000,
@@ -368,10 +387,10 @@ export const WishlistProvider = ({ children }) => {
       }
     } catch (error) {
       console.error('WishlistContext: Error adding to wishlist:', error);
-      
+
       // Handle case where item already exists in wishlist
-      if (error.response && error.response.status === 400 && 
-          error.response.data && error.response.data.message === 'Item already exists in wishlist') {
+      if (error.response && error.response.status === 400 &&
+        error.response.data && error.response.data.message === 'Item already exists in wishlist') {
         console.log('WishlistContext: Item already in wishlist, showing info message');
         toast.info('Item is already in your wishlist', {
           duration: 3000,
@@ -379,7 +398,7 @@ export const WishlistProvider = ({ children }) => {
         });
         return; // Don't throw error for this case
       }
-      
+
       toast.error('Failed to add item to wishlist');
       throw error;
     }
@@ -388,15 +407,15 @@ export const WishlistProvider = ({ children }) => {
   const removeFromWishlist = async (productId) => {
     try {
       console.log('WishlistContext: Removing product from wishlist:', productId);
-      
+
       // For authenticated users, remove from MongoDB
       if (user && user.uid) {
         console.log('WishlistContext: Syncing removal with backend for user:', user.uid);
         const response = await wishlistAPI.removeFromWishlistByProduct(productId);
-        
+
         if (response.success) {
           console.log('WishlistContext: Item successfully removed from backend wishlist');
-          
+
           // Update local state with backend response to ensure consistency
           if (response.data && response.data.items) {
             const backendWishlistItems = response.data.items.map(item => ({
@@ -407,7 +426,7 @@ export const WishlistProvider = ({ children }) => {
               image: (item.product_id.image_url && item.product_id.image_url[0]) || item.product_image,
               category: item.product_id.category
             }));
-            
+
             dispatch({ type: WISHLIST_ACTIONS.SET_WISHLIST, payload: backendWishlistItems });
           } else {
             // If no items returned, clear the wishlist
@@ -431,10 +450,10 @@ export const WishlistProvider = ({ children }) => {
   const toggleWishlistItem = async (product) => {
     try {
       console.log('WishlistContext: Toggling wishlist item:', product._id);
-      
+
       // Check if item is currently in wishlist (from current state)
       const wasInWishlist = state.items.some(item => item._id === product._id);
-      
+
       if (wasInWishlist) {
         // Remove from wishlist
         await removeFromWishlist(product._id);
@@ -442,7 +461,7 @@ export const WishlistProvider = ({ children }) => {
         // Add to wishlist
         await addToWishlist(product);
       }
-      
+
       console.log('WishlistContext: Wishlist item toggled successfully');
     } catch (error) {
       console.error('WishlistContext: Error toggling wishlist item:', error);
@@ -453,11 +472,11 @@ export const WishlistProvider = ({ children }) => {
   const clearWishlist = async () => {
     try {
       console.log('WishlistContext: Clearing wishlist');
-      
+
       // For authenticated users, clear MongoDB wishlist
       if (user && user.uid) {
         const response = await wishlistAPI.clearWishlist();
-        
+
         if (response.success) {
           dispatch({ type: WISHLIST_ACTIONS.CLEAR_WISHLIST });
           console.log('WishlistContext: MongoDB wishlist cleared successfully');
@@ -483,22 +502,40 @@ export const WishlistProvider = ({ children }) => {
     return state.items.find(item => item._id === productId);
   };
 
+  const openSidebar = () => {
+    dispatch({ type: WISHLIST_ACTIONS.OPEN_SIDEBAR });
+  };
+
+  const closeSidebar = () => {
+    dispatch({ type: WISHLIST_ACTIONS.CLOSE_SIDEBAR });
+  };
+
+  const toggleSidebar = () => {
+    dispatch({ type: WISHLIST_ACTIONS.TOGGLE_SIDEBAR });
+  };
+
   const value = {
     // State
     items: state.items,
     itemCount: state.itemCount,
     loading: state.loading,
-    
+    isSidebarOpen: state.isSidebarOpen,
+
     // Actions
     addToWishlist,
     removeFromWishlist,
     toggleWishlistItem,
     clearWishlist,
-    
+
+    // Sidebar controls
+    openSidebar,
+    closeSidebar,
+    toggleSidebar,
+
     // Utility functions
     isInWishlist,
     getWishlistItem,
-    
+
     // Utility
     isUsingCookies: false, // No longer using cookies, only MongoDB
     isAuthenticated: !!(user && user.uid), // Helper to check if user is authenticated

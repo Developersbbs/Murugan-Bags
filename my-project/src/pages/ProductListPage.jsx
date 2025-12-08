@@ -391,72 +391,70 @@ const ProductListPage = () => {
   return (
     <div className="bg-white min-h-screen">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-8 gap-4">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-900">All Products</h1>
-            <p className="text-sm text-gray-500 mt-1">
-              {totalItems || 0} {totalItems === 1 ? 'product' : 'products'} found
-              {searchTerm && ` for "${searchTerm}"`}
-            </p>
-          </div>
-
-          {/* Search bar */}
-          <form onSubmit={handleSearch} className="w-full md:w-1/3">
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Search className="h-5 w-5 text-gray-400" />
-              </div>
-              <input
-                type="text"
-                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition duration-150"
-                placeholder="Search products..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
+        {/* Header */}
+        <div className="mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+            <div>
+              <h1 className="text-2xl md:text-3xl font-bold text-gray-900">All Products</h1>
+              <p className="text-sm text-gray-500 mt-1">
+                {totalItems || 0} {totalItems === 1 ? 'product' : 'products'} found
+                {searchTerm && ` for "${searchTerm}"`}
+              </p>
             </div>
-          </form>
 
-          {/* Sort options */}
-          <div className="flex items-center space-x-4">
-            <label htmlFor="sort" className="text-sm font-medium text-gray-700 mr-2">
-              Sort by:
-            </label>
-            <select
-              id="sort"
-              value={sortOption}
-              onChange={handleSortChange}
-              className="block w-full pl-3 pr-10 py-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm cursor-pointer"
-            >
-              <option value="featured">Featured</option>
-              <option value="price-low">Price: Low to High</option>
-              <option value="price-high">Price: High to Low</option>
-              <option value="newest">Newest Arrivals</option>
-            </select>
-          </div>
-
-          {/* View Mode Toggle */}
-          <div className="flex items-center">
-            <div className="flex rounded-lg border border-gray-300 overflow-hidden">
+            {/* View Mode Toggle */}
+            <div className="flex items-center gap-2">
               <button
                 onClick={() => setViewMode('grid')}
-                className={`p-2 ${viewMode === 'grid'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-white text-gray-600 hover:bg-gray-50'
-                  } transition-colors duration-200`}
+                className={`p-2 rounded-lg ${viewMode === 'grid'
+                  ? 'bg-gray-900 text-white'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  } transition-colors`}
                 title="Grid View"
               >
                 <Grid3X3 className="w-5 h-5" />
               </button>
               <button
                 onClick={() => setViewMode('list')}
-                className={`p-2 ${viewMode === 'list'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-white text-gray-600 hover:bg-gray-50'
-                  } transition-colors duration-200`}
+                className={`p-2 rounded-lg ${viewMode === 'list'
+                  ? 'bg-gray-900 text-white'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  } transition-colors`}
                 title="List View"
               >
                 <List className="w-5 h-5" />
               </button>
+            </div>
+          </div>
+
+          {/* Search and Sort Row */}
+          <div className="flex flex-col sm:flex-row gap-3">
+            {/* Search bar */}
+            <form onSubmit={handleSearch} className="flex-1">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <input
+                  type="text"
+                  className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+                  placeholder="Search products..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+            </form>
+
+            {/* Sort dropdown */}
+            <div className="sm:w-64">
+              <select
+                value={sortOption}
+                onChange={handleSortChange}
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent cursor-pointer bg-white"
+              >
+                <option value="featured">Sort: Featured</option>
+                <option value="price-low">Sort: Price Low to High</option>
+                <option value="price-high">Sort: Price High to Low</option>
+                <option value="newest">Sort: Newest</option>
+              </select>
             </div>
           </div>
         </div>
@@ -517,7 +515,7 @@ const ProductListPage = () => {
             <>
               <div className={
                 viewMode === 'grid'
-                  ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6"
+                  ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
                   : "space-y-4"
               }>
                 {products.map((product) => (
