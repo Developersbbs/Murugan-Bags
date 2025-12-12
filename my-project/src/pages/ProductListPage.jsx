@@ -510,7 +510,7 @@ const ProductListPage = () => {
         </div>
 
         {/* Product grid */}
-        <div className="lg:col-span-4">
+        <div className="lg:col-span-4 pr-4">
           {products && products.length > 0 ? (
             <>
               <div className={

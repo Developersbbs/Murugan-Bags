@@ -21,9 +21,11 @@ if (process.env.FIREBASE_PRIVATE_KEY && process.env.FIREBASE_CLIENT_EMAIL && pro
   try {
     firebaseAdmin = admin.initializeApp({
       credential: admin.credential.cert(serviceAccount),
-      projectId: process.env.FIREBASE_PROJECT_ID
+      projectId: process.env.FIREBASE_PROJECT_ID,
+      storageBucket: process.env.FIREBASE_STORAGE_BUCKET || `${process.env.FIREBASE_PROJECT_ID}.appspot.com`
     });
     console.log("✅ Firebase Admin SDK initialized successfully");
+    console.log(`✅ Firebase Storage Bucket: ${process.env.FIREBASE_STORAGE_BUCKET || `${process.env.FIREBASE_PROJECT_ID}.appspot.com`}`);
   } catch (error) {
     console.error("❌ Failed to initialize Firebase Admin SDK:", error.message);
     console.error("Please check your Firebase environment variables in .env file");

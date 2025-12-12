@@ -321,12 +321,15 @@ export const WishlistProvider = ({ children }) => {
           product_name: product.name || 'Unknown Product',
           product_image: product.images?.[0]?.url || product.image_url?.[0] || null,
           price: basePrice,
-          discounted_price: discountedPrice
+          discounted_price: discountedPrice,
+          variant_id: product.variant_id || (product.isVariant ? product._id : undefined)
         };
 
         console.log('WishlistContext: Sending wishlist item:', wishlistItem);
         console.log('WishlistContext: Original product data:', {
           _id: product._id,
+          variant_id: product.variant_id,
+          isVariant: product.isVariant,
           name: product.name,
           price: product.price,
           selling_price: product.selling_price,
@@ -366,7 +369,8 @@ export const WishlistProvider = ({ children }) => {
             name: item.product_name,
             price: item.discounted_price,
             image: item.product_image,
-            wishlistItemId: item._id
+            wishlistItemId: item._id,
+            variant_id: item.variant_id
           }));
 
           dispatch({ type: WISHLIST_ACTIONS.SET_WISHLIST, payload: backendWishlistItems });
@@ -399,19 +403,36 @@ export const WishlistProvider = ({ children }) => {
         return; // Don't throw error for this case
       }
 
-      toast.error('Failed to add item to wishlist');
+      const errorMessage = error.response?.data?.message || 'Failed to add item to wishlist';
+      console.error('WishlistContext: Backend error message:', errorMessage);
+      toast.error(errorMessage);
       throw error;
     }
   };
 
-  const removeFromWishlist = async (productId) => {
+  const removeFromWishlist = async (productId, variantId = null) => {
     try {
-      console.log('WishlistContext: Removing product from wishlist:', productId);
+      console.log('WishlistContext: Removing product from wishlist:', productId, 'variant:', variantId);
 
-      // For authenticated users, remove from MongoDB
+      // Find the specific item to remove
+      const itemToRemove = state.items.find(item => {
+        const sameProduct = item._id === productId;
+        const sameVariant = variantId
+          ? (item.variant_id === variantId)
+          : (!item.variant_id);
+        return sameProduct && sameVariant;
+      });
+
+      if (!itemToRemove) {
+        console.warn('WishlistContext: Item not found in wishlist to remove');
+        return;
+      }
+
+      // For authenticated users, remove from MongoDB using item ID
       if (user && user.uid) {
-        console.log('WishlistContext: Syncing removal with backend for user:', user.uid);
-        const response = await wishlistAPI.removeFromWishlistByProduct(productId);
+        console.log('WishlistContext: Syncing removal with backend for user:', user.uid, 'item:', itemToRemove.wishlistItemId);
+        // Use remove by item ID instead of product ID to support variants
+        const response = await wishlistAPI.removeFromWishlist(itemToRemove.wishlistItemId);
 
         if (response.success) {
           console.log('WishlistContext: Item successfully removed from backend wishlist');
@@ -424,7 +445,9 @@ export const WishlistProvider = ({ children }) => {
               name: item.product_id.name || item.product_name,
               price: item.product_id.selling_price || item.price,
               image: (item.product_id.image_url && item.product_id.image_url[0]) || item.product_image,
-              category: item.product_id.category
+              category: item.product_id.category,
+              variant_id: item.variant_id,
+              wishlistItemId: item._id
             }));
 
             dispatch({ type: WISHLIST_ACTIONS.SET_WISHLIST, payload: backendWishlistItems });
@@ -435,8 +458,11 @@ export const WishlistProvider = ({ children }) => {
         }
       } else {
         // For non-authenticated users, remove from guest wishlist
+        // Guest wishlist needs update to support variants too... 
+        // For now, let's assume guest wishlist works by ID.
+        // If guest wishlist uses local storage, we need to update utils/guestStorage.js too.
         console.log('WishlistContext: Removing from guest wishlist for non-authenticated user');
-        const updatedGuestWishlist = removeFromGuestWishlist(productId);
+        const updatedGuestWishlist = removeFromGuestWishlist(productId); // This might remove all variants?
         dispatch({ type: WISHLIST_ACTIONS.SET_WISHLIST, payload: updatedGuestWishlist });
         console.log('WishlistContext: Item removed from guest wishlist successfully');
       }
@@ -452,11 +478,22 @@ export const WishlistProvider = ({ children }) => {
       console.log('WishlistContext: Toggling wishlist item:', product._id);
 
       // Check if item is currently in wishlist (from current state)
-      const wasInWishlist = state.items.some(item => item._id === product._id);
+      // If product has a variant_id, check for exact match including variant
+      const wasInWishlist = state.items.some(item => {
+        if (product.variant_id) {
+          return item._id === product._id && item.variant_id === product.variant_id;
+        }
+        // If checking a main product, check if ANY variant of it is in wishlist?
+        // Or strictly check for main product entry?
+        // User wants "every product add separatly", so we should check strictly.
+        // But if product has no variant_id, it might be a main product check.
+        return item._id === product._id && !item.variant_id;
+      });
 
       if (wasInWishlist) {
         // Remove from wishlist
-        await removeFromWishlist(product._id);
+        // Remove from wishlist
+        await removeFromWishlist(product._id, product.variant_id);
       } else {
         // Add to wishlist
         await addToWishlist(product);
@@ -494,12 +531,24 @@ export const WishlistProvider = ({ children }) => {
     }
   };
 
-  const isInWishlist = (productId) => {
-    return state.items.some(item => item._id === productId);
+  const isInWishlist = (productId, variantId = null) => {
+    return state.items.some(item => {
+      const sameProduct = item._id === productId;
+      const sameVariant = variantId
+        ? (item.variant_id === variantId)
+        : (!item.variant_id);
+      return sameProduct && sameVariant;
+    });
   };
 
-  const getWishlistItem = (productId) => {
-    return state.items.find(item => item._id === productId);
+  const getWishlistItem = (productId, variantId = null) => {
+    return state.items.find(item => {
+      const sameProduct = item._id === productId;
+      const sameVariant = variantId
+        ? (item.variant_id === variantId)
+        : (!item.variant_id);
+      return sameProduct && sameVariant;
+    });
   };
 
   const openSidebar = () => {

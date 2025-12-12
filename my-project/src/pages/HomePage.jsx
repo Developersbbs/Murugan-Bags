@@ -607,7 +607,7 @@ const HomePage = () => {
                 className="w-12 h-12 flex items-center justify-center border border-white/20 text-white hover:bg-white hover:text-slate-900 transition-all duration-300"
               >
                 <FaChevronRight />
-              </button>
+              </button>Always – No commitment, cancel anytime
             </div>
           </div>
         </div>

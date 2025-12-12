@@ -144,21 +144,21 @@ export default function FormVariantManagement<TFormData extends FieldValues>({
         // Map attributes and ENSURE options are included for UI display
         const mappedAttributes = value.attributes && value.attributes.length > 0
           ? value.attributes.map((attribute: any) => {
-              // Ensure each attribute has options for UI display
-              const defaultOptions = getDefaultOptionsForAttribute(attribute.name);
-              return {
-                ...attribute,
-                id: attribute.id || `attr-${attribute.name.toLowerCase()}`,
-                options: attribute.options || defaultOptions || [],
-                type: attribute.type || 'select',
-                required: attribute.required ?? false,
-                allowCustom: attribute.allowCustom ?? true,
-              };
-            })
+            // Ensure each attribute has options for UI display
+            const defaultOptions = getDefaultOptionsForAttribute(attribute.name);
+            return {
+              ...attribute,
+              id: attribute.id || `attr-${attribute.name.toLowerCase()}`,
+              options: attribute.options || defaultOptions || [],
+              type: attribute.type || 'select',
+              required: attribute.required ?? false,
+              allowCustom: attribute.allowCustom ?? true,
+            };
+          })
           : DEFAULT_VARIANT_ATTRIBUTES.map(attr => ({
-              ...attr,
-              id: `attr-${attr.name.toLowerCase()}`, // Use consistent ID generation
-            }));
+            ...attr,
+            id: `attr-${attr.name.toLowerCase()}`, // Use consistent ID generation
+          }));
 
         console.log('🔄 MAPPED ATTRIBUTES WITH OPTIONS:', mappedAttributes);
 
@@ -204,7 +204,7 @@ export default function FormVariantManagement<TFormData extends FieldValues>({
           console.log('🔄 FORM VARIANT: value.selectedValues type:', typeof value.selectedValues);
           console.log('🔄 FORM VARIANT: value.selectedValues keys:', value.selectedValues ? Object.keys(value.selectedValues) : 'N/A');
           console.log('🔄 FORM VARIANT: value.selectedValues content:', value.selectedValues);
-          
+
           if (value.selectedValues && typeof value.selectedValues === 'object' && Object.keys(value.selectedValues).length > 0) {
             console.log('✅ USING SELECTED VALUES FROM TOP LEVEL:', value.selectedValues);
             initialSelectedValues = value.selectedValues;
@@ -617,7 +617,7 @@ export default function FormVariantManagement<TFormData extends FieldValues>({
                   {variantData.combinations.length > 0 && ` (${variantData.combinations.length})`}
                   {Object.values(selectedValues).some(values => values.length > 0) && variantData.combinations.length === 0 && " (Generating...)"}
                 </CardTitle>
-                
+
               </CardHeader>
               <CardContent>
                 <div className="grid gap-4">
@@ -741,7 +741,7 @@ function VariantAttributeEditor({
                 <Plus className="h-4 w-4" />
               </Button>
             </div>
-            
+
           </div>
         )}
 
@@ -1023,21 +1023,21 @@ function VariantCombinationEditor({
                   <span>₹</span>
                 </div>
                 <Input
-                id={`salesPrice-${combination.id}`}
-                type="number"
-                step="1"
-                min="0"
-                className="h-10 pl-14"
-                value={combination.salesPrice ?? ''}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  const numValue = value === '' ? undefined : parseFloat(value) || 0;
-                  onUpdate({ salesPrice: numValue });
-                }}
-                placeholder="0"
-              />
+                  id={`salesPrice-${combination.id}`}
+                  type="number"
+                  step="1"
+                  min="0"
+                  className="h-10 pl-14"
+                  value={combination.salesPrice ?? ''}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    const numValue = value === '' ? undefined : parseFloat(value) || 0;
+                    onUpdate({ salesPrice: numValue });
+                  }}
+                  placeholder="0"
+                />
               </div>
-              
+
             </div>
 
             <div>
@@ -1071,7 +1071,7 @@ function VariantCombinationEditor({
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <Label className="text-sm font-medium">Variant Images</Label>
-              
+
             </div>
 
             {/* Hidden File Input */}
@@ -1109,6 +1109,7 @@ function VariantCombinationEditor({
               </div>
             </div>
 
+
             {variantImages.length > 0 && (
               <div className="space-y-2">
                 <div className="text-sm text-muted-foreground">
@@ -1118,7 +1119,20 @@ function VariantCombinationEditor({
                   <div className="grid grid-cols-4 md:grid-cols-6 gap-2">
                     {variantImages.map((img, index) => {
                       // Handle both File objects and string URLs
-                      const imageSrc = img instanceof File ? URL.createObjectURL(img) : img;
+                      let imageSrc = '';
+                      if (img instanceof File) {
+                        imageSrc = URL.createObjectURL(img);
+                      } else if (typeof img === 'string') {
+                        if (img.startsWith('http')) {
+                          imageSrc = img;
+                        } else {
+                          // Handle relative paths (e.g. /uploads/...)
+                          const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+                          // Ensure we don't double slash
+                          const cleanPath = img.startsWith('/') ? img : `/${img}`;
+                          imageSrc = `${baseUrl}${cleanPath}`;
+                        }
+                      }
                       const imageAlt = img instanceof File ? img.name : `Variant ${index + 1}`;
 
                       return (

@@ -65,7 +65,7 @@ const CartSidebar = () => {
                     </div>
 
                     {/* Cart Items */}
-                    <div className="flex-1 overflow-y-auto">
+                    <div className="flex-1 overflow-y-auto bg-gray-50 p-2">
                         {cartItems.length === 0 ? (
                             <div className="flex flex-col items-center justify-center h-full p-8 text-center">
                                 <ShoppingBagIcon className="w-16 h-16 text-gray-300 mb-4" />

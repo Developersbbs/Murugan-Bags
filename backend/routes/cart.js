@@ -9,15 +9,15 @@ const { authenticateHybridToken } = require('../middleware/hybridAuth');
 router.get('/', authenticateToken, async (req, res) => {
   try {
     const customerId = req.user.id;
-    
+
     let cart = await Cart.findOne({ customer_id: customerId })
-      .populate('items.product_id', 'name slug selling_price variants image_url')
+      .populate('items.product_id')
       .lean();
-    
+
     if (!cart) {
       // Create empty cart if none exists
-      cart = new Cart({ 
-        customer_id: customerId, 
+      cart = new Cart({
+        customer_id: customerId,
         items: [],
         total_items: 0,
         total_amount: 0,
@@ -26,7 +26,7 @@ router.get('/', authenticateToken, async (req, res) => {
       await cart.save();
       cart = cart.toObject();
     }
-    
+
     res.json({
       success: true,
       data: cart
@@ -45,11 +45,11 @@ router.get('/', authenticateToken, async (req, res) => {
 router.post('/add', authenticateToken, async (req, res) => {
   try {
     const customerId = req.user.id;
-    const { 
-      product_id, 
-      variant_sku, 
-      quantity = 1, 
-      price, 
+    const {
+      product_id,
+      variant_sku,
+      quantity = 1,
+      price,
       discounted_price,
       product_name,
       product_image,
@@ -81,8 +81,8 @@ router.post('/add', authenticateToken, async (req, res) => {
     }
 
     // Check if item already exists in cart
-    const existingItemIndex = cart.items.findIndex(item => 
-      item.product_id.toString() === product_id && 
+    const existingItemIndex = cart.items.findIndex(item =>
+      item.product_id.toString() === product_id &&
       (variant_sku ? item.variant_sku === variant_sku : !item.variant_sku)
     );
 
@@ -108,7 +108,7 @@ router.post('/add', authenticateToken, async (req, res) => {
 
     // Return updated cart with populated product data
     const updatedCart = await Cart.findById(cart._id)
-      .populate('items.product_id', 'name slug selling_price variants')
+      .populate('items.product_id')
       .lean();
 
     res.json({
@@ -161,7 +161,7 @@ router.put('/update/:itemId', authenticateHybridToken, async (req, res) => {
 
     // Return updated cart with populated product data
     const updatedCart = await Cart.findById(cart._id)
-      .populate('items.product_id', 'name slug selling_price variants')
+      .populate('items.product_id')
       .lean();
 
     res.json({
@@ -206,7 +206,7 @@ router.delete('/remove/:itemId', authenticateHybridToken, async (req, res) => {
 
     // Return updated cart with populated product data
     const updatedCart = await Cart.findById(cart._id)
-      .populate('items.product_id', 'name slug selling_price variants')
+      .populate('items.product_id')
       .lean();
 
     res.json({
@@ -228,11 +228,11 @@ router.delete('/remove/:itemId', authenticateHybridToken, async (req, res) => {
 router.delete('/clear', authenticateHybridToken, async (req, res) => {
   try {
     const customerId = req.user.id;
-    
+
     // Find and clear the cart
     const cart = await Cart.findOneAndUpdate(
       { customer_id: customerId },
-      { 
+      {
         items: [],
         total_items: 0,
         total_amount: 0,
@@ -241,14 +241,14 @@ router.delete('/clear', authenticateHybridToken, async (req, res) => {
       },
       { new: true }
     );
-    
+
     if (!cart) {
       return res.status(404).json({
         success: false,
         message: 'Cart not found'
       });
     }
-    
+
     res.json({
       success: true,
       message: 'Cart cleared successfully',
@@ -268,10 +268,10 @@ router.delete('/clear', authenticateHybridToken, async (req, res) => {
 router.get('/count', authenticateHybridToken, async (req, res) => {
   try {
     const customerId = req.user.id;
-    
+
     const cart = await Cart.findOne({ customer_id: customerId });
     const itemCount = cart ? cart.total_items : 0;
-    
+
     res.json({
       success: true,
       data: { count: itemCount }
@@ -312,7 +312,7 @@ router.post('/sync', authenticateHybridToken, async (req, res) => {
       }
 
       // Check if item already exists (considering variants)
-      const existingIndex = cart.items.findIndex(existingItem => 
+      const existingIndex = cart.items.findIndex(existingItem =>
         existingItem.product_id.toString() === (item.productId || item.id) &&
         (item.variantId ? existingItem.variant_sku === item.variantId : !existingItem.variant_sku)
       );
@@ -340,7 +340,7 @@ router.post('/sync', authenticateHybridToken, async (req, res) => {
 
     // Return updated cart with populated product data
     const updatedCart = await Cart.findById(cart._id)
-      .populate('items.product_id', 'name slug selling_price variants')
+      .populate('items.product_id')
       .lean();
 
     res.json({

@@ -30,9 +30,20 @@ const WishlistSidebar = () => {
         };
     }, [isSidebarOpen]);
 
-    const handleRemoveItem = async (productId) => {
+    // Helper to resolve full image URL
+    const getFullImageUrl = (imagePath) => {
+        if (!imagePath) return '/images/products/placeholder-product.svg';
+        if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) return imagePath;
+        if (imagePath.startsWith('/images/')) return imagePath; // Local assets
+
+        // Convert relative path to full URL
+        const API_BASE = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
+        return `${API_BASE}${imagePath}`;
+    };
+
+    const handleRemoveItem = async (productId, variantId) => {
         try {
-            await removeFromWishlist(productId);
+            await removeFromWishlist(productId, variantId);
         } catch (error) {
             console.error('Error removing from wishlist:', error);
         }
@@ -41,9 +52,9 @@ const WishlistSidebar = () => {
     const handleMoveToCart = async (item) => {
         try {
             // Add to cart
-            await addToCart(item, null, 1);
+            await addToCart(item, item.variant_id ? { _id: item.variant_id } : null, 1);
             // Remove from wishlist
-            await removeFromWishlist(item._id || item.id);
+            await removeFromWishlist(item._id || item.id, item.variant_id);
             toast.success('Moved to cart!');
         } catch (error) {
             console.error('Error moving to cart:', error);
@@ -106,7 +117,7 @@ const WishlistSidebar = () => {
                             <div className="divide-y">
                                 {wishlistItems.map((item) => (
                                     <div
-                                        key={item._id || item.id}
+                                        key={item.wishlistItemId || `${item.id}-${item.variant_id || 'default'}`}
                                         className="p-4 hover:bg-gray-50 transition-colors"
                                     >
                                         <div className="flex gap-4">
@@ -117,7 +128,7 @@ const WishlistSidebar = () => {
                                                 className="flex-shrink-0"
                                             >
                                                 <img
-                                                    src={item.image || '/placeholder.png'}
+                                                    src={getFullImageUrl(item.image)}
                                                     alt={item.name}
                                                     className="w-20 h-20 object-cover rounded-lg border border-gray-200"
                                                 />
@@ -148,7 +159,7 @@ const WishlistSidebar = () => {
                                                         Move to Cart
                                                     </button>
                                                     <button
-                                                        onClick={() => handleRemoveItem(item._id || item.id)}
+                                                        onClick={() => handleRemoveItem(item._id || item.id, item.variant_id)}
                                                         disabled={loading}
                                                         className="text-xs text-gray-500 hover:text-red-600 transition-colors disabled:opacity-50"
                                                     >

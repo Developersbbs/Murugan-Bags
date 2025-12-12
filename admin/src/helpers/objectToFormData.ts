@@ -91,7 +91,7 @@ export function objectToFormData(obj: Record<string, any>, namespace = ''): Form
             const existingImages: string[] = [];
             let fileIndex = 0;
 
-            combo.images.forEach((image: string | File) => {
+            combo.images.forEach((image: any) => {
               if (image instanceof File) {
                 // Append as variant image file with sequential index
                 formData.append(`variantImages[${comboIndex}][${fileIndex}]`, image);
@@ -100,6 +100,13 @@ export function objectToFormData(obj: Record<string, any>, namespace = ''): Form
               } else if (typeof image === 'string') {
                 // Keep existing image URLs
                 existingImages.push(image);
+              } else if (typeof image === 'object' && image !== null) {
+                // Handle object-based images (e.g. Cloudinary objects)
+                const url = image.url || image.secure_url || image.path;
+                if (url) {
+                  console.log(`Extracted URL from image object: ${url}`);
+                  existingImages.push(url);
+                }
               }
             });
 
@@ -108,15 +115,6 @@ export function objectToFormData(obj: Record<string, any>, namespace = ''): Form
               variantsCopy.combinations[comboIndex].images = existingImages;
             }
           }
-
-          // Debug: Log variant pricing data before JSON serialization
-          console.log(`🚨 FRONTEND: Variant ${comboIndex} pricing data:`, {
-            costPrice: combo.costPrice,
-            salesPrice: combo.salesPrice,
-            sellingPrice: combo.sellingPrice,
-            stock: combo.stock,
-            minStock: combo.minStock
-          });
         });
       }
 
@@ -130,6 +128,7 @@ export function objectToFormData(obj: Record<string, any>, namespace = ''): Form
       formData.append(key, JSON.stringify(value));
       return;
     }
+
     // Handle images array - append each file with same key name 'images'
     if (key === 'images' && Array.isArray(value)) {
       console.log('Processing images array:', value);

@@ -597,7 +597,7 @@ router.post("/", uploadDigitalFile, async (req, res) => {
         });
       });
 
-      // Process variant images (only if no Firebase URLs found)
+      // Process variant images (save to local uploads folder)
       if (Object.keys(variantImagesMap).length === 0) {
         const variantImageFields = Object.keys(filesByField).filter(key =>
           key.startsWith('variantImages[')

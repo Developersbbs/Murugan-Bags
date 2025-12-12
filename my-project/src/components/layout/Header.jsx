@@ -196,8 +196,8 @@ const Header = () => {
 
 
   const navItems = [
-    { name: 'Combos', path: '/products?category=Combos' },
-    { name: 'Bulk Orders', path: '/products?category=Bulk Orders' },
+    { name: 'Combos', path: '/combo-offers' },
+    { name: 'Bulk Orders', path: '/bulk-orders' },
     { name: 'Discover More', path: '/products' },
     { name: 'New Arrivals', path: '/products?sort=newest' }
   ];

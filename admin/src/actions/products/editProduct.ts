@@ -52,26 +52,42 @@ export async function editProduct(
 
   // Extract variant image files from FormData (for all combinations)
   const variantImageFiles: { [key: string]: File[] } = {};
-  let comboIndex = 0;
-  let fileIndex = 0;
 
-  while (true) {
-    const file = formData.get(`variantImages[${comboIndex}][${fileIndex}]`);
-    if (!file || !(file instanceof File)) {
-      // Check if there are more combinations
-      if (fileIndex === 0) {
-        break; // No more combinations
+  if (variants && variants.combinations && Array.isArray(variants.combinations)) {
+    variants.combinations.forEach((_: any, index: number) => {
+      let fileIndex = 0;
+      while (true) {
+        const file = formData.get(`variantImages[${index}][${fileIndex}]`);
+        if (!file || !(file instanceof File)) {
+          break;
+        }
+
+        if (!variantImageFiles[index.toString()]) {
+          variantImageFiles[index.toString()] = [];
+        }
+        variantImageFiles[index.toString()].push(file);
+        fileIndex++;
       }
-      comboIndex++;
-      fileIndex = 0;
-      continue;
-    }
+    });
+  } else {
+    // Fallback for when variants parsing fails or structure is different
+    // Check for at least 50 potential variant indices to be safe
+    for (let i = 0; i < 50; i++) {
+      let fileIndex = 0;
+      while (true) {
+        const file = formData.get(`variantImages[${i}][${fileIndex}]`);
+        if (!file || !(file instanceof File)) {
+          if (fileIndex === 0) break; // No files for this variant, stop checking this variant
+          break;
+        }
 
-    if (!variantImageFiles[comboIndex.toString()]) {
-      variantImageFiles[comboIndex.toString()] = [];
+        if (!variantImageFiles[i.toString()]) {
+          variantImageFiles[i.toString()] = [];
+        }
+        variantImageFiles[i.toString()].push(file);
+        fileIndex++;
+      }
     }
-    variantImageFiles[comboIndex.toString()].push(file);
-    fileIndex++;
   }
 
   console.log('Found variant image files:', variantImageFiles);

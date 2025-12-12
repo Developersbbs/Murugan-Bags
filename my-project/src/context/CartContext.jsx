@@ -179,16 +179,61 @@ export const CartProvider = ({ children }) => {
         console.log('Cart loaded from MongoDB:', backendCart.data.items.length, 'items');
 
         // Transform backend cart format to frontend format
-        const transformedItems = backendCart.data.items.map(item => ({
-          id: item.product_id._id || item.product_id,
-          cartItemId: item._id,
-          name: item.product_id.name || item.name || 'Unknown Product',
-          price: item.product_id.selling_price || item.price || 0,
-          quantity: item.quantity || 1,
-          image: (item.product_id.image_url && item.product_id.image_url[0]) || item.image || null,
-          variant: item.variant_attributes || {},
-          stock: item.product_id.stock || 999
-        }));
+        const transformedItems = backendCart.data.items.map(item => {
+          // Find matching variant to get specific image
+          let variantImage = null;
+          let matchingVariant = null;
+
+          if (item.product_id.product_variants) {
+            console.log(`🔍 Debugging ${item.name}:`, {
+              sku: item.variant_sku,
+              variants: item.product_id.product_variants.length
+            });
+
+            // Priority 1: Match by SKU (most reliable)
+            if (item.variant_sku) {
+              matchingVariant = item.product_id.product_variants.find(v => v.sku === item.variant_sku);
+              if (matchingVariant) console.log('✅ Matched by SKU:', matchingVariant.sku);
+            }
+
+            // Priority 2: Match by attributes (fallback)
+            if (!matchingVariant && item.variant_attributes) {
+              matchingVariant = item.product_id.product_variants.find(v => {
+                if (!v.attributes) return false;
+                const vAttrs = v.attributes instanceof Map ? Object.fromEntries(v.attributes) : v.attributes;
+                const itemAttrs = item.variant_attributes;
+                return Object.keys(itemAttrs).every(key => String(itemAttrs[key]) === String(vAttrs[key]));
+              });
+              if (matchingVariant) console.log('✅ Matched by Attributes');
+            }
+
+            if (matchingVariant && matchingVariant.images && matchingVariant.images.length > 0) {
+              variantImage = matchingVariant.images[0];
+              // console.log('🖼️ Found variant image:', variantImage);
+            } else {
+              // console.log('❌ No variant image found');
+            }
+          }
+
+          const resolvedPrice = (matchingVariant && matchingVariant.selling_price) || item.price || item.product_id.selling_price || 0;
+          console.log(`💰 Price Debug for ${item.name}:`, {
+            variantPrice: matchingVariant?.selling_price,
+            savedPrice: item.price,
+            mainPrice: item.product_id.selling_price,
+            resolved: resolvedPrice
+          });
+
+          return {
+            id: item.product_id._id || item.product_id,
+            cartItemId: item._id,
+            name: item.product_id.name || item.name || 'Unknown Product',
+            price: resolvedPrice,
+            quantity: item.quantity || 1,
+            image: variantImage || (item.product_id.image_url && item.product_id.image_url[0]) || item.product_image || null,
+            variant: item.variant_attributes || {},
+            stock: item.product_id.stock || 999
+          };
+        });
 
         dispatch({ type: CART_ACTIONS.SET_CART, payload: transformedItems });
 
@@ -289,16 +334,41 @@ export const CartProvider = ({ children }) => {
           console.log('Backend cart response after migration:', backendCart);
 
           if (backendCart.success && backendCart.data && backendCart.data.items) {
-            const transformedItems = backendCart.data.items.map(item => ({
-              id: item.product_id._id || item.product_id,
-              cartItemId: item._id,
-              name: item.product_id.name || item.name || 'Unknown Product',
-              price: item.product_id.selling_price || item.price || 0,
-              quantity: item.quantity || 1,
-              image: (item.product_id.image_url && item.product_id.image_url[0]) || item.image || null,
-              variant: item.variant_attributes || {},
-              stock: item.product_id.stock || 999
-            }));
+            const transformedItems = backendCart.data.items.map(item => {
+              // Find matching variant to get specific image
+              let variantImage = null;
+              let matchingVariant = null;
+              if (item.product_id.product_variants) {
+                if (item.variant_sku) {
+                  matchingVariant = item.product_id.product_variants.find(v => v.sku === item.variant_sku);
+                }
+                if (!matchingVariant && item.variant_attributes) {
+                  matchingVariant = item.product_id.product_variants.find(v => {
+                    if (!v.attributes) return false;
+                    const vAttrs = v.attributes instanceof Map ? Object.fromEntries(v.attributes) : v.attributes;
+                    const itemAttrs = item.variant_attributes;
+                    return Object.keys(itemAttrs).every(key => String(itemAttrs[key]) === String(vAttrs[key]));
+                  });
+                }
+
+                if (matchingVariant && matchingVariant.images && matchingVariant.images.length > 0) {
+                  variantImage = matchingVariant.images[0];
+                }
+              }
+
+              const resolvedPrice = (matchingVariant && matchingVariant.selling_price) || item.price || item.product_id.selling_price || 0;
+
+              return {
+                id: item.product_id._id || item.product_id,
+                cartItemId: item._id,
+                name: item.product_id.name || item.name || 'Unknown Product',
+                price: resolvedPrice,
+                quantity: item.quantity || 1,
+                image: variantImage || (item.product_id.image_url && item.product_id.image_url[0]) || item.product_image || null,
+                variant: item.variant_attributes || {},
+                stock: item.product_id.stock || 999
+              };
+            });
             console.log('Setting cart with transformed items:', transformedItems);
             dispatch({ type: CART_ACTIONS.SET_CART, payload: transformedItems });
 
@@ -329,8 +399,16 @@ export const CartProvider = ({ children }) => {
       // For authenticated users, add directly to MongoDB
       if (user && user.uid) {
         // Enhanced price validation with better fallbacks
-        const basePrice = product.selling_price || product.price || product.mrp || 1;
-        const discountedPrice = product.salePrice || product.selling_price || product.price || product.mrp || basePrice;
+        // Prioritize variant price if available
+        let basePrice, discountedPrice;
+
+        if (variant) {
+          basePrice = variant.selling_price || variant.price || product.selling_price || product.price || 1;
+          discountedPrice = variant.selling_price || variant.price || product.salePrice || product.selling_price || basePrice;
+        } else {
+          basePrice = product.selling_price || product.price || product.mrp || 1;
+          discountedPrice = product.salePrice || product.selling_price || product.price || product.mrp || basePrice;
+        }
 
         const cartItem = {
           product_id: product._id,
@@ -338,8 +416,12 @@ export const CartProvider = ({ children }) => {
           price: basePrice,
           discounted_price: discountedPrice,
           product_name: product.name || 'Unknown Product',
-          product_image: (product.image_url && product.image_url[0]) || product.images?.[0]?.url || null,
-          variant_attributes: variant || {}
+          product_image: (variant && variant.images && variant.images.length > 0)
+            ? variant.images[0]
+            : ((product.image_url && product.image_url[0]) || product.images?.[0]?.url || null),
+          variant_name: variant ? (variant.name || Object.values(variant.attributes || {}).join(', ')) : null,
+          variant_sku: variant ? variant.sku : null,
+          variant_attributes: variant ? (variant.attributes || {}) : {}
         };
 
         console.log('CartContext: Sending cart item:', cartItem);
@@ -378,16 +460,45 @@ export const CartProvider = ({ children }) => {
 
         if (response.success && response.data && response.data.items) {
           // Update local state with backend response
-          const backendCartItems = response.data.items.map(item => ({
-            id: item.product_id._id || item.product_id,
-            cartItemId: item._id,
-            name: item.product_id.name || item.name || 'Unknown Product',
-            price: item.product_id.selling_price || item.price || 0,
-            quantity: item.quantity || 1,
-            image: (item.product_id.image_url && item.product_id.image_url[0]) || item.image || null,
-            variant: item.variant_attributes || {},
-            stock: item.product_id.stock || 999
-          }));
+          const backendCartItems = response.data.items.map(item => {
+            // Find matching variant to get specific image
+            let variantImage = null;
+            let matchingVariant = null;
+
+            if (item.product_id.product_variants) {
+              // Priority 1: Match by SKU
+              if (item.variant_sku) {
+                matchingVariant = item.product_id.product_variants.find(v => v.sku === item.variant_sku);
+              }
+
+              // Priority 2: Match by attributes
+              if (!matchingVariant && item.variant_attributes) {
+                matchingVariant = item.product_id.product_variants.find(v => {
+                  if (!v.attributes) return false;
+                  const vAttrs = v.attributes instanceof Map ? Object.fromEntries(v.attributes) : v.attributes;
+                  const itemAttrs = item.variant_attributes;
+                  return Object.keys(itemAttrs).every(key => String(itemAttrs[key]) === String(vAttrs[key]));
+                });
+              }
+
+              if (matchingVariant && matchingVariant.images && matchingVariant.images.length > 0) {
+                variantImage = matchingVariant.images[0];
+              }
+            }
+
+            const resolvedPrice = (matchingVariant && matchingVariant.selling_price) || item.price || item.product_id.selling_price || 0;
+
+            return {
+              id: item.product_id._id || item.product_id,
+              cartItemId: item._id,
+              name: item.product_id.name || item.name || 'Unknown Product',
+              price: resolvedPrice,
+              quantity: item.quantity || 1,
+              image: variantImage || (item.product_id.image_url && item.product_id.image_url[0]) || item.product_image || null,
+              variant: item.variant_attributes || {},
+              stock: item.product_id.stock || 999
+            };
+          });
 
           dispatch({ type: CART_ACTIONS.SET_CART, payload: backendCartItems });
           console.log('CartContext: Item added to MongoDB cart successfully');

@@ -9,6 +9,7 @@ import { MdOutlineViewCarousel } from "react-icons/md";
 import { FaGift } from "react-icons/fa";
 import { FaTag } from "react-icons/fa";
 import { FaBullhorn } from "react-icons/fa";
+import { FaBox } from "react-icons/fa";
 
 export const navItems = [
   {
@@ -45,6 +46,11 @@ export const navItems = [
         title: "Combo Offers",
         url: "/combo-offers",
         icon: <FaTag />,
+      },
+      {
+        title: "Bulk Orders",
+        url: "/bulk-orders",
+        icon: <FaBox />,
       },
       {
         title: "Marquee Offers",

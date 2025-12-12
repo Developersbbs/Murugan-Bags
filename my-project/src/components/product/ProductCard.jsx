@@ -11,8 +11,13 @@ const ProductCard = memo(({ product, viewMode = 'grid', className = '' }) => {
   const navigate = useNavigate();
   const [isAddingToCart, setIsAddingToCart] = useState(false);
 
-  const productInWishlist = isInWishlist(product._id);
-  const productInCart = isInCart(product._id);
+  // Determine the effective product ID (use parent ID for variants to ensure valid ObjectId)
+  const effectiveId = product._originalProductId || product.parentProductId || product._id;
+  // Determine variant ID if this card represents a specific variant
+  const variantId = (product.isVariant || product._isVariant) ? product._id : (product.variant_id || null);
+
+  const productInWishlist = isInWishlist(effectiveId, variantId);
+  const productInCart = isInCart(effectiveId);
 
   const toggleWishlist = async (e) => {
     e.preventDefault();
@@ -20,10 +25,16 @@ const ProductCard = memo(({ product, viewMode = 'grid', className = '' }) => {
 
     try {
       if (productInWishlist) {
-        await removeFromWishlist(product._id);
+        await removeFromWishlist(effectiveId, variantId);
         toast.success('Removed from wishlist');
       } else {
-        await addToWishlist(product);
+        // Ensure we send the product with the correct ID (main product ID)
+        // This fixes the "Invalid product ID" error when wishlisting variants
+        await addToWishlist({
+          ...product,
+          _id: effectiveId,
+          variant_id: variantId
+        });
         toast.success('Added to wishlist');
       }
     } catch (error) {
@@ -108,6 +119,18 @@ const ProductCard = memo(({ product, viewMode = 'grid', className = '' }) => {
 
   // Determine the correct product link (handle both old and new structure)
   const isVariantProduct = isVariant || _isVariant;
+
+  // DEBUG: Log product data for variants
+  if (isVariantProduct) {
+    console.log('ProductCard Variant Debug:', {
+      name,
+      isVariantProduct,
+      image_url,
+      _variantData,
+      variantData: product.variantData
+    });
+  }
+
   const variantData = _variantData || product.variantData;
   const parentProductId = _originalProductId || originalParentProductId;
   // Prioritize parent ID if available (for variants), otherwise use slug or ID
@@ -153,19 +176,54 @@ const ProductCard = memo(({ product, viewMode = 'grid', className = '' }) => {
 
   // Get the first valid image URL or use placeholder
   const getMainImage = () => {
-    // For variant products, prioritize the first variant's image
+    // Helper to extract URL from an image item (string or object)
+    const extractUrl = (img) => {
+      if (!img) return null;
+
+      let url = null;
+      if (typeof img === 'string') {
+        url = img;
+      } else if (typeof img === 'object') {
+        url = img.url || img.secure_url || img.path;
+      }
+
+      if (!url) return null;
+
+      // Check if it's already a full URL
+      if (url.startsWith('http') || url.startsWith('data:')) {
+        return url;
+      }
+
+      // Check if it already has /uploads/ prefix
+      if (url.startsWith('/uploads/') || url.startsWith('uploads/')) {
+        return url.startsWith('/') ? url : `/${url}`;
+      }
+
+      // Default to /uploads/ prefix for relative paths
+      return `/uploads/${url}`;
+    };
+
+    // 1. Try to use the specific display image determined earlier (from variant)
     if (displayImage) {
-      return displayImage.startsWith('http') ? displayImage : `/uploads/${displayImage}`;
+      const url = extractUrl(displayImage);
+      if (url) return url;
     }
 
-    // Fall back to main product images
-    if (!image_url || !Array.isArray(image_url) || image_url.length === 0) {
-      return getPlaceholderImage();
+    // 2. Try to use the product's main image_url array
+    if (image_url && Array.isArray(image_url) && image_url.length > 0) {
+      // Find the first valid image URL
+      for (const img of image_url) {
+        const url = extractUrl(img);
+        if (url) return url;
+      }
+    }
+    // Handle case where image_url might be a single string
+    else if (typeof image_url === 'string' && image_url) {
+      return extractUrl(image_url);
     }
 
-    // Find the first image with a valid URL
-    const validImage = image_url.find(img => img && (img.url || img));
-    return validImage ? (validImage.url || validImage) : getPlaceholderImage();
+    // 3. Fallback to placeholder
+    return getPlaceholderImage();
   };
 
   const mainImage = getMainImage();

@@ -1,57 +1,61 @@
 const mongoose = require("mongoose");
 
 const wishlistItemSchema = new mongoose.Schema({
-  product_id: { 
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: 'Product', 
-    required: true 
+  product_id: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Product',
+    required: true
   },
-  product_name: { 
-    type: String, 
-    required: true 
+  variant_id: {
+    type: String, // Storing as String because variant IDs might be strings (e.g. generated ones) or ObjectIds
+    required: false
   },
-  product_image: { 
-    type: String, 
-    required: false 
+  product_name: {
+    type: String,
+    required: true
   },
-  price: { 
-    type: Number, 
-    required: true 
+  product_image: {
+    type: String,
+    required: false
   },
-  discounted_price: { 
-    type: Number, 
-    required: true 
+  price: {
+    type: Number,
+    required: true
   },
-  added_at: { 
-    type: Date, 
-    default: Date.now 
+  discounted_price: {
+    type: Number,
+    required: true
+  },
+  added_at: {
+    type: Date,
+    default: Date.now
   }
 });
 
 const wishlistSchema = new mongoose.Schema({
-  customer_id: { 
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: 'Customers', 
+  customer_id: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Customers',
     required: true,
     unique: true // One wishlist per customer
   },
   items: [wishlistItemSchema],
-  total_items: { 
-    type: Number, 
-    default: 0 
+  total_items: {
+    type: Number,
+    default: 0
   },
-  created_at: { 
-    type: Date, 
-    default: Date.now 
+  created_at: {
+    type: Date,
+    default: Date.now
   },
-  updated_at: { 
-    type: Date, 
-    default: Date.now 
+  updated_at: {
+    type: Date,
+    default: Date.now
   }
 });
 
 // Update totals before saving
-wishlistSchema.pre('save', function(next) {
+wishlistSchema.pre('save', function (next) {
   this.total_items = this.items.length;
   this.updated_at = new Date();
   next();

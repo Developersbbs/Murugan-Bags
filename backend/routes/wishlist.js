@@ -8,22 +8,22 @@ const { authenticateToken } = require('../middleware/auth');
 router.get('/', authenticateToken, async (req, res) => {
   try {
     const customerId = req.user.id;
-    
+
     let wishlist = await Wishlist.findOne({ customer_id: customerId })
       .populate('items.product_id', 'name slug selling_price image_url category')
       .lean();
-    
+
     if (!wishlist) {
       // Create empty wishlist if none exists
-      wishlist = new Wishlist({ 
-        customer_id: customerId, 
+      wishlist = new Wishlist({
+        customer_id: customerId,
         items: [],
         total_items: 0
       });
       await wishlist.save();
       wishlist = wishlist.toObject();
     }
-    
+
     res.json({
       success: true,
       data: wishlist
@@ -42,16 +42,22 @@ router.get('/', authenticateToken, async (req, res) => {
 router.post('/add', authenticateToken, async (req, res) => {
   try {
     const customerId = req.user.id;
-    const { 
-      product_id, 
+    console.log(`[Wishlist] Adding item for customer: ${customerId}`);
+
+    const {
+      product_id,
       product_name,
       product_image,
       price,
-      discounted_price
+      discounted_price,
+      variant_id
     } = req.body;
 
+    console.log('[Wishlist] Request body:', req.body);
+
     // Validate required fields
-    if (!product_id || !product_name || !price || !discounted_price) {
+    if (!product_id || !product_name || price === undefined || discounted_price === undefined) {
+      console.log('[Wishlist] Missing required fields');
       return res.status(400).json({
         success: false,
         message: 'Missing required fields: product_id, product_name, price, discounted_price'
@@ -59,26 +65,50 @@ router.post('/add', authenticateToken, async (req, res) => {
     }
 
     // Verify product exists
-    const product = await Product.findById(product_id);
-    if (!product) {
-      return res.status(404).json({
+    try {
+      const product = await Product.findById(product_id);
+      if (!product) {
+        console.log(`[Wishlist] Product not found: ${product_id}`);
+        return res.status(404).json({
+          success: false,
+          message: 'Product not found'
+        });
+      }
+    } catch (err) {
+      console.error(`[Wishlist] Invalid product ID: ${product_id}`, err);
+      return res.status(400).json({
         success: false,
-        message: 'Product not found'
+        message: 'Invalid product ID'
       });
     }
 
     // Find or create wishlist
-    let wishlist = await Wishlist.findOne({ customer_id: customerId });
-    if (!wishlist) {
-      wishlist = new Wishlist({ customer_id: customerId, items: [] });
+    let wishlist;
+    try {
+      wishlist = await Wishlist.findOne({ customer_id: customerId });
+      if (!wishlist) {
+        console.log(`[Wishlist] Creating new wishlist for customer: ${customerId}`);
+        wishlist = new Wishlist({ customer_id: customerId, items: [] });
+      } else {
+        console.log(`[Wishlist] Found existing wishlist for customer: ${customerId}`);
+      }
+    } catch (err) {
+      console.error('[Wishlist] Error finding/creating wishlist:', err);
+      throw err;
     }
 
-    // Check if item already exists in wishlist
-    const existingItemIndex = wishlist.items.findIndex(item => 
-      item.product_id.toString() === product_id
-    );
+    // Check if item already exists in wishlist (checking both product_id and variant_id)
+    const existingItemIndex = wishlist.items.findIndex(item => {
+      const sameProduct = item.product_id.toString() === product_id;
+      const sameVariant = variant_id
+        ? (item.variant_id && item.variant_id.toString() === variant_id.toString())
+        : (!item.variant_id); // If no variant_id in request, match item with no variant_id
+
+      return sameProduct && sameVariant;
+    });
 
     if (existingItemIndex > -1) {
+      console.log(`[Wishlist] Item already exists: ${product_id}`);
       return res.status(400).json({
         success: false,
         message: 'Item already exists in wishlist'
@@ -86,15 +116,23 @@ router.post('/add', authenticateToken, async (req, res) => {
     }
 
     // Add new item to wishlist
-    wishlist.items.push({
-      product_id,
-      product_name,
-      product_image,
-      price: parseFloat(price),
-      discounted_price: parseFloat(discounted_price)
-    });
+    try {
+      wishlist.items.push({
+        product_id,
+        product_name,
+        product_image,
+        price: parseFloat(price),
+        discounted_price: parseFloat(discounted_price),
+        variant_id
+      });
 
-    await wishlist.save();
+      console.log('[Wishlist] Saving wishlist...');
+      await wishlist.save();
+      console.log('[Wishlist] Wishlist saved successfully');
+    } catch (err) {
+      console.error('[Wishlist] Error saving wishlist:', err);
+      throw err;
+    }
 
     // Return updated wishlist with populated product data
     const updatedWishlist = await Wishlist.findById(wishlist._id)
@@ -107,11 +145,12 @@ router.post('/add', authenticateToken, async (req, res) => {
       data: updatedWishlist
     });
   } catch (error) {
-    console.error('Error adding item to wishlist:', error);
+    console.error('[Wishlist] Critical error adding item to wishlist:', error);
     res.status(500).json({
       success: false,
       message: 'Error adding item to wishlist',
-      error: error.message
+      error: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
 });
@@ -175,10 +214,10 @@ router.delete('/remove-product/:productId', authenticateToken, async (req, res) 
       });
     }
 
-    const itemIndex = wishlist.items.findIndex(item => 
+    const itemIndex = wishlist.items.findIndex(item =>
       item.product_id.toString() === productId
     );
-    
+
     if (itemIndex === -1) {
       return res.status(404).json({
         success: false,
@@ -244,10 +283,10 @@ router.delete('/clear', authenticateToken, async (req, res) => {
 router.get('/count', authenticateToken, async (req, res) => {
   try {
     const customerId = req.user.id;
-    
+
     const wishlist = await Wishlist.findOne({ customer_id: customerId });
     const itemCount = wishlist ? wishlist.total_items : 0;
-    
+
     res.json({
       success: true,
       data: { count: itemCount }
@@ -267,12 +306,12 @@ router.get('/check/:productId', authenticateToken, async (req, res) => {
   try {
     const customerId = req.user.id;
     const { productId } = req.params;
-    
+
     const wishlist = await Wishlist.findOne({ customer_id: customerId });
-    const isInWishlist = wishlist ? 
-      wishlist.items.some(item => item.product_id.toString() === productId) : 
+    const isInWishlist = wishlist ?
+      wishlist.items.some(item => item.product_id.toString() === productId) :
       false;
-    
+
     res.json({
       success: true,
       data: { isInWishlist }
@@ -313,7 +352,7 @@ router.post('/sync', authenticateToken, async (req, res) => {
       }
 
       // Check if item already exists
-      const existingIndex = wishlist.items.findIndex(existingItem => 
+      const existingIndex = wishlist.items.findIndex(existingItem =>
         existingItem.product_id.toString() === item._id
       );
 

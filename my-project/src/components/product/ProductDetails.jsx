@@ -230,11 +230,18 @@ const ProductDetails = ({ product, isLoading, isError, onCartUpdate }) => {
 
   const handleWishlistToggle = async () => {
     try {
-      if (isInWishlist(displayProduct._id)) {
-        await removeFromWishlist(displayProduct._id);
+      const mainProductId = product._id; // Use the main product's ID
+      const variantId = selectedVariant ? selectedVariant._id : null;
+
+      if (isInWishlist(mainProductId, variantId)) {
+        await removeFromWishlist(mainProductId, variantId);
         toast.success('Removed from wishlist');
       } else {
-        await addToWishlist(displayProduct);
+        await addToWishlist({
+          ...displayProduct, // Keep variant details for display
+          _id: mainProductId, // Override with main product ID for backend
+          variant_id: variantId // Pass variant ID if selected
+        });
         toast.success('Added to wishlist');
       }
     } catch (error) {
@@ -322,7 +329,7 @@ const ProductDetails = ({ product, isLoading, isError, onCartUpdate }) => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="lg:grid lg:grid-cols-12 lg:gap-x-8 lg:items-start">
           {/* Left Column: Image Gallery & Actions */}
-          <div className="lg:col-span-5 lg:sticky lg:top-24">
+          <div className="lg:col-span-5 lg:sticky lg:top-24 z-30">
             {/* Image Gallery */}
             <div className="mb-6 relative">
               <FlipkartImageGallery
@@ -366,7 +373,20 @@ const ProductDetails = ({ product, isLoading, isError, onCartUpdate }) => {
 
           {/* Right Column: Product Details */}
           <div className="mt-10 px-4 sm:px-0 sm:mt-16 lg:mt-0 lg:col-span-7">
-            <h1 className="text-xl sm:text-2xl font-medium text-gray-900">{displayProduct.name}</h1>
+            <div className="flex justify-between items-start">
+              <h1 className="text-xl sm:text-2xl font-medium text-gray-900 flex-1">{displayProduct.name}</h1>
+              <button
+                onClick={handleWishlistToggle}
+                className="ml-4 p-2 rounded-full hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-500"
+                aria-label={isInWishlist(product._id, selectedVariant?._id) ? "Remove from wishlist" : "Add to wishlist"}
+              >
+                {isInWishlist(product._id, selectedVariant?._id) ? (
+                  <HeartSolidIcon className="h-7 w-7 text-rose-600" />
+                ) : (
+                  <HeartIcon className="h-7 w-7 text-gray-400 hover:text-rose-600" />
+                )}
+              </button>
+            </div>
 
             {/* Reviews */}
             {displayProduct.showRatings !== false && (

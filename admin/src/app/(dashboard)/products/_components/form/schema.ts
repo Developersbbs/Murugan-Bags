@@ -235,35 +235,8 @@ export const productFormSchema = z
       }
     } else if (data.productStructure === "variant") {
       console.log('Running VARIANT product validation');
-      // For variant products, main product prices should not be set (variants handle pricing)
-      if (data.costPrice !== undefined && data.costPrice !== null) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "Variant products should not have main product cost price (use variant pricing instead)",
-          path: ["costPrice"],
-        });
-      }
-      if (data.salesPrice !== undefined && data.salesPrice !== null) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "Variant products should not have main product sales price (use variant pricing instead)",
-          path: ["salesPrice"],
-        });
-      }
-      if (data.stock !== undefined && data.stock !== null) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "Variant products should not have main product stock (use variant stock instead)",
-          path: ["stock"],
-        });
-      }
-      if (data.minStockThreshold !== undefined && data.minStockThreshold !== null) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "Variant products should not have main product minimum stock threshold (use variant thresholds instead)",
-          path: ["minStockThreshold"],
-        });
-      }
+      // For variant products, we don't enforce main product prices/stock to be empty
+      // The form handles clearing them, and the backend will ignore them if present
     }
 
     // Validate digital product requirements

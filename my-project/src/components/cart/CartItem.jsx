@@ -6,21 +6,21 @@ import { formatCurrency } from '../../utils/format';
 import { useWishlist } from '../../context/WishlistContext';
 import toast from 'react-hot-toast';
 
-const CartItem = ({ 
-  item, 
-  onUpdateQuantity, 
-  onRemove, 
-  loading = false 
+const CartItem = ({
+  item,
+  onUpdateQuantity,
+  onRemove,
+  loading = false
 }) => {
   const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
   const [isUpdating, setIsUpdating] = useState(false);
   const [isRemoving, setIsRemoving] = useState(false);
-  
-  const inWishlist = isInWishlist(item.id);
+
+  const inWishlist = isInWishlist(item.id, item.variant_id);
 
   const handleQuantityChange = async (newQuantity) => {
     if (newQuantity < 1 || isUpdating) return;
-    
+
     setIsUpdating(true);
     try {
       // Use cartItemId if available, otherwise fall back to id
@@ -37,7 +37,7 @@ const CartItem = ({
 
   const handleRemove = async () => {
     if (isRemoving) return;
-    
+
     setIsRemoving(true);
     try {
       // For authenticated users, use cartItemId (MongoDB cart item ID)
@@ -55,14 +55,15 @@ const CartItem = ({
   const handleWishlistToggle = async () => {
     try {
       if (inWishlist) {
-        await removeFromWishlist(item.id);
+        await removeFromWishlist(item.id, item.variant_id);
         toast.success('Removed from wishlist');
       } else {
         await addToWishlist({
           _id: item.id,
           name: item.name,
           selling_price: item.price,
-          image_url: [item.image]
+          image_url: [item.image],
+          variant_id: item.variant_id
         });
         toast.success('Added to wishlist');
       }
@@ -73,18 +74,29 @@ const CartItem = ({
 
   const defaultImage = '/images/products/placeholder-product.svg';
 
+  // Helper to resolve full image URL
+  const getFullImageUrl = (imagePath) => {
+    if (!imagePath) return defaultImage;
+    if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) return imagePath;
+    if (imagePath.startsWith('/images/')) return imagePath; // Local assets
+
+    // Convert relative path to full URL
+    const API_BASE = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
+    return `${API_BASE}${imagePath}`;
+  };
+
   return (
-    <div className="p-4 border-b bg-white hover:bg-gray-50 transition-colors">
-      <div className="flex items-start space-x-4">
+    <div className="group relative bg-white p-4 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300 mb-3 mx-2">
+      <div className="flex gap-4">
         {/* Product Image */}
-        <Link 
-          to={`/product/${item.id}`} 
-          className="flex-shrink-0 w-20 h-20 bg-gray-100 rounded-lg overflow-hidden group"
+        <Link
+          to={`/product/${item.id}`}
+          className="relative flex-shrink-0 w-24 h-24 bg-gray-50 rounded-lg overflow-hidden border border-gray-100"
         >
-          <img 
-            src={item.image || defaultImage} 
-            alt={item.name} 
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+          <img
+            src={getFullImageUrl(item.image)}
+            alt={item.name}
+            className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
             onError={(e) => {
               e.target.onerror = null;
               e.target.src = defaultImage;
@@ -93,120 +105,139 @@ const CartItem = ({
           />
         </Link>
 
-        {/* Product Details */}
-        <div className="flex-1 min-w-0">
-          <Link 
-            to={`/product/${item.id}`} 
-            className="block group"
-          >
-            <h3 className="font-medium text-gray-900 group-hover:text-blue-600 transition-colors line-clamp-2">
-              {item.name}
-            </h3>
-          </Link>
-          
-          {/* Variant details */}
-          {item.variant && Object.keys(item.variant).length > 0 && (
-            <div className="mt-1 text-sm text-gray-500">
-              {Object.entries(item.variant).map(([key, value]) => {
-                // Handle different value types properly
-                let displayValue;
-                if (typeof value === 'object' && value !== null) {
-                  // If it's an object, try to extract meaningful values
-                  if (Array.isArray(value)) {
-                    displayValue = value.join(', ');
-                  } else {
-                    displayValue = Object.values(value).join(', ') || JSON.stringify(value);
+        {/* Content Container */}
+        <div className="flex-1 min-w-0 flex flex-col justify-between">
+          <div>
+            <div className="flex justify-between items-start gap-2">
+              <Link
+                to={`/product/${item.id}`}
+                className="block"
+              >
+                <h3 className="text-sm font-semibold text-gray-900 group-hover:text-rose-600 transition-colors line-clamp-2 leading-snug">
+                  {item.name}
+                </h3>
+              </Link>
+
+              {/* Remove Button (Top Right) */}
+              <button
+                onClick={handleRemove}
+                disabled={isRemoving || loading}
+                className="text-gray-400 hover:text-red-500 p-1 -mr-1 -mt-1 rounded-full hover:bg-red-50 transition-all"
+                aria-label="Remove from cart"
+              >
+                <TrashIcon className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* Variant details */}
+            {(() => {
+              // Determine what attributes to show
+              let displayAttributes = {};
+
+              if (item.variant && item.variant.attributes) {
+                // If variant has an 'attributes' property, use that (standard structure)
+                displayAttributes = item.variant.attributes;
+              } else if (item.variant) {
+                // Otherwise use the variant object itself but filter out technical fields
+                const technicalKeys = [
+                  '_id', 'id', 'sku', 'stock', 'images', 'image_url', 'price',
+                  'cost_price', 'selling_price', 'originalPrice', 'quantity',
+                  'isActive', 'createdAt', 'updatedAt', 'product_id', '__v'
+                ];
+
+                Object.entries(item.variant).forEach(([key, value]) => {
+                  if (!technicalKeys.includes(key) && typeof value !== 'object') {
+                    displayAttributes[key] = value;
+                  } else if (key === 'attributes' && typeof value === 'object') {
+                    // Handle case where attributes might be nested but not detected above
+                    Object.assign(displayAttributes, value);
                   }
-                } else {
-                  displayValue = String(value);
-                }
-                
-                return (
-                  <span key={key} className="inline-block mr-3 px-2 py-1 bg-gray-100 rounded-md text-xs">
-                    <span className="font-medium capitalize">{key}:</span> {displayValue}
-                  </span>
-                );
-              })}
-            </div>
-          )}
-          
-          {/* Price */}
-          <div className="mt-2 flex items-center space-x-2">
-            <span className="text-lg font-semibold text-gray-900">
-              {formatCurrency(item.price)}
-            </span>
-            {item.originalPrice && item.originalPrice > item.price && (
-              <span className="text-sm text-gray-500 line-through">
-                {formatCurrency(item.originalPrice)}
+                });
+              }
+
+              if (Object.keys(displayAttributes).length === 0) return null;
+
+              return (
+                <div className="mt-1.5 flex flex-wrap gap-1.5">
+                  {Object.entries(displayAttributes).map(([key, value]) => (
+                    <span key={key} className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-gray-100 text-gray-600 border border-gray-200">
+                      <span className="opacity-60 mr-1 capitalize">{key}:</span> {String(value)}
+                    </span>
+                  ))}
+                </div>
+              );
+            })()}
+          </div>
+
+          {/* Bottom Row: Price & Controls */}
+          <div className="flex items-end justify-between mt-3">
+            {/* Price */}
+            <div className="flex flex-col">
+              <span className="text-base font-bold text-gray-900">
+                {formatCurrency(item.price * item.quantity)}
               </span>
-            )}
-          </div>
-
-          {/* Stock Status */}
-          {item.stock && item.stock <= 5 && (
-            <div className="mt-1 text-xs text-orange-600 font-medium">
-              Only {item.stock} left in stock
-            </div>
-          )}
-        </div>
-
-        {/* Quantity and Actions */}
-        <div className="flex flex-col items-end space-y-3">
-          {/* Quantity Controls */}
-          <div className="flex items-center border rounded-md">
-            <button 
-              onClick={() => handleQuantityChange(item.quantity - 1)}
-              disabled={item.quantity <= 1 || isUpdating || loading}
-              className="p-1 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
-              aria-label="Decrease quantity"
-            >
-              <MinusIcon className="h-4 w-4" />
-            </button>
-            
-            <span className="px-3 py-1 text-sm font-medium min-w-[3rem] text-center">
-              {isUpdating ? '...' : item.quantity}
-            </span>
-            
-            <button 
-              onClick={() => handleQuantityChange(item.quantity + 1)}
-              disabled={item.stock && item.quantity >= item.stock || isUpdating || loading}
-              className="p-1 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
-              aria-label="Increase quantity"
-            >
-              <PlusIcon className="h-4 w-4" />
-            </button>
-          </div>
-
-          {/* Total Price */}
-          <div className="text-lg font-semibold text-gray-900">
-            {formatCurrency(item.price * item.quantity)}
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex items-center space-x-2">
-            <button 
-              onClick={handleWishlistToggle}
-              className="p-2 text-gray-400 hover:text-red-500 transition-colors"
-              aria-label={inWishlist ? "Remove from wishlist" : "Add to wishlist"}
-            >
-              {inWishlist ? (
-                <HeartSolidIcon className="h-5 w-5 text-red-500" />
-              ) : (
-                <HeartIcon className="h-5 w-5" />
+              {item.quantity > 1 && (
+                <span className="text-xs text-gray-500">
+                  {formatCurrency(item.price)} each
+                </span>
               )}
-            </button>
-            
-            <button 
-              onClick={handleRemove}
-              disabled={isRemoving || loading}
-              className="p-2 text-gray-400 hover:text-red-500 transition-colors disabled:opacity-50"
-              aria-label="Remove from cart"
-            >
-              <TrashIcon className="h-5 w-5" />
-            </button>
+            </div>
+
+            {/* Controls */}
+            <div className="flex items-center gap-3">
+              {/* Wishlist Button */}
+              <button
+                onClick={handleWishlistToggle}
+                className={`p-1.5 rounded-full transition-colors ${inWishlist
+                  ? 'bg-rose-50 text-rose-500'
+                  : 'text-gray-400 hover:text-rose-500 hover:bg-gray-50'
+                  }`}
+                aria-label={inWishlist ? "Remove from wishlist" : "Add to wishlist"}
+              >
+                {inWishlist ? (
+                  <HeartSolidIcon className="h-5 w-5" />
+                ) : (
+                  <HeartIcon className="h-5 w-5" />
+                )}
+              </button>
+
+              {/* Quantity Stepper */}
+              <div className="flex items-center bg-gray-50 rounded-lg border border-gray-200 p-0.5">
+                <button
+                  onClick={() => handleQuantityChange(item.quantity - 1)}
+                  disabled={item.quantity <= 1 || isUpdating || loading}
+                  className="p-1.5 text-gray-500 hover:text-gray-900 hover:bg-white rounded-md disabled:opacity-30 disabled:hover:bg-transparent transition-all"
+                  aria-label="Decrease quantity"
+                >
+                  <MinusIcon className="h-3.5 w-3.5" />
+                </button>
+
+                <span className="w-8 text-center text-xs font-semibold text-gray-900">
+                  {isUpdating ? (
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce mx-auto" />
+                  ) : item.quantity}
+                </span>
+
+                <button
+                  onClick={() => handleQuantityChange(item.quantity + 1)}
+                  disabled={(item.stock && item.quantity >= item.stock) || isUpdating || loading}
+                  className="p-1.5 text-gray-500 hover:text-gray-900 hover:bg-white rounded-md disabled:opacity-30 disabled:hover:bg-transparent transition-all"
+                  aria-label="Increase quantity"
+                >
+                  <PlusIcon className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
+
+      {/* Stock Warning */}
+      {item.stock && item.stock <= 5 && (
+        <div className="absolute bottom-2 left-28 text-[10px] font-medium text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded border border-orange-100">
+          Only {item.stock} left
+        </div>
+      )}
     </div>
   );
 };

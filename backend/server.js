@@ -136,6 +136,10 @@ app.use("/api/special-offers", specialOffersRoutes);
 app.use("/api/combo-offers", comboOffersRoutes);
 app.use("/api/marquee-offers", marqueeOffersRoutes);
 app.use("/api/offer-popups", offerPopupsRoutes);
+const uploadRoutes = require("./routes/upload");
+app.use("/api/upload", uploadRoutes);
+const bulkOrdersRoutes = require("./routes/bulkOrders");
+app.use("/api/bulk-orders", bulkOrdersRoutes);
 console.log('✅ Payments routes mounted at /api/payments');
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 

@@ -4,9 +4,14 @@ const ComboOffer = require('../models/ComboOffer');
 // GET all active combo offers (for homepage)
 router.get('/', async (req, res) => {
     try {
-        const offers = await ComboOffer.find({ isActive: true })
-            .sort({ order: 1 })
-            .limit(4);
+        const limit = req.query.limit ? parseInt(req.query.limit) : 4;
+        const query = ComboOffer.find({ isActive: true }).sort({ order: 1 });
+
+        if (limit > 0) {
+            query.limit(limit);
+        }
+
+        const offers = await query;
 
         res.json({
             success: true,
@@ -65,7 +70,7 @@ router.get('/:id', async (req, res) => {
 // CREATE new combo offer
 router.post('/', async (req, res) => {
     try {
-        const { title, description, price, originalPrice, isLimitedTime, order, isActive } = req.body;
+        const { title, description, image, price, originalPrice, isLimitedTime, order, isActive } = req.body;
 
         if (!title || !description || price === undefined || originalPrice === undefined) {
             return res.status(400).json({
@@ -91,6 +96,7 @@ router.post('/', async (req, res) => {
         const offer = new ComboOffer({
             title,
             description,
+            image,
             price,
             originalPrice,
             isLimitedTime: isLimitedTime !== undefined ? isLimitedTime : true,
@@ -115,7 +121,7 @@ router.post('/', async (req, res) => {
 // UPDATE combo offer
 router.put('/:id', async (req, res) => {
     try {
-        const { title, description, price, originalPrice, isLimitedTime, order, isActive } = req.body;
+        const { title, description, image, price, originalPrice, isLimitedTime, order, isActive } = req.body;
 
         // Validate prices if provided
         if (price !== undefined && price < 0) {
@@ -137,6 +143,7 @@ router.put('/:id', async (req, res) => {
             {
                 ...(title && { title }),
                 ...(description && { description }),
+                ...(image && { image }),
                 ...(price !== undefined && { price }),
                 ...(originalPrice !== undefined && { originalPrice }),
                 ...(isLimitedTime !== undefined && { isLimitedTime }),
