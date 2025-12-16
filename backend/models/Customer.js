@@ -6,7 +6,7 @@ const customerSchema = new mongoose.Schema({
   phone: { type: String, required: false }, // Remove unique: true from here - will be handled by index
   password: { type: String, required: false }, // Optional for phone-only auth
   firebase_uid: { type: String, unique: true, sparse: true },
-  google_id: { type: String, unique: true, sparse: true }, // For Google authentication
+  google_id: { type: String }, // For Google authentication
   image_url: { type: String, required: false }, // For profile images
   role: { type: String, enum: ['user', 'admin'], default: 'user' },
   is_active: { type: Boolean, default: true },
@@ -24,7 +24,7 @@ customerSchema.index({ google_id: 1 }, { unique: true, partialFilterExpression: 
 
 // Ensure either email or phone is provided (but not requiring both)
 // Also ensure phone field is not empty string for unique constraint
-customerSchema.pre('save', function(next) {
+customerSchema.pre('save', function (next) {
   if (!this.email && !this.phone) {
     return next(new Error('Either email or phone number is required'));
   }

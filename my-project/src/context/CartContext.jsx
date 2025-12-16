@@ -179,7 +179,10 @@ export const CartProvider = ({ children }) => {
         console.log('Cart loaded from MongoDB:', backendCart.data.items.length, 'items');
 
         // Transform backend cart format to frontend format
-        const transformedItems = backendCart.data.items.map(item => {
+        // Filter out items with missing product_id first
+        const validItems = backendCart.data.items.filter(item => item && item.product_id);
+
+        const transformedItems = validItems.map(item => {
           // Find matching variant to get specific image
           let variantImage = null;
           let matchingVariant = null;
@@ -460,7 +463,10 @@ export const CartProvider = ({ children }) => {
 
         if (response.success && response.data && response.data.items) {
           // Update local state with backend response
-          const backendCartItems = response.data.items.map(item => {
+          // Filter out items with missing product_id first
+          const validBackendItems = response.data.items.filter(item => item && item.product_id);
+
+          const backendCartItems = validBackendItems.map(item => {
             // Find matching variant to get specific image
             let variantImage = null;
             let matchingVariant = null;

@@ -829,6 +829,7 @@ router.get("/profile/:firebaseUid", async (req, res) => {
         address: customer.address,
         created_at: customer.created_at,
         updated_at: customer.updated_at,
+
       }
     };
 

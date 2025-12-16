@@ -5,6 +5,7 @@ const Customer = require("../models/Customer.js");
 const Order = require("../models/Order.js");
 const Wishlist = require("../models/Wishlist.js");
 const Cart = require("../models/Cart.js");
+const Address = require("../models/Address.js");
 const admin = require('firebase-admin');
 const router = express.Router();
 
@@ -152,14 +153,30 @@ router.get("/", async (req, res) => {
     const customers = await Customer.find(filter)
       .sort({ created_at: -1 })
       .skip(skip)
-      .limit(limitNum);
+      .limit(limitNum)
+      .lean();
+
+    // Populate phone from address if missing
+    const customersWithPhone = await Promise.all(customers.map(async (customer) => {
+      if (!customer.phone) {
+        const address = await Address.findOne({ customer_id: customer._id })
+          .sort({ updated_at: -1 })
+          .select('phone')
+          .lean();
+
+        if (address && address.phone) {
+          customer.phone = address.phone;
+        }
+      }
+      return customer;
+    }));
 
     const total = await Customer.countDocuments(filter);
     const totalPages = Math.ceil(total / limitNum);
 
     res.json({
       success: true,
-      data: customers,
+      data: customersWithPhone,
       meta: {
         page: pageNum,
         limit: limitNum,
@@ -270,17 +287,20 @@ router.get("/:id/cart", async (req, res) => {
     }
 
     // Transform items to match frontend interface
-    const transformedItems = cart.items.map(item => ({
-      _id: item._id,
-      product_id: item.product_id._id || item.product_id,
-      product_name: item.product_name,
-      product_image: item.product_image || item.product_id?.image_url?.[0],
-      price: item.price,
-      discounted_price: item.discounted_price,
-      quantity: item.quantity,
-      variant: item.variant || null,
-      created_at: item.added_at || item.created_at
-    }));
+    // Transform items to match frontend interface
+    const transformedItems = cart.items
+      .filter(item => item.product_id) // Filter out items with null product_id (deleted products)
+      .map(item => ({
+        _id: item._id,
+        product_id: item.product_id._id || item.product_id,
+        product_name: item.product_name,
+        product_image: item.product_image || item.product_id?.image_url?.[0],
+        price: item.price,
+        discounted_price: item.discounted_price,
+        quantity: item.quantity,
+        variant: item.variant || null,
+        created_at: item.added_at || item.created_at
+      }));
 
     res.json({
       success: true,
@@ -423,11 +443,21 @@ router.get("/:_id", async (req, res) => {
       )
     };
 
+    // Fetch customer's address (prefer default, then most recent)
+    const address = await Address.findOne({ customer_id: customer._id })
+      .sort({ is_default: -1, updated_at: -1 })
+      .lean();
+
     // Prepare response
     const response = {
       success: true,
       data: {
         ...customer,
+        phone: customer.phone || address?.phone, // Use address phone if customer phone is missing
+        address: address ? (address.street || address.address) : undefined,
+        city: address?.city,
+        state: address?.state,
+        zip_code: address?.zipCode,
         orders,
         statistics: orderStats,
         wishlist: {
@@ -736,18 +766,38 @@ router.get("/export/csv", async (req, res) => {
       'City',
       'State',
       'Zip Code',
+      'Country',
       'Created At'
     ];
 
-    const csvRows = customers.map(customer => [
-      customer.id,
+    // Fetch address details for all customers in parallel
+    const customersWithDetails = await Promise.all(customers.map(async (customer) => {
+      // Get address if available
+      const address = await Address.findOne({ customer_id: customer._id })
+        .sort({ is_default: -1, updated_at: -1 })
+        .lean();
+
+      return {
+        ...customer.toObject(),
+        displayPhone: customer.phone || address?.phone || '',
+        displayAddress: address ? (address.street || address.address || '') : '',
+        displayCity: address?.city || '',
+        displayState: address?.state || '',
+        displayZip: address?.zipCode || '',
+        displayCountry: address?.country || ''
+      };
+    }));
+
+    const csvRows = customersWithDetails.map(customer => [
+      customer.id || customer._id,
       customer.name || '',
       customer.email || '',
-      customer.phone || '',
-      customer.address || '',
-      customer.city || '',
-      customer.state || '',
-      customer.zip_code || '',
+      customer.displayPhone,
+      customer.displayAddress.replace(/"/g, '""'), // Escape quotes
+      customer.displayCity,
+      customer.displayState,
+      customer.displayZip,
+      customer.displayCountry,
       customer.createdAt || customer.created_at
     ]);
 

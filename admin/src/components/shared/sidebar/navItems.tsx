@@ -1,4 +1,4 @@
-import { MdOutlineDashboard } from "react-icons/md";
+import { MdOutlineDashboard, MdRateReview } from "react-icons/md";
 import { LuUsers } from "react-icons/lu";
 import { TbPackages, TbTruckDelivery } from "react-icons/tb";
 import { RiCoupon2Line } from "react-icons/ri";
@@ -79,6 +79,11 @@ export const navItems = [
     title: "Orders",
     url: "/orders",
     icon: <TbTruckDelivery />,
+  },
+  {
+    title: "Reviews",
+    url: "/reviews",
+    icon: <MdRateReview />,
   },
 
   // {

@@ -278,11 +278,64 @@ router.get("/uploads/:filename", (req, res) => {
 // GET unique colors available in products
 router.get("/colors", async (req, res) => {
   try {
-    const colors = await Product.distinct("color", {
-      status: "selling",
+    const colorSet = new Set();
+
+    // Get colors from the product color field
+    const productColors = await Product.distinct("color", {
+      published: true,
       color: { $exists: true, $ne: "" }
     });
-    const validColors = colors.filter(c => c).sort();
+    productColors.forEach(color => {
+      if (color) colorSet.add(color.toLowerCase());
+    });
+
+    // Get colors from variant attributes
+    const productsWithVariants = await Product.find({
+      published: true,
+      product_structure: "variant",
+      "product_variants.published": true
+    }).select("product_variants");
+
+    productsWithVariants.forEach(product => {
+      if (product.product_variants && Array.isArray(product.product_variants)) {
+        product.product_variants.forEach(variant => {
+          if (variant.published && variant.attributes) {
+            // Convert Map to plain object if needed
+            let attributes = variant.attributes;
+            if (attributes instanceof Map) {
+              const attributesObj = {};
+              attributes.forEach((value, key) => {
+                attributesObj[key] = value;
+              });
+              attributes = attributesObj;
+            } else if (typeof attributes === 'object') {
+              // Already a plain object, convert to ensure consistency
+              const attributesObj = {};
+              Object.entries(attributes).forEach(([key, value]) => {
+                attributesObj[key] = value;
+              });
+              attributes = attributesObj;
+            }
+
+            // Check for color in attributes (case-insensitive)
+            const colorKeys = ['color', 'Color', 'colour', 'Colour'];
+            colorKeys.forEach(key => {
+              if (attributes[key]) {
+                colorSet.add(attributes[key].toLowerCase());
+              }
+            });
+          }
+        });
+      }
+    });
+
+    // Convert Set to sorted array with proper capitalization
+    const validColors = Array.from(colorSet)
+      .filter(c => c)
+      .map(c => c.charAt(0).toUpperCase() + c.slice(1))
+      .sort();
+
+    console.log('Colors endpoint - found colors:', validColors);
     res.json({ success: true, data: validColors });
   } catch (err) {
     console.error("Error fetching colors:", err);
@@ -354,7 +407,25 @@ router.get("/", async (req, res) => {
     }
 
     if (color) {
-      filter.color = { $regex: color, $options: "i" };
+      const colorRegex = { $regex: color, $options: "i" };
+      // Combine with existing $or if it exists (from search)
+      const colorQuery = [
+        { color: colorRegex },
+        { "product_variants.attributes.color": colorRegex },
+        { "product_variants.attributes.Color": colorRegex },
+        { "product_variants.attributes.colour": colorRegex },
+        { "product_variants.attributes.Colour": colorRegex }
+      ];
+
+      if (filter.$or) {
+        filter.$and = [
+          { $or: filter.$or },
+          { $or: colorQuery }
+        ];
+        delete filter.$or;
+      } else {
+        filter.$or = colorQuery;
+      }
     }
 
     let sort = {};
@@ -527,11 +598,13 @@ router.post("/", uploadDigitalFile, async (req, res) => {
     }
 
     let variantsData = null;
-    if (req.body.variants) {
+    const variantsPayload = req.body.variants || req.body.product_variants;
+
+    if (variantsPayload) {
       try {
-        variantsData = typeof req.body.variants === 'string'
-          ? JSON.parse(req.body.variants)
-          : req.body.variants;
+        variantsData = typeof variantsPayload === 'string'
+          ? JSON.parse(variantsPayload)
+          : variantsPayload;
       } catch (e) {
         console.error('Error parsing variants:', e);
       }
@@ -1266,7 +1339,7 @@ router.put("/:id", uploadDigitalFile, async (req, res) => {
     if (req.body.description !== undefined) updateData.description = req.body.description;
     if (productStructure) updateData.product_structure = productStructure;
     if (req.body.sku) updateData.sku = req.body.sku.toUpperCase();
-    if (categories.length > 0) updateData.categories = categories;
+    if (req.body.categories) updateData.categories = categories;
 
     if (productStructure === 'simple') {
       if (req.body.cost_price || req.body.costPrice) updateData.cost_price = parseFloat(req.body.cost_price || req.body.costPrice);

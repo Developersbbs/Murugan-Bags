@@ -89,12 +89,23 @@ const SidebarFilters = ({ filters = {}, onFilterChange }) => {
 
   // Handle rating filter changes
   const handleRatingFilter = (rating) => {
-    const currentRating = filters.rating;
-    const newRating = currentRating === rating ? null : rating; // Toggle off if same rating selected
+    const params = new URLSearchParams(location.search);
+    const currentRating = params.get('rating');
 
+    if (currentRating === String(rating)) {
+      params.delete('rating');
+    } else {
+      params.set('rating', rating);
+    }
+
+    // Reset to first page
+    params.delete('page');
+    setSearchParams(params);
+
+    // Also notify parent if needed, but URL change effectively drives state in parent
     if (onFilterChange) {
       onFilterChange({
-        rating: newRating
+        rating: currentRating === String(rating) ? null : rating
       });
     }
   };

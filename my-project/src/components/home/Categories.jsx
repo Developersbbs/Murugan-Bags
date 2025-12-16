@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { 
-  ChevronRightIcon, 
+import {
+  ChevronRightIcon,
   SparklesIcon,
   TagIcon,
   ShoppingBagIcon,
@@ -47,7 +47,7 @@ const Categories = () => {
           <p className="text-red-700 mb-4">
             {error?.data?.error || error?.error || 'Something went wrong while loading categories'}
           </p>
-          <button 
+          <button
             onClick={() => window.location.reload()}
             className="inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
           >
@@ -78,7 +78,7 @@ const Categories = () => {
     <div className="relative">
       {/* Background Pattern */}
       <div className="absolute inset-0 bg-gradient-to-br from-blue-50/50 to-purple-50/50 rounded-3xl"></div>
-      
+
       <div className="relative">
         {/* Categories Grid */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 md:gap-6">
@@ -90,9 +90,8 @@ const Categories = () => {
               onMouseEnter={() => setHoveredCategory(category._id)}
               onMouseLeave={() => setHoveredCategory(null)}
             >
-              <div className={`relative bg-white rounded-2xl p-6 shadow-sm border border-gray-100 transition-all duration-300 hover:shadow-xl hover:scale-105 hover:-translate-y-2 ${
-                hoveredCategory === category._id ? 'ring-2 ring-blue-500/20' : ''
-              }`}>
+              <div className={`relative bg-white rounded-2xl p-6 shadow-sm border border-gray-100 transition-all duration-300 hover:shadow-xl hover:scale-105 hover:-translate-y-2 ${hoveredCategory === category._id ? 'ring-2 ring-blue-500/20' : ''
+                }`}>
                 {/* Category Image */}
                 <div className="relative mb-4">
                   <div className="w-full h-24 md:h-32 bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl overflow-hidden group-hover:shadow-lg transition-shadow">
@@ -115,11 +114,10 @@ const Categories = () => {
                       </div>
                     )}
                   </div>
-                  
+
                   {/* Hover Overlay */}
-                  <div className={`absolute inset-0 bg-gradient-to-t from-black/20 to-transparent rounded-xl transition-opacity duration-300 ${
-                    hoveredCategory === category._id ? 'opacity-100' : 'opacity-0'
-                  }`}>
+                  <div className={`absolute inset-0 bg-gradient-to-t from-black/20 to-transparent rounded-xl transition-opacity duration-300 ${hoveredCategory === category._id ? 'opacity-100' : 'opacity-0'
+                    }`}>
                     <div className="absolute bottom-2 right-2">
                       <div className="bg-white/90 backdrop-blur-sm rounded-full p-1.5 shadow-lg">
                         <ArrowRightIcon className="h-3 w-3 text-gray-700" />
@@ -127,33 +125,31 @@ const Categories = () => {
                     </div>
                   </div>
                 </div>
-                
+
                 {/* Category Info */}
                 <div className="text-center">
                   <h3 className="font-semibold text-gray-900 text-sm md:text-base mb-1 line-clamp-2 group-hover:text-blue-600 transition-colors">
                     {category.name}
                   </h3>
-                  
+
                   {/* Product Count (if available) */}
                   {category.product_count && (
                     <p className="text-xs text-gray-500 mb-2">
                       {category.product_count} {category.product_count === 1 ? 'product' : 'products'}
                     </p>
                   )}
-                  
+
                   {/* Shop Now Button */}
-                  <div className={`inline-flex items-center text-xs font-medium text-blue-600 transition-all duration-300 ${
-                    hoveredCategory === category._id ? 'translate-x-1' : ''
-                  }`}>
+                  <div className={`inline-flex items-center text-xs font-medium text-blue-600 transition-all duration-300 ${hoveredCategory === category._id ? 'translate-x-1' : ''
+                    }`}>
                     <span>Shop Now</span>
                     <ChevronRightIcon className="h-3 w-3 ml-1" />
                   </div>
                 </div>
-                
+
                 {/* Decorative Elements */}
-                <div className={`absolute top-3 left-3 transition-opacity duration-300 ${
-                  hoveredCategory === category._id ? 'opacity-100' : 'opacity-0'
-                }`}>
+                <div className={`absolute top-3 left-3 transition-opacity duration-300 ${hoveredCategory === category._id ? 'opacity-100' : 'opacity-0'
+                  }`}>
                   <div className="bg-gradient-to-r from-blue-500 to-purple-500 rounded-full p-1">
                     <SparklesIcon className="h-3 w-3 text-white" />
                   </div>
@@ -162,7 +158,7 @@ const Categories = () => {
             </Link>
           ))}
         </div>
-        
+
         {/* View All Categories Button */}
         {categories.length >= 6 && (
           <div className="text-center mt-12">

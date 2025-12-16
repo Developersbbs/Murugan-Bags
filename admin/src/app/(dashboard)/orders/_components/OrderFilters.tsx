@@ -1,8 +1,7 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { DownloadCloud, Loader2 } from "lucide-react";
 
 import {
   Select,
@@ -18,13 +17,10 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { DatePicker } from "@/components/shared/DatePicker";
 
-import { exportAsCSV } from "@/helpers/exportData";
-import { exportOrders } from "@/actions/orders/exportOrders";
 
 export default function OrderFilters() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [isPending, startTransition] = useTransition();
 
   const [filters, setFilters] = useState({
     search: searchParams.get("search") || "",
@@ -34,19 +30,7 @@ export default function OrderFilters() {
     endDate: searchParams.get("endDate") || "",
   });
 
-  const handleOrdersDownload = () => {
-    toast.info(`Downloading orders...`);
 
-    startTransition(async () => {
-      const result = await exportOrders();
-
-      if (result.error) {
-        toast.error(result.error);
-      } else if (result.data) {
-        exportAsCSV(result.data, "Orders");
-      }
-    });
-  };
 
   const handleFilter = (e: React.FormEvent) => {
     e.preventDefault();
@@ -128,19 +112,7 @@ export default function OrderFilters() {
             </SelectContent>
           </Select>
 
-          <Button
-            type="button"
-            onClick={handleOrdersDownload}
-            disabled={isPending}
-            className="h-12 flex-shrink-0 md:basis-1/4"
-          >
-            Download{" "}
-            {isPending ? (
-              <Loader2 className="ml-2 size-4 animate-spin" />
-            ) : (
-              <DownloadCloud className="ml-2 size-4" />
-            )}
-          </Button>
+
         </div>
 
         <div className="flex flex-col md:flex-row md:items-end gap-4 lg:gap-6">

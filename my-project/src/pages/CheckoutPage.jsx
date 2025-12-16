@@ -805,20 +805,14 @@ const CheckoutPage = () => {
                     value="razorpay"
                     checked={formData.paymentMethod === 'razorpay'}
                     onChange={handleChange}
-                    disabled={!razorpayAvailable}
-                    className={`h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 ${!razorpayAvailable ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    disabled={true}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 opacity-50 cursor-not-allowed"
                   />
-                  <label htmlFor="razorpay" className={`ml-3 flex items-center ${!razorpayAvailable ? 'opacity-50' : ''}`}>
-                    <span className={`text-sm font-medium ${!razorpayAvailable ? 'text-gray-400' : 'text-gray-700'}`}>Razorpay</span>
-                    {razorpayAvailable ? (
-                      <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                        Secure Online Payment
-                      </span>
-                    ) : (
-                      <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500">
-                        Not Configured
-                      </span>
-                    )}
+                  <label htmlFor="razorpay" className="ml-3 flex items-center opacity-50">
+                    <span className="text-sm font-medium text-gray-400">Razorpay</span>
+                    <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500">
+                      Coming Soon
+                    </span>
                   </label>
                 </div>
 

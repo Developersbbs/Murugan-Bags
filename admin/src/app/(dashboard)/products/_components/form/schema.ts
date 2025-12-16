@@ -72,7 +72,7 @@ export const productFormSchema = z
       .transform((val) => val ? val.toUpperCase() : val),
     categories: z
       .array(z.object({
-        categoryId: z.string(),
+        category: z.string(),
         categoryName: z.string().optional(),
         categorySlug: z.string().optional(),
         subcategoryIds: z.array(z.string()).optional().default([]),

@@ -29,6 +29,10 @@ interface CustomerProfileCardProps {
     phone?: string;
     created_at: string;
     updated_at: string;
+    address?: string;
+    city?: string;
+    state?: string;
+    zip_code?: string;
     orders: Order[];
     statistics: {
       total_orders: number;
@@ -86,6 +90,20 @@ export default function CustomerProfileCard({ customer }: CustomerProfileCardPro
             <h3 className="text-sm font-medium text-muted-foreground">Phone</h3>
             <p className="mt-1 text-sm">
               {customer.phone || 'N/A'}
+            </p>
+            <p className="mt-1 text-sm">
+              {customer.phone || 'N/A'}
+            </p>
+          </div>
+          <div>
+            <h3 className="text-sm font-medium text-muted-foreground">Address</h3>
+            <p className="mt-1 text-sm">
+              {[
+                customer.address,
+                customer.city,
+                customer.state,
+                customer.zip_code
+              ].filter(Boolean).join(', ') || 'N/A'}
             </p>
           </div>
           <div>

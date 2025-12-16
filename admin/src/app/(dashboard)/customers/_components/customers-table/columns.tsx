@@ -25,16 +25,23 @@ export const getColumns = ({
   hasPermission: HasPermission;
 }) => {
   const columns: ColumnDef<Customer>[] = [
-    
+
     {
       header: "name",
-      cell: ({ row }) => row.original.name,
+      cell: ({ row }) => (
+        <Link
+          href={`/customer-orders/${row.original.id || row.original._id}`}
+          className="font-medium hover:text-primary transition-colors hover:underline"
+        >
+          {row.original.name}
+        </Link>
+      ),
     },
     {
       header: "email",
       cell: ({ row }) => (
         <Typography className="block max-w-52 xl:max-w-60 truncate">
-          {row.original.email||"-"}
+          {row.original.email || "-"}
         </Typography>
       ),
     },
@@ -45,7 +52,7 @@ export const getColumns = ({
           {row.original.phone || "—"}
         </Typography>
       ),
-    },{
+    }, {
       header: "Created Date",
       cell: ({ row }) => format(row.original.created_at, "PP"),
     },

@@ -7,7 +7,7 @@ import { useCart } from '../../context/CartContext';
 import { useWishlist } from '../../context/WishlistContext';
 
 const Header = () => {
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); // Mobile menu state
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
   const [isMobileCategoryOpen, setIsMobileCategoryOpen] = useState(false);
@@ -175,6 +175,8 @@ const Header = () => {
               imageUrl = `http://localhost:5000${imageUrl}`;
             }
 
+
+
             return {
               name: cat.name,
               path: `/products?category=${cat.slug || cat.name}`,
@@ -255,18 +257,7 @@ const Header = () => {
                             src={cat.image}
                             alt={cat.name}
                             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                            onError={(e) => {
-                              e.target.onerror = null;
-                              e.target.style.display = 'none';
-                              // Create a fallback div if it doesn't exist
-                              const parent = e.target.parentElement;
-                              if (parent) {
-                                const fallback = document.createElement('div');
-                                fallback.className = 'w-full h-full bg-slate-200 flex items-center justify-center text-slate-400 text-xs font-bold';
-                                fallback.innerText = cat.name;
-                                parent.appendChild(fallback);
-                              }
-                            }}
+
                           />
                           <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-60 group-hover:opacity-40 transition-opacity duration-300"></div>
                         </div>

@@ -12,6 +12,11 @@ const ratingSchema = new mongoose.Schema(
       ref: "Product",
       required: true
     },
+    order_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Order",
+      required: true
+    },
     rating: {
       type: Number,
       required: true,
@@ -23,6 +28,9 @@ const ratingSchema = new mongoose.Schema(
       required: false,
       maxlength: 1000
     },
+    images: [{
+      type: String
+    }],
     verified_purchase: {
       type: Boolean,
       default: false

@@ -5,7 +5,7 @@ import { ExportDataButtons } from "@/components/shared/ExportDataButtons";
 export default function CustomerActions() {
   return (
     <Card className="mb-5">
-      <ExportDataButtons action={exportCustomers} tableName="customers" />
+      <ExportDataButtons action={exportCustomers} tableName="customers" hideJson={true} />
     </Card>
   );
 }

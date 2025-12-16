@@ -6,6 +6,8 @@ import { toast } from 'react-hot-toast';
 import { uploadProfilePhoto } from '../services/storageService';
 import orderService from '../services/orderService';
 import addressService from '../services/addressService';
+import ratingService from '../services/ratingService';
+import { Star, Trash2 } from 'lucide-react';
 
 const ProfilePage = () => {
   const [activeTab, setActiveTab] = useState('profile');
@@ -29,6 +31,8 @@ const ProfilePage = () => {
   const [selectedAvatarFile, setSelectedAvatarFile] = useState(null);
   const [orders, setOrders] = useState([]);
   const [isOrdersLoading, setIsOrdersLoading] = useState(false);
+  const [reviews, setReviews] = useState([]);
+  const [isReviewsLoading, setIsReviewsLoading] = useState(false);
   const [addresses, setAddresses] = useState([]);
   const [isAddressesLoading, setIsAddressesLoading] = useState(false);
   const [showAddressModal, setShowAddressModal] = useState(false);
@@ -56,13 +60,13 @@ const ProfilePage = () => {
         console.log('fetchUserData: Skipping because authChecked:', authChecked, 'authLoading:', authLoading);
         return;
       }
-      
+
       setIsPageLoading(true);
       setError(null);
-      
+
       const currentUser = auth.currentUser;
       console.log('fetchUserData: currentUser:', currentUser ? { uid: currentUser.uid, email: currentUser.email } : 'null');
-      
+
       if (!currentUser) {
         setError('Please sign in to view your profile');
         setIsPageLoading(false);
@@ -81,7 +85,7 @@ const ProfilePage = () => {
 
       const result = await response.json();
       console.log('fetchUserData: Raw API response:', result);
-      
+
       if (!result.success) {
         console.error('fetchUserData: API returned success=false:', result);
         throw new Error(result.error || 'Failed to load profile data');
@@ -99,9 +103,9 @@ const ProfilePage = () => {
         phone: data.phone || '',
         address: data.address || '',
         avatar: data.image_url || 'https://via.placeholder.com/150',
-        memberSince: data.created_at ? new Date(data.created_at).toLocaleDateString('en-US', { 
-          year: 'numeric', 
-          month: 'long' 
+        memberSince: data.created_at ? new Date(data.created_at).toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'long'
         }) : 'N/A'
       };
 
@@ -179,6 +183,37 @@ const ProfilePage = () => {
       setIsAddressesLoading(false);
     }
   }, [auth]);
+
+  const fetchUserReviews = useCallback(async () => {
+    try {
+      const currentUser = auth.currentUser;
+      if (!currentUser) return;
+
+      setIsReviewsLoading(true);
+      const response = await ratingService.getUserReviews();
+      if (response.success) {
+        setReviews(response.data || []);
+      } else {
+        toast.error('Failed to load reviews');
+      }
+    } catch (error) {
+      console.error('Error fetching reviews:', error);
+      toast.error('Failed to load reviews');
+    } finally {
+      setIsReviewsLoading(false);
+    }
+  }, [auth]);
+
+  const handleDeleteReview = async (reviewId) => {
+    if (!confirm('Are you sure you want to delete this review?')) return;
+    try {
+      await ratingService.deleteReview(reviewId);
+      toast.success('Review deleted successfully');
+      fetchUserReviews();
+    } catch (err) {
+      toast.error(err.message || 'Failed to delete review');
+    }
+  };
 
   const handleAddAddress = () => {
     setEditingAddress(null);
@@ -344,6 +379,13 @@ const ProfilePage = () => {
     }
   }, [activeTab, auth.currentUser, fetchUserAddresses]);
 
+  // Fetch reviews when reviews tab is active
+  useEffect(() => {
+    if (activeTab === 'reviews' && auth.currentUser) {
+      fetchUserReviews();
+    }
+  }, [activeTab, auth.currentUser, fetchUserReviews]);
+
   const handleEditProfile = useCallback((e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -390,7 +432,7 @@ const ProfilePage = () => {
       if (typeof avatarUrl === 'string' && avatarUrl.startsWith('data:')) {
         avatarUrl = userData.avatar;
       }
-      
+
       const response = await fetch(`http://localhost:5000/api/auth/profile/${currentUser.uid}`, {
         method: 'PUT',
         headers: {
@@ -411,7 +453,7 @@ const ProfilePage = () => {
       }
 
       const result = await response.json();
-      
+
       if (!result.success) {
         throw new Error(result.error || 'Failed to update profile');
       }
@@ -422,14 +464,14 @@ const ProfilePage = () => {
         avatar: avatarUrl,
         memberSince: userData.memberSince // Keep the original memberSince
       };
-      
+
       setUserData(updatedData);
       setFormData(updatedData);
       setSelectedAvatarFile(null);
       setIsEditing(false);
       setError(null);
       toast.success('Profile updated successfully!');
-      
+
       // Refetch user data to update the state
       await fetchUserData();
     } catch (error) {
@@ -583,6 +625,12 @@ const ProfilePage = () => {
                   className={`${activeTab === 'addresses' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'} whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm`}
                 >
                   Addresses
+                </button>
+                <button
+                  onClick={() => setActiveTab('reviews')}
+                  className={`${activeTab === 'reviews' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'} whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm`}
+                >
+                  My Reviews
                 </button>
               </nav>
             </div>
@@ -836,11 +884,10 @@ const ProfilePage = () => {
                                 </div>
                                 <div className="mt-4 flex-shrink-0 sm:mt-0 sm:ml-5">
                                   <div className="flex items-center">
-                                    <div className={`h-5 w-5 rounded-full flex items-center justify-center ${
-                                      order.status === 'delivered' ? 'bg-green-500' :
+                                    <div className={`h-5 w-5 rounded-full flex items-center justify-center ${order.status === 'delivered' ? 'bg-green-500' :
                                       order.status === 'shipped' ? 'bg-blue-500' :
-                                      order.status === 'processing' ? 'bg-yellow-500' : 'bg-gray-500'
-                                    }`}>
+                                        order.status === 'processing' ? 'bg-yellow-500' : 'bg-gray-500'
+                                      }`}>
                                       <svg className="h-3.5 w-3.5 text-white" fill="currentColor" viewBox="0 0 20 20">
                                         <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                                       </svg>
@@ -955,7 +1002,7 @@ const ProfilePage = () => {
                               </div>
                               <div className="mt-2 flex items-center space-x-2">
                                 <div className="flex space-x-2">
-                                  <button 
+                                  <button
                                     className="text-xs text-blue-600 hover:text-blue-800 font-medium"
                                     onClick={() => handleEditAddress(address)}
                                   >
@@ -964,7 +1011,7 @@ const ProfilePage = () => {
                                   {!address.is_default && (
                                     <>
                                       <span className="text-gray-300">|</span>
-                                      <button 
+                                      <button
                                         className="text-xs text-red-600 hover:text-red-800 font-medium"
                                         onClick={() => handleDeleteAddress(address)}
                                       >
@@ -1016,7 +1063,7 @@ const ProfilePage = () => {
                             </svg>
                           </button>
                         </div>
-                        
+
                         <div className="space-y-4">
                           <div>
                             <label htmlFor="addressType" className="block text-sm font-medium text-gray-700">
@@ -1200,6 +1247,78 @@ const ProfilePage = () => {
                   </div>
                 )}
 
+              </div>
+            )}
+            {activeTab === 'reviews' && (
+              <div className="px-4 py-5 sm:p-6">
+                <div className="md:flex md:items-center md:justify-between">
+                  <div className="flex-1 min-w-0">
+                    <h2 className="text-lg font-medium leading-6 text-gray-900">My Reviews</h2>
+                    <p className="mt-1 text-sm text-gray-500">
+                      Manage reviews you have posted for products.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-6">
+                  {isReviewsLoading ? (
+                    <div className="flex justify-center p-8">
+                      <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+                    </div>
+                  ) : reviews.length === 0 ? (
+                    <div className="text-center py-12 text-gray-500">
+                      You haven't posted any reviews yet.
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {reviews.map((review) => (
+                        <div key={review._id} className="bg-white border rounded-lg p-4 flex gap-4">
+                          <img
+                            src={review.product_id?.image_url?.[0] || 'https://via.placeholder.com/64'}
+                            alt={review.product_id?.name}
+                            className="w-16 h-16 object-cover rounded"
+                          />
+                          <div className="flex-1">
+                            <div className="flex justify-between items-start">
+                              <div>
+                                <h3 className="font-medium text-gray-900">{review.product_id?.name}</h3>
+                                <div className="flex items-center gap-1 mt-1">
+                                  {Array.from({ length: 5 }).map((_, i) => (
+                                    <Star
+                                      key={i}
+                                      size={14}
+                                      className={`${i < review.rating ? "fill-yellow-400 text-yellow-500" : "text-gray-300"}`}
+                                    />
+                                  ))}
+                                  <span className="text-xs text-gray-500 ml-2">
+                                    {new Date(review.created_at).toLocaleDateString()}
+                                  </span>
+                                </div>
+                              </div>
+                              <div className="flex bg-gray-100 rounded px-2 py-1 text-xs font-medium uppercase tracking-wide">
+                                <span className={
+                                  review.status === 'approved' ? 'text-green-700' :
+                                    review.status === 'rejected' ? 'text-red-700' : 'text-yellow-700'
+                                }>
+                                  {review.status}
+                                </span>
+                              </div>
+                            </div>
+                            <p className="mt-2 text-sm text-gray-600">{review.review}</p>
+                            <div className="mt-3 flex justify-end">
+                              <button
+                                onClick={() => handleDeleteReview(review._id)}
+                                className="text-red-500 hover:text-red-700 text-sm flex items-center gap-1"
+                              >
+                                <Trash2 size={14} /> Delete Review
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>

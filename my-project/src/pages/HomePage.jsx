@@ -278,6 +278,13 @@ const HomePage = () => {
         if (data.success && data.data && data.data.length > 0) {
           const mappedProducts = data.data.map(product => {
             let imageUrl = product.image_url?.[0] || product.images?.[0];
+
+            // If no main image, check variants
+            if (!imageUrl && product.product_variants && product.product_variants.length > 0) {
+              const variant = product.product_variants[0];
+              imageUrl = variant.images?.[0] || variant.image_url?.[0] || variant.image;
+            }
+
             if (imageUrl && imageUrl.startsWith('/')) {
               imageUrl = `http://localhost:5000${imageUrl}`;
             }
@@ -382,6 +389,13 @@ const HomePage = () => {
         if (data.success && data.data) {
           const mappedProducts = data.data.map(product => {
             let imageUrl = product.image_url?.[0] || product.images?.[0];
+
+            // If no main image, check variants
+            if (!imageUrl && product.product_variants && product.product_variants.length > 0) {
+              const variant = product.product_variants[0];
+              imageUrl = variant.images?.[0] || variant.image_url?.[0] || variant.image;
+            }
+
             if (imageUrl && imageUrl.startsWith('/')) {
               imageUrl = `http://localhost:5000${imageUrl}`;
             }
@@ -882,41 +896,52 @@ const HomePage = () => {
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-rose-600"></div>
               </div>
             ) : colorProducts.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-                {colorProducts.map((product, index) => (
-                  <div key={product.id || index} className="group bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2">
-                    <div className="aspect-square overflow-hidden bg-slate-100 relative">
-                      <img
-                        src={product.image}
-                        alt={product.name}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                        loading="lazy"
-                        onError={(e) => {
-                          e.target.onerror = null;
-                          e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100%25' height='100%25' viewBox='0 0 800 600' preserveAspectRatio='none'%3E%3Crect width='800' height='600' fill='%23f1f5f9'/%3E%3Ctext x='400' y='300' font-family='sans-serif' font-size='48' fill='%2394a3b8' text-anchor='middle' dy='.3em'%3ENo Image%3C/text%3E%3C/svg%3E";
-                        }}
-                      />
-                      <div className="absolute top-4 right-4 bg-rose-600 text-white px-3 py-1 rounded-full text-xs font-bold">
-                        NEW
-                      </div>
-                    </div>
-                    <div className="p-6">
-                      <h3 className="text-lg font-bold mb-3 text-slate-800 group-hover:text-rose-600 transition-colors duration-300">{product.name}</h3>
-                      <div className="flex items-center justify-between mb-4">
-                        <div>
-                          <span className="text-2xl font-bold text-slate-900">₹{product.price}</span>
-                          {product.originalPrice && (
-                            <span className="text-sm text-slate-400 line-through ml-2">₹{product.originalPrice}</span>
-                          )}
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                  {colorProducts.map((product, index) => (
+                    <div key={product.id || index} className="group bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2">
+                      <div className="aspect-square overflow-hidden bg-slate-100 relative">
+                        <img
+                          src={product.image}
+                          alt={product.name}
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                          loading="lazy"
+                          onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100%25' height='100%25' viewBox='0 0 800 600' preserveAspectRatio='none'%3E%3Crect width='800' height='600' fill='%23f1f5f9'/%3E%3Ctext x='400' y='300' font-family='sans-serif' font-size='48' fill='%2394a3b8' text-anchor='middle' dy='.3em'%3ENo Image%3C/text%3E%3C/svg%3E";
+                          }}
+                        />
+                        <div className="absolute top-4 right-4 bg-rose-600 text-white px-3 py-1 rounded-full text-xs font-bold">
+                          NEW
                         </div>
                       </div>
-                      <button className="w-full bg-slate-900 hover:bg-rose-600 text-white py-3 rounded-xl font-bold transition-all duration-300 transform active:scale-95 shadow-lg hover:shadow-rose-500/30 flex items-center justify-center">
-                        <FaShoppingBag className="mr-2" /> Add to Cart
-                      </button>
+                      <div className="p-6">
+                        <h3 className="text-lg font-bold mb-3 text-slate-800 group-hover:text-rose-600 transition-colors duration-300">{product.name}</h3>
+                        <div className="flex items-center justify-between mb-4">
+                          <div>
+                            <span className="text-2xl font-bold text-slate-900">₹{product.price}</span>
+                            {product.originalPrice && (
+                              <span className="text-sm text-slate-400 line-through ml-2">₹{product.originalPrice}</span>
+                            )}
+                          </div>
+                        </div>
+                        <button className="w-full bg-slate-900 hover:bg-rose-600 text-white py-3 rounded-xl font-bold transition-all duration-300 transform active:scale-95 shadow-lg hover:shadow-rose-500/30 flex items-center justify-center">
+                          <FaShoppingBag className="mr-2" /> Add to Cart
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+                <div className="text-center mt-12">
+                  <Link
+                    to={`/products?color=${encodeURIComponent(selectedColor)}`}
+                    className="inline-flex items-center px-8 py-3 bg-white text-slate-900 border border-slate-200 rounded-full font-bold hover:bg-rose-600 hover:text-white hover:border-transparent transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg group"
+                  >
+                    View More {selectedColor} Bags
+                    <FaArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" />
+                  </Link>
+                </div>
+              </>
             ) : (
               <div className="text-center py-10">
                 <p className="text-xl text-slate-500">No products found in {selectedColor}.</p>

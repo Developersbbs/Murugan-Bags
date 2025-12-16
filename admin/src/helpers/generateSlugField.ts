@@ -11,7 +11,7 @@ export function generateSlugField<T extends FieldValues>(
   options: SlugifyOptions<T>
 ) {
   const { sourceField, targetField } = options;
-
+  
   try {
     const sourceValue = form.getValues(sourceField);
 

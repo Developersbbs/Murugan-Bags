@@ -15,21 +15,23 @@ type ActionResponse = SuccessResponse | ErrorResponse;
 type Props = {
   tableName: string; // The name of the table/resource (e.g., 'categories', 'products', 'customers')
   action: () => Promise<ActionResponse>;
+  hideJson?: boolean;
 };
 
-export function ExportDataButtons({ tableName, action }: Props) {
+export function ExportDataButtons({ tableName, action, hideJson }: Props) {
+  const props = { tableName, action, hideJson };
   const [isPending, startTransition] = useTransition();
   const searchParams = useSearchParams();
   const [isExporting, setIsExporting] = useState(false);
-  
+
   const handleExport = async (format: 'csv' | 'json') => {
     setIsExporting(true);
     const toastId = toast.loading(`Exporting ${tableName} as ${format.toUpperCase()}...`);
-    
+
     try {
       // Build query params from current search params
       const params = new URLSearchParams();
-      
+
       // Add all current search params to the export request
       searchParams.forEach((value, key) => {
         params.set(key, value);
@@ -77,15 +79,17 @@ export function ExportDataButtons({ tableName, action }: Props) {
         {isExporting ? "Exporting..." : "Export CSV"}
       </Button>
 
-      <Button
-        variant="outline"
-        className="h-12"
-        disabled={isExporting}
-        onClick={() => handleExport("json")}
-      >
-        <FileJson className="mr-2 size-4" />
-        {isExporting ? "Exporting..." : "Export JSON"}
-      </Button>
+      {!tableName.includes('customers') && !props.hideJson && (
+        <Button
+          variant="outline"
+          className="h-12"
+          disabled={isExporting}
+          onClick={() => handleExport("json")}
+        >
+          <FileJson className="mr-2 size-4" />
+          {isExporting ? "Exporting..." : "Export JSON"}
+        </Button>
+      )}
     </div>
   );
 }

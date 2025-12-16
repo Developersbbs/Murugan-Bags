@@ -141,6 +141,8 @@ app.use("/api/upload", uploadRoutes);
 const bulkOrdersRoutes = require("./routes/bulkOrders");
 app.use("/api/bulk-orders", bulkOrdersRoutes);
 console.log('✅ Payments routes mounted at /api/payments');
+const ratingsRoutes = require("./routes/ratings");
+app.use("/api/ratings", ratingsRoutes);
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 

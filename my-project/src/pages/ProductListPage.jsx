@@ -5,6 +5,8 @@ import ProductCard from '../components/product/ProductCard';
 import SidebarFilters from '../components/home/SidebarFilters';
 import { Filter, X, Search, ChevronLeft, ChevronRight, Grid3X3, List } from 'lucide-react';
 
+import { useGetCategoriesQuery } from '../redux/services/categories';
+
 // Number of products per page
 const ITEMS_PER_PAGE = 12;
 
@@ -24,6 +26,10 @@ const ProductListPage = () => {
     inStock: false,
     color: null,
   });
+
+  // Fetch categories for filter display
+  const { data: categoriesData } = useGetCategoriesQuery();
+  const categories = useMemo(() => categoriesData?.data || [], [categoriesData]);
 
   // Fetch all products with error handling
   const { data: apiResponse, isLoading, error, isError } = useGetProductsQuery({
@@ -179,13 +185,40 @@ const ProductListPage = () => {
 
   // Get active filters for display
   const activeFilters = useMemo(() => {
-    const filters = [];
-    if (filters.category) filters.push({ type: 'category', value: filters.category });
-    if (filters.subcategory) filters.push({ type: 'subcategory', value: filters.subcategory });
-    if (filters.rating) filters.push({ type: 'rating', value: `${filters.rating} Stars & Up` });
-    if (searchTerm) filters.push({ type: 'search', value: searchTerm });
-    return filters;
-  }, [filters, searchTerm]);
+    const activeFiltersList = [];
+
+    if (filters.category) {
+      const category = categories.find(c => c._id === filters.category);
+      activeFiltersList.push({
+        type: 'category',
+        value: category ? category.name : filters.category,
+        id: filters.category // Keep ID for clearing
+      });
+    }
+
+    if (filters.subcategory) {
+      // Find subcategory across all categories
+      let subcategoryName = filters.subcategory;
+      for (const cat of categories) {
+        const sub = cat.subcategories?.find(s => s._id === filters.subcategory);
+        if (sub) {
+          subcategoryName = sub.name;
+          break;
+        }
+      }
+      activeFiltersList.push({
+        type: 'subcategory',
+        value: subcategoryName,
+        id: filters.subcategory
+      });
+    }
+
+    if (filters.rating) activeFiltersList.push({ type: 'rating', value: `${filters.rating} Stars & Up` });
+    if (filters.search) activeFiltersList.push({ type: 'search', value: filters.search }); // Fixed: use filters.search if available or searchTerm
+    if (searchTerm) activeFiltersList.push({ type: 'search', value: searchTerm });
+
+    return activeFiltersList;
+  }, [filters, searchTerm, categories]);
 
   // Destructure the memoized values
   const { products, totalPages, totalItems } = useMemo(() => {
@@ -208,10 +241,16 @@ const ProductListPage = () => {
         product.description?.toLowerCase().includes(searchTerm.toLowerCase());
 
       // Category filter
+      // Category filter
       const matchesCategory = !filters.category ||
         (product.categories && product.categories.some(cat =>
           cat.category?.name === filters.category ||
-          cat.category?._id === filters.category
+          cat.category?.slug === filters.category ||
+          // Case insensitive checks
+          (cat.category?.name && filters.category && cat.category.name.toLowerCase() === filters.category.toLowerCase()) ||
+          (cat.category?.slug && filters.category && cat.category.slug.toLowerCase() === filters.category.toLowerCase()) ||
+          String(cat.category?._id) === String(filters.category) ||
+          (typeof cat.category === 'string' && cat.category === filters.category)
         ));
 
       // Subcategory filter
@@ -219,9 +258,11 @@ const ProductListPage = () => {
         (product.categories && product.categories.some(cat =>
           cat.subcategories?.some(sub =>
             sub.name === filters.subcategory ||
-            sub._id === filters.subcategory
+            String(sub._id) === String(filters.subcategory)
           )
         ));
+
+      // ... rest of filters ...
 
       // Price range filter - try multiple price fields
       const price = Number(product.selling_price || product.salePrice || product.price || product.mrp || 0);

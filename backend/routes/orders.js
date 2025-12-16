@@ -10,8 +10,8 @@ const router = express.Router();
 
 // Test route to verify orders routes are loading
 router.get("/test", (req, res) => {
-  res.json({ 
-    success: true, 
+  res.json({
+    success: true,
     message: "Orders routes are working",
     timestamp: new Date().toISOString()
   });
@@ -22,27 +22,27 @@ router.get("/check-purchase/:productId", authenticateToken, async (req, res) => 
   try {
     const { productId } = req.params;
     const Customer = require('../models/Customer');
-    
+
     // Use authenticated user's ID
     const customerId = req.user.id;
-    
+
     // For JWT auth, find customer by ID
     const customer = await Customer.findById(customerId);
-    
+
     if (!customer) {
       return res.json({
         success: true,
         hasPurchased: false
       });
     }
-    
+
     // Check if customer has purchased this product using new embedded items schema
     const hasPurchased = await Order.findOne({
       customer_id: customer._id,
       status: { $in: ['processing', 'shipped', 'delivered'] }, // Include processing orders for testing
       'items.product_id': productId
     });
-    
+
     res.json({
       success: true,
       hasPurchased: !!hasPurchased
@@ -59,23 +59,23 @@ router.get("/check-purchase/:productId", authenticateToken, async (req, res) => 
 // GET all orders with pagination and filtering
 router.get("/", async (req, res) => {
   try {
-    const { 
-      page = 1, 
-      limit = 10, 
-      search, 
-      status, 
-      method, 
-      startDate, 
-      endDate 
+    const {
+      page = 1,
+      limit = 10,
+      search,
+      status,
+      method,
+      startDate,
+      endDate
     } = req.query;
-    
+
     const pageNum = parseInt(page);
     const limitNum = parseInt(limit);
     const skip = (pageNum - 1) * limitNum;
-    
+
     // Build filter query
     let filter = {};
-    
+
     if (search) {
       filter.$or = [
         { invoice_no: { $regex: search, $options: "i" } },
@@ -83,15 +83,15 @@ router.get("/", async (req, res) => {
         { "shipping_address.email": { $regex: search, $options: "i" } }
       ];
     }
-    
+
     if (status) {
       filter.status = status;
     }
-    
+
     if (method) {
       filter.payment_method = method;
     }
-    
+
     if (startDate || endDate) {
       filter.order_time = {};
       if (startDate) {
@@ -101,7 +101,7 @@ router.get("/", async (req, res) => {
         filter.order_time.$lte = new Date(endDate);
       }
     }
-    
+
     // Execute queries
     const orders = await Order.find(filter)
       .populate({
@@ -113,10 +113,10 @@ router.get("/", async (req, res) => {
       .sort({ order_time: -1 })
       .skip(skip)
       .limit(limitNum);
-      
+
     const total = await Order.countDocuments(filter);
     const totalPages = Math.ceil(total / limitNum);
-    
+
     // Transform orders to match frontend structure
     const transformedOrders = orders.map(order => {
       const transformed = {
@@ -129,16 +129,16 @@ router.get("/", async (req, res) => {
         },
         customer: order.customer_id
       };
-      
+
       console.log('🔍 Transformed order:', {
         _id: order._id,
         id: transformed.id,
         invoice_no: order.invoice_no
       });
-      
+
       return transformed;
     });
-    
+
     res.json({
       success: true,
       items: transformedOrders,
@@ -153,9 +153,9 @@ router.get("/", async (req, res) => {
     });
   } catch (err) {
     console.error('Error fetching orders:', err);
-    res.status(500).json({ 
-      success: false, 
-      error: err.message 
+    res.status(500).json({
+      success: false,
+      error: err.message
     });
   }
 });
@@ -165,7 +165,7 @@ router.get("/customer/:customerId", authenticateHybridToken, async (req, res) =>
   try {
     const orders = await Order.find({ customer_id: req.params.customerId })
       .sort({ order_time: -1 });
-    
+
     // Get order items for each order
     const ordersWithItems = await Promise.all(
       orders.map(async (order) => {
@@ -176,7 +176,7 @@ router.get("/customer/:customerId", authenticateHybridToken, async (req, res) =>
         };
       })
     );
-    
+
     res.json(ordersWithItems);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -188,7 +188,7 @@ router.get("/customer/firebase/:firebaseUid", authenticateHybridToken, async (re
   console.log('Firebase orders route called with UID:', req.params.firebaseUid);
   try {
     const Customer = require('../models/Customer');
-    
+
     // Find customer by Firebase UID
     const customer = await Customer.findOne({ firebase_uid: req.params.firebaseUid });
     console.log('Customer found:', customer ? customer._id : 'Not found');
@@ -198,9 +198,9 @@ router.get("/customer/firebase/:firebaseUid", authenticateHybridToken, async (re
 
     const orders = await Order.find({ customer_id: customer._id.toString() })
       .sort({ order_time: -1 });
-    
+
     console.log('Orders found:', orders.length);
-    
+
     // Enhance items with product information (items are now embedded in order)
     const ordersWithItems = await Promise.all(
       orders.map(async (order) => {
@@ -213,8 +213,8 @@ router.get("/customer/firebase/:firebaseUid", authenticateHybridToken, async (re
                 ...item.toObject(),
                 id: item._id,
                 name: product ? product.name : 'Product Not Found',
-                image: product && product.image_url && product.image_url.length > 0 
-                  ? product.image_url[0] 
+                image: product && product.image_url && product.image_url.length > 0
+                  ? product.image_url[0]
                   : '/images/products/placeholder-product.svg',
                 sku: product ? product.sku : 'N/A',
                 price: item.price || 0 // Use price field from new schema
@@ -231,7 +231,7 @@ router.get("/customer/firebase/:firebaseUid", authenticateHybridToken, async (re
             }
           })
         );
-        
+
         return {
           ...order.toObject(),
           items: enhancedItems,
@@ -239,7 +239,7 @@ router.get("/customer/firebase/:firebaseUid", authenticateHybridToken, async (re
         };
       })
     );
-    
+
     res.json(ordersWithItems);
   } catch (err) {
     console.error('Error fetching orders by Firebase UID:', err);
@@ -248,13 +248,13 @@ router.get("/customer/firebase/:firebaseUid", authenticateHybridToken, async (re
 });
 
 // Export orders to CSV
-router.get("/export", async (req, res) => {
+router.get("/export/csv", async (req, res) => {
   try {
     const { search, status, method, startDate, endDate } = req.query;
-    
+
     // Build filter query
     let filter = {};
-    
+
     if (search) {
       filter.$or = [
         { invoice_no: { $regex: search, $options: "i" } },
@@ -262,15 +262,15 @@ router.get("/export", async (req, res) => {
         { "shipping_address.email": { $regex: search, $options: "i" } }
       ];
     }
-    
+
     if (status) {
       filter.status = status;
     }
-    
+
     if (method) {
       filter.payment_method = method;
     }
-    
+
     if (startDate || endDate) {
       filter.order_time = {};
       if (startDate) {
@@ -280,7 +280,7 @@ router.get("/export", async (req, res) => {
         filter.order_time.$lte = new Date(endDate);
       }
     }
-    
+
     // Fetch orders with customer data
     const orders = await Order.find(filter)
       .populate({
@@ -289,7 +289,7 @@ router.get("/export", async (req, res) => {
         model: "Customers",
       })
       .sort({ order_time: -1 });
-    
+
     // Transform orders for CSV
     const csvOrders = orders.map(order => ({
       'Invoice No': order.invoice_no,
@@ -303,20 +303,20 @@ router.get("/export", async (req, res) => {
       'Total Amount': order.total_amount,
       'Shipping Address': `${order.shipping_address?.street || ''}, ${order.shipping_address?.city || ''}, ${order.shipping_address?.state || ''} ${order.shipping_address?.zipCode || ''}`.trim()
     }));
-    
+
     // Convert to CSV
     const csv = convertToCSV(csvOrders);
-    
+
     // Set headers for CSV download
     res.setHeader('Content-Type', 'text/csv');
     res.setHeader('Content-Disposition', `attachment; filename=orders_export_${new Date().toISOString().split('T')[0]}.csv`);
-    
+
     res.send(csv);
   } catch (err) {
     console.error('Error exporting orders:', err);
-    res.status(500).json({ 
-      success: false, 
-      error: err.message 
+    res.status(500).json({
+      success: false,
+      error: err.message
     });
   }
 });
@@ -324,10 +324,10 @@ router.get("/export", async (req, res) => {
 // Helper function to convert array of objects to CSV
 function convertToCSV(data) {
   if (!data || data.length === 0) return '';
-  
+
   const headers = Object.keys(data[0]);
   const csvHeaders = headers.join(',');
-  
+
   const csvRows = data.map(row => {
     return headers.map(header => {
       const value = row[header];
@@ -338,7 +338,7 @@ function convertToCSV(data) {
       return value || '';
     }).join(',');
   });
-  
+
   return csvHeaders + '\n' + csvRows.join('\n');
 }
 
@@ -347,7 +347,7 @@ router.get("/:id", async (req, res) => {
   try {
     const orderId = req.params.id;
     console.log('🔍 Fetching order with ID:', orderId);
-    
+
     const order = await Order.findOne({ _id: orderId })
       .populate({
         path: "customer_id",
@@ -355,21 +355,21 @@ router.get("/:id", async (req, res) => {
         model: "Customers",
       })
       .select('-__v');
-      
+
     if (!order) {
       console.log('❌ Order not found with ID:', orderId);
       return res.status(404).json({ error: "Order not found" });
     }
-    
+
     console.log('✅ Found order:', {
       _id: order._id,
       invoice_no: order.invoice_no,
       status: order.status
     });
-    
+
     // Get order items with product details
     const items = await OrderItem.find({ order_id: order.invoice_no });
-    
+
     // Enhance items with product information
     const enhancedItems = await Promise.all(
       items.map(async (item) => {
@@ -402,7 +402,7 @@ router.get("/:id", async (req, res) => {
         }
       })
     );
-    
+
     // Transform order to match frontend structure
     const transformedOrder = {
       ...order.toObject(),
@@ -417,13 +417,13 @@ router.get("/:id", async (req, res) => {
       order_items: enhancedItems,
       coupons: order.coupons || null
     };
-    
+
     console.log('🔍 Transformed single order:', {
       _id: order._id,
       id: transformedOrder.id,
       invoice_no: order.invoice_no
     });
-    
+
     res.json({
       success: true,
       data: transformedOrder
@@ -552,7 +552,7 @@ router.put("/:id/status", async (req, res) => {
   try {
     const { status } = req.body;
     const orderId = req.params.id;
-    
+
     // Validate status
     const validStatuses = ["delivered", "cancelled", "pending", "processing", "shipped", "dispatched"];
     if (!validStatuses.includes(status)) {
@@ -570,7 +570,7 @@ router.put("/:id/status", async (req, res) => {
       try {
         const Product = require('../models/Product');
         const Stock = require('../models/Stock');
-        
+
         // Update stock for each item from the embedded items array
         for (const item of currentOrder.items) {
           // Update Product collection stock
@@ -578,10 +578,10 @@ router.put("/:id/status", async (req, res) => {
           if (product) {
             const originalStock = product.baseStock || 0;
             const newStock = Math.max(0, originalStock - item.quantity);
-            
+
             // Update product stock
             product.baseStock = newStock;
-            
+
             // Update product status based on new stock
             const minStock = product.minStock || 5;
             if (newStock <= 0) {
@@ -592,16 +592,16 @@ router.put("/:id/status", async (req, res) => {
             } else {
               product.status = 'selling';
             }
-            
+
             await product.save();
             console.log(`Updated product stock for ${item.product_id}: ${originalStock} → ${newStock} units remaining`);
-            
+
             // Also update Stock collection for tracking
-            let stock = await Stock.findOne({ 
+            let stock = await Stock.findOne({
               productId: item.product_id,
-              variantId: item.variant_id || null 
+              variantId: item.variant_id || null
             });
-            
+
             if (stock) {
               stock.quantity = newStock;
               stock.notes = `Updated via order dispatch: ${originalStock} → ${newStock} (Order: ${currentOrder.invoice_no})`;
@@ -629,9 +629,9 @@ router.put("/:id/status", async (req, res) => {
     }
 
     // Update the order status
-    const updateData = { 
-      status, 
-      updated_at: new Date() 
+    const updateData = {
+      status,
+      updated_at: new Date()
     };
 
     const order = await Order.findByIdAndUpdate(
@@ -655,22 +655,22 @@ router.put("/:id/status", async (req, res) => {
 router.patch("/:id/status", authenticateHybridToken, async (req, res) => {
   try {
     const { status, trackingNumber } = req.body;
-    
+
     // Validate status
     const validStatuses = ["delivered", "cancelled", "pending", "processing", "shipped"];
     if (!validStatuses.includes(status)) {
       return res.status(400).json({ error: "Invalid status" });
     }
 
-    const updateData = { 
-      status, 
-      updated_at: new Date() 
+    const updateData = {
+      status,
+      updated_at: new Date()
     };
 
     // If status is shipped and tracking number provided, add tracking
     if (status === 'shipped' && trackingNumber) {
       updateData.tracking_number = trackingNumber;
-      
+
       // Set estimated delivery if not already set
       if (!updateData.estimated_delivery) {
         const estimatedDelivery = new Date();
@@ -686,7 +686,7 @@ router.patch("/:id/status", authenticateHybridToken, async (req, res) => {
     );
 
     if (!order) return res.status(404).json({ error: "Order not found" });
-    
+
     res.json({
       success: true,
       message: "Order status updated successfully",
@@ -728,13 +728,13 @@ router.get("/:id/invoice", authenticateHybridToken, async (req, res) => {
     const OrderItem = require('../models/OrderItem');
     const Customer = require('../models/Customer');
     const Product = require('../models/Product');
-    
+
     const order = await Order.findById(req.params.id);
     if (!order) return res.status(404).json({ error: "Order not found" });
 
     // Get customer details
     const customer = await Customer.findById(order.customer_id);
-    
+
     // Get order items with product details (items are now embedded in order)
     const enhancedItems = await Promise.all(
       order.items.map(async (item) => {
@@ -868,11 +868,11 @@ router.get("/:id/invoice", authenticateHybridToken, async (req, res) => {
     // Set headers for PDF download
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="invoice-${order.invoice_no}.pdf"`);
-    
+
     // For now, send HTML as a simple solution
     // In production, you would use puppeteer or similar to convert to PDF
     res.send(htmlContent);
-    
+
   } catch (err) {
     console.error('Error generating invoice:', err);
     res.status(500).json({ error: err.message });

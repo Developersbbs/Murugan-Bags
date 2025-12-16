@@ -1,5 +1,5 @@
 import React from 'react';
-import { 
+import {
   XMarkIcon,
   TruckIcon,
   ArrowDownTrayIcon,
@@ -12,14 +12,21 @@ import {
 } from '@heroicons/react/24/outline';
 import { formatCurrency } from '../../utils/format';
 import OrderItem from './OrderItem';
+import ReviewModal from '../reviews/ReviewModal';
+import { Star } from 'lucide-react';
+import { useState } from 'react';
 
-const OrderDetailsModal = ({ 
-  order, 
-  isOpen, 
-  onClose, 
-  onTrackOrder, 
-  onDownloadInvoice 
+const OrderDetailsModal = ({
+  order,
+  isOpen,
+  onClose,
+  onTrackOrder,
+
+  onDownloadInvoice
 }) => {
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [selectedProductForReview, setSelectedProductForReview] = useState(null);
+
   if (!isOpen || !order) return null;
 
   const getStatusIcon = (status) => {
@@ -66,7 +73,7 @@ const OrderDetailsModal = ({
     <div className="fixed inset-0 z-50 overflow-y-auto">
       <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
         {/* Background overlay */}
-        <div 
+        <div
           className="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75"
           onClick={onClose}
         />
@@ -145,6 +152,7 @@ const OrderDetailsModal = ({
                           <p className="text-sm text-gray-600">Quantity: {item.quantity}</p>
                         </div>
                       </div>
+
                       <div className="text-right">
                         <p className="font-semibold text-gray-900">
                           {formatCurrency(item.price)}
@@ -152,6 +160,18 @@ const OrderDetailsModal = ({
                         <p className="text-sm text-gray-600">
                           Total: {formatCurrency(item.price * item.quantity)}
                         </p>
+                        {order.status === 'delivered' && (
+                          <button
+                            onClick={() => {
+                              setSelectedProductForReview(item);
+                              setShowReviewModal(true);
+                            }}
+                            className="mt-2 inline-flex items-center text-xs font-medium text-blue-600 hover:text-blue-800"
+                          >
+                            <Star className="w-3 h-3 mr-1" />
+                            Rate Product
+                          </button>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -256,7 +276,27 @@ const OrderDetailsModal = ({
           </div>
         </div>
       </div>
-    </div>
+
+
+      {/* Review Modal */}
+      {
+        showReviewModal && selectedProductForReview && (
+          <ReviewModal
+            isOpen={showReviewModal}
+            onClose={() => {
+              setShowReviewModal(false);
+              setSelectedProductForReview(null);
+            }}
+            product={selectedProductForReview}
+            orderId={order.id}
+            onSuccess={() => {
+              // Optional: refresh order details or mark item as reviewed in local state
+              // For now, we rely on the modal closing and toast success
+            }}
+          />
+        )
+      }
+    </div >
   );
 };
 
