@@ -187,7 +187,10 @@ export const CartProvider = ({ children }) => {
           let variantImage = null;
           let matchingVariant = null;
 
-          if (item.product_id.product_variants) {
+          const isProduct = item.modelType === 'Product' || (!item.modelType && item.product_id.product_variants);
+          const isCombo = item.modelType === 'ComboOffer' || item.isCombo;
+
+          if (isProduct && item.product_id.product_variants) {
             console.log(`🔍 Debugging ${item.name}:`, {
               sku: item.variant_sku,
               variants: item.product_id.product_variants.length
@@ -218,23 +221,36 @@ export const CartProvider = ({ children }) => {
             }
           }
 
-          const resolvedPrice = (matchingVariant && matchingVariant.selling_price) || item.price || item.product_id.selling_price || 0;
-          console.log(`💰 Price Debug for ${item.name}:`, {
+          const resolvedPrice = (matchingVariant && matchingVariant.selling_price) || item.price || (isProduct ? item.product_id.selling_price : item.product_id.price) || 0;
+
+          // Determine image based on type
+          let displayImage = variantImage || item.product_image;
+          if (!displayImage) {
+            if (isProduct && item.product_id.image_url && item.product_id.image_url[0]) {
+              displayImage = item.product_id.image_url[0];
+            } else if (isCombo && item.product_id.image) {
+              displayImage = item.product_id.image;
+            }
+          }
+
+          console.log(`💰 Price Debug for ${item.product_name || item.name}:`, {
+            type: item.modelType || 'Unknown',
             variantPrice: matchingVariant?.selling_price,
             savedPrice: item.price,
-            mainPrice: item.product_id.selling_price,
+            mainPrice: isProduct ? item.product_id.selling_price : item.product_id.price,
             resolved: resolvedPrice
           });
 
           return {
             id: item.product_id._id || item.product_id,
             cartItemId: item._id,
-            name: item.product_id.name || item.name || 'Unknown Product',
+            name: item.product_id.name || item.product_name || item.name || item.product_id.title || 'Unknown Product', // Handle Combo 'title' vs Product 'name' vs cached 'product_name'
             price: resolvedPrice,
             quantity: item.quantity || 1,
-            image: variantImage || (item.product_id.image_url && item.product_id.image_url[0]) || item.product_image || null,
+            image: displayImage || null,
             variant: item.variant_attributes || {},
-            stock: item.product_id.stock || 999
+            stock: item.product_id.stock || 999,
+            isCombo: isCombo
           };
         });
 
@@ -424,7 +440,8 @@ export const CartProvider = ({ children }) => {
             : ((product.image_url && product.image_url[0]) || product.images?.[0]?.url || null),
           variant_name: variant ? (variant.name || Object.values(variant.attributes || {}).join(', ')) : null,
           variant_sku: variant ? variant.sku : null,
-          variant_attributes: variant ? (variant.attributes || {}) : {}
+          variant_attributes: variant ? (variant.attributes || {}) : {},
+          isCombo: product.isCombo || false
         };
 
         console.log('CartContext: Sending cart item:', cartItem);
@@ -471,7 +488,10 @@ export const CartProvider = ({ children }) => {
             let variantImage = null;
             let matchingVariant = null;
 
-            if (item.product_id.product_variants) {
+            const isProduct = item.modelType === 'Product' || (!item.modelType && item.product_id.product_variants);
+            const isCombo = item.modelType === 'ComboOffer' || item.isCombo;
+
+            if (isProduct && item.product_id.product_variants) {
               // Priority 1: Match by SKU
               if (item.variant_sku) {
                 matchingVariant = item.product_id.product_variants.find(v => v.sku === item.variant_sku);
@@ -492,17 +512,28 @@ export const CartProvider = ({ children }) => {
               }
             }
 
-            const resolvedPrice = (matchingVariant && matchingVariant.selling_price) || item.price || item.product_id.selling_price || 0;
+            const resolvedPrice = (matchingVariant && matchingVariant.selling_price) || item.price || (isProduct ? item.product_id.selling_price : item.product_id.price) || 0;
+
+            // Determine image based on type
+            let displayImage = variantImage || item.product_image;
+            if (!displayImage) {
+              if (isProduct && item.product_id.image_url && item.product_id.image_url[0]) {
+                displayImage = item.product_id.image_url[0];
+              } else if (isCombo && item.product_id.image) {
+                displayImage = item.product_id.image;
+              }
+            }
 
             return {
               id: item.product_id._id || item.product_id,
               cartItemId: item._id,
-              name: item.product_id.name || item.name || 'Unknown Product',
+              name: item.product_id.name || item.product_name || item.name || item.product_id.title || 'Unknown Product',
               price: resolvedPrice,
               quantity: item.quantity || 1,
-              image: variantImage || (item.product_id.image_url && item.product_id.image_url[0]) || item.product_image || null,
+              image: displayImage || null,
               variant: item.variant_attributes || {},
-              stock: item.product_id.stock || 999
+              stock: item.product_id.stock || 999,
+              isCombo: isCombo
             };
           });
 

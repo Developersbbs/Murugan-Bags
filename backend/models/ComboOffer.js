@@ -37,6 +37,10 @@ const comboOfferSchema = new mongoose.Schema({
     isActive: {
         type: Boolean,
         default: true
+    },
+    isHomeFeatured: {
+        type: Boolean,
+        default: false
     }
 }, {
     timestamps: true

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { Helmet } from 'react-helmet-async';
 import { FaShoppingBag, FaTag, FaClock } from 'react-icons/fa';
@@ -40,7 +41,7 @@ const ComboOffersPage = () => {
                 selling_price: offer.price,
                 salePrice: offer.price,
                 mrp: offer.originalPrice,
-                image_url: ['https://placehold.co/600x400?text=Combo+Offer'], // Placeholder since no image in model
+                image_url: offer.image ? [offer.image] : ['https://placehold.co/600x400?text=Combo+Offer'],
                 stock: 100, // Assume available
                 isCombo: true
             };
@@ -86,7 +87,7 @@ const ComboOffersPage = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                         {offers.map((offer) => (
                             <div key={offer._id} className="bg-white rounded-2xl shadow-xl overflow-hidden hover:shadow-2xl transition-shadow duration-300 flex flex-col">
-                                <div className="h-48 bg-gradient-to-r from-rose-500 to-orange-500 flex items-center justify-center relative overflow-hidden">
+                                <Link to={`/combo-offers/${offer._id}`} className="h-48 bg-gradient-to-r from-rose-500 to-orange-500 flex items-center justify-center relative overflow-hidden group-hover:opacity-95 transition-opacity">
                                     {offer.image ? (
                                         <img
                                             src={offer.image}
@@ -108,11 +109,13 @@ const ComboOffersPage = () => {
                                             <FaClock /> LIMITED TIME
                                         </div>
                                     )}
-                                </div>
+                                </Link>
 
                                 <div className="p-6 flex-1 flex flex-col">
                                     <div className="flex justify-between items-start mb-4">
-                                        <h3 className="text-2xl font-bold text-slate-800">{offer.title}</h3>
+                                        <Link to={`/combo-offers/${offer._id}`}>
+                                            <h3 className="text-2xl font-bold text-slate-800 hover:text-rose-600 transition-colors">{offer.title}</h3>
+                                        </Link>
                                         <span className="bg-green-100 text-green-800 text-xs font-bold px-2 py-1 rounded-full">
                                             SAVE {offer.savingsPercent}%
                                         </span>

@@ -16,6 +16,7 @@ interface ComboOffer {
     isLimitedTime: boolean;
     order: number;
     isActive: boolean;
+    isHomeFeatured: boolean;
     savingsPercent?: number;
 }
 
@@ -36,7 +37,8 @@ export default function ComboOffersPage() {
         originalPrice: '',
         isLimitedTime: true,
         order: '',
-        isActive: true
+        isActive: true,
+        isHomeFeatured: false
     });
 
     const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
@@ -79,7 +81,8 @@ export default function ComboOffersPage() {
             originalPrice: '',
             isLimitedTime: true,
             order: '',
-            isActive: true
+            isActive: true,
+            isHomeFeatured: false
         });
         setIsEditing(false);
         setCurrentOffer(null);
@@ -96,7 +99,8 @@ export default function ComboOffersPage() {
             originalPrice: offer.originalPrice.toString(),
             isLimitedTime: offer.isLimitedTime,
             order: (offer.order || 0).toString(),
-            isActive: offer.isActive
+            isActive: offer.isActive,
+            isHomeFeatured: offer.isHomeFeatured || false
         });
         setIsEditing(true);
         setSelectedFile(null);
@@ -324,6 +328,20 @@ export default function ComboOffersPage() {
                                     <label htmlFor="isActive" className="text-sm font-medium text-slate-700">Active</label>
                                 </div>
 
+                                <div className="flex items-center gap-2">
+                                    <input
+                                        type="checkbox"
+                                        name="isHomeFeatured"
+                                        checked={formData.isHomeFeatured}
+                                        onChange={handleInputChange}
+                                        id="isHomeFeatured"
+                                        className="w-4 h-4 text-rose-600 rounded focus:ring-rose-500"
+                                    />
+                                    <label htmlFor="isHomeFeatured" className="text-sm font-medium text-slate-700">
+                                        Show on Home Page
+                                    </label>
+                                </div>
+
                                 <div className="flex justify-end gap-3 mt-6">
                                     <button
                                         type="button"
@@ -387,6 +405,11 @@ export default function ComboOffersPage() {
                             <span className={`px-2 py-0.5 rounded-full text-xs ${offer.isActive ? 'bg-green-500/20 text-green-400' : 'bg-slate-700 text-slate-400'}`}>
                                 {offer.isActive ? 'Active' : 'Inactive'}
                             </span>
+                            {offer.isHomeFeatured && (
+                                <span className="bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-full text-xs border border-blue-500/30 ml-2">
+                                    Home Featured
+                                </span>
+                            )}
                         </div>
 
                         <div className="mt-2 text-xs text-slate-500">

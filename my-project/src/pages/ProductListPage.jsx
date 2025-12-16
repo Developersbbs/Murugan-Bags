@@ -543,7 +543,7 @@ const ProductListPage = () => {
 
       <div className="lg:grid lg:grid-cols-5 lg:gap-6">
         {/* Filters sidebar */}
-        <div className="hidden lg:block space-y-6 sticky top-24 self-start pl-4">
+        <div className="hidden lg:block space-y-6 sticky top-24 self-start pl-36">
           <SidebarFilters
             filters={filters}
             onFilterChange={(newFilters) => setFilters(prev => ({ ...prev, ...newFilters }))}
@@ -551,7 +551,7 @@ const ProductListPage = () => {
         </div>
 
         {/* Product grid */}
-        <div className="lg:col-span-4 pr-4">
+        <div className="lg:col-span-4 pr-36">
           {products && products.length > 0 ? (
             <>
               <div className={

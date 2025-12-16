@@ -283,34 +283,22 @@ const SidebarFilters = ({ filters = {}, onFilterChange }) => {
           <div>
             <h4 className="text-sm font-semibold text-gray-900 mb-3">Color</h4>
 
-            <div className="grid grid-cols-3 gap-3">
+            <div className="space-y-2">
               {colors.map((color) => (
                 <div
                   key={color}
-                  className={`relative flex flex-col items-center p-2 rounded cursor-pointer hover:bg-gray-50 transition-colors ${colorFilter === color ? 'bg-blue-50 ring-2 ring-blue-500' : ''
+                  className={`flex items-center justify-between p-2 rounded cursor-pointer hover:bg-gray-50 transition-colors ${colorFilter === color ? 'bg-blue-600 text-white hover:bg-blue-700' : 'text-gray-700'
                     }`}
                   onClick={() => handleFilterSelect('color', color)}
                 >
-                  <div
-                    className={`w-10 h-10 rounded-full border-2 mb-1 ${colorFilter === color ? 'border-blue-500' : 'border-gray-300'
-                      }`}
-                    style={{
-                      backgroundColor: color.toLowerCase(),
-                      boxShadow: colorFilter === color ? '0 0 0 2px rgba(59, 130, 246, 0.2)' : 'none'
-                    }}
-                  >
-                    {colorFilter === color && (
-                      <div className="flex items-center justify-center h-full">
-                        <svg className="w-5 h-5 text-white drop-shadow-md" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                        </svg>
-                      </div>
-                    )}
-                  </div>
-                  <span className={`text-xs text-center capitalize ${colorFilter === color ? 'font-semibold text-blue-700' : 'text-gray-600'
-                    }`}>
+                  <span className="text-sm font-medium capitalize">
                     {color}
                   </span>
+                  {colorFilter === color && (
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                  )}
                 </div>
               ))}
             </div>
@@ -330,13 +318,16 @@ const SidebarFilters = ({ filters = {}, onFilterChange }) => {
               {[4, 3, 2, 1].map((rating) => (
                 <div
                   key={rating}
-                  className={`flex items-center p-2 rounded cursor-pointer hover:bg-gray-50 border-l-4 ${filters.rating === rating
-                    ? 'bg-yellow-50 border-yellow-400'
-                    : 'border-transparent'
+                  className={`relative flex items-center p-2 rounded cursor-pointer hover:bg-gray-50 ${filters.rating === rating
+                    ? 'bg-yellow-50'
+                    : ''
                     }`}
                   onClick={() => handleRatingFilter(rating)}
                 >
-                  <div className="flex items-center mr-3">
+                  {filters.rating === rating && (
+                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-yellow-400 rounded-l"></div>
+                  )}
+                  <div className="flex items-center mr-2">
                     {[...Array(5)].map((_, i) => (
                       <svg
                         key={i}
@@ -348,7 +339,7 @@ const SidebarFilters = ({ filters = {}, onFilterChange }) => {
                       </svg>
                     ))}
                   </div>
-                  <span className="text-sm font-medium text-gray-700">{rating} Stars & Up</span>
+                  <span className="text-sm font-medium text-gray-700 whitespace-nowrap">{rating} Stars+</span>
                   {filters.rating === rating && (
                     <svg className="w-4 h-4 ml-auto text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { FaBox, FaPhone, FaEnvelope } from 'react-icons/fa';
 
 export default function BulkOrdersPage() {
@@ -52,43 +53,46 @@ export default function BulkOrdersPage() {
                         {orders.map((order) => (
                             <div
                                 key={order._id}
-                                className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300"
+                                className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300 relative group"
                             >
-                                {order.image && (
-                                    <div className="h-64 overflow-hidden">
-                                        <img
-                                            src={order.image}
-                                            alt={order.title}
-                                            className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                                        />
-                                    </div>
-                                )}
+                                <Link to={`/bulk-orders/${order._id}`} className="block h-full">
+                                    {order.image && (
+                                        <div className="h-64 overflow-hidden relative">
+                                            <img
+                                                src={order.image}
+                                                alt={order.title}
+                                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                            />
+                                            <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-opacity duration-300" />
+                                        </div>
+                                    )}
 
-                                <div className="p-6">
-                                    <h3 className="text-2xl font-bold text-gray-900 mb-3">
-                                        {order.title}
-                                    </h3>
+                                    <div className="p-6">
+                                        <h3 className="text-2xl font-bold text-gray-900 mb-3 group-hover:text-blue-600 transition-colors">
+                                            {order.title}
+                                        </h3>
 
-                                    <p className="text-gray-600 mb-4 line-clamp-3">
-                                        {order.description}
-                                    </p>
+                                        <p className="text-gray-600 mb-4 line-clamp-3">
+                                            {order.description}
+                                        </p>
 
-                                    <div className="flex items-center gap-2 mb-4 text-blue-600">
-                                        <FaBox />
-                                        <span className="font-medium">
-                                            Minimum Quantity: {order.minQuantity} units
-                                        </span>
-                                    </div>
-
-                                    <div className="border-t pt-4">
-                                        <div className="flex items-baseline justify-between">
-                                            <span className="text-sm text-gray-500">Price per unit</span>
-                                            <span className="text-3xl font-bold text-gray-900">
-                                                ₹{order.price.toLocaleString()}
+                                        <div className="flex items-center gap-2 mb-4 text-blue-600">
+                                            <FaBox />
+                                            <span className="font-medium">
+                                                Minimum Quantity: {order.minQuantity} units
                                             </span>
                                         </div>
+
+                                        <div className="border-t pt-4">
+                                            <div className="flex items-baseline justify-between">
+                                                <span className="text-sm text-gray-500">Price per unit</span>
+                                                <span className="text-3xl font-bold text-gray-900">
+                                                    ₹{order.price.toLocaleString()}
+                                                </span>
+                                            </div>
+                                        </div>
                                     </div>
-                                </div>
+                                </Link>
                             </div>
                         ))}
                     </div>

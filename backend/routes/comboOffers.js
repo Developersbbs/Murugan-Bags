@@ -5,7 +5,14 @@ const ComboOffer = require('../models/ComboOffer');
 router.get('/', async (req, res) => {
     try {
         const limit = req.query.limit ? parseInt(req.query.limit) : 4;
-        const query = ComboOffer.find({ isActive: true }).sort({ order: 1 });
+        const isHomeFeatured = req.query.isHomeFeatured === 'true';
+
+        const filter = { isActive: true };
+        if (isHomeFeatured) {
+            filter.isHomeFeatured = true;
+        }
+
+        const query = ComboOffer.find(filter).sort({ order: 1 });
 
         if (limit > 0) {
             query.limit(limit);
@@ -70,7 +77,7 @@ router.get('/:id', async (req, res) => {
 // CREATE new combo offer
 router.post('/', async (req, res) => {
     try {
-        const { title, description, image, price, originalPrice, isLimitedTime, order, isActive } = req.body;
+        const { title, description, image, price, originalPrice, isLimitedTime, order, isActive, isHomeFeatured } = req.body;
 
         if (!title || !description || price === undefined || originalPrice === undefined) {
             return res.status(400).json({
@@ -101,7 +108,8 @@ router.post('/', async (req, res) => {
             originalPrice,
             isLimitedTime: isLimitedTime !== undefined ? isLimitedTime : true,
             order: order || 0,
-            isActive: isActive !== undefined ? isActive : true
+            isActive: isActive !== undefined ? isActive : true,
+            isHomeFeatured: isHomeFeatured || false
         });
 
         await offer.save();
@@ -121,7 +129,7 @@ router.post('/', async (req, res) => {
 // UPDATE combo offer
 router.put('/:id', async (req, res) => {
     try {
-        const { title, description, image, price, originalPrice, isLimitedTime, order, isActive } = req.body;
+        const { title, description, image, price, originalPrice, isLimitedTime, order, isActive, isHomeFeatured } = req.body;
 
         // Validate prices if provided
         if (price !== undefined && price < 0) {
@@ -148,7 +156,8 @@ router.put('/:id', async (req, res) => {
                 ...(originalPrice !== undefined && { originalPrice }),
                 ...(isLimitedTime !== undefined && { isLimitedTime }),
                 ...(order !== undefined && { order }),
-                ...(isActive !== undefined && { isActive })
+                ...(isActive !== undefined && { isActive }),
+                ...(isHomeFeatured !== undefined && { isHomeFeatured })
             },
             { new: true, runValidators: true }
         );

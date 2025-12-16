@@ -47,35 +47,57 @@ router.post("/", authenticateHybridToken, async (req, res) => {
             return res.status(400).json({ error: "This product was not found in your order" });
         }
 
-        // Check if review already exists for this order item
+        // Check if review already exists for this customer-product pair (matching the unique index)
         const existingRating = await Rating.findOne({
             customer_id,
-            product_id,
-            order_id
+            product_id
         });
+
+        let savedRating;
+        let isUpdate = false;
 
         if (existingRating) {
-            return res.status(400).json({ error: "You have already reviewed this product from this order" });
+            // Update existing rating with new values
+            savedRating = await Rating.findOneAndUpdate(
+                { customer_id, product_id },
+                {
+                    order_id, // Update to most recent order
+                    rating,
+                    review,
+                    images: images || [],
+                    verified_purchase: true,
+                    status: 'pending' // Reset to pending for re-approval
+                },
+                { new: true } // Return the updated document
+            );
+            isUpdate = true;
+        } else {
+            // Create new rating
+            const newRating = new Rating({
+                customer_id,
+                product_id,
+                order_id,
+                rating,
+                review,
+                images: images || [],
+                verified_purchase: true,
+                status: 'pending'
+            });
+            savedRating = await newRating.save();
         }
 
-        // Create the rating
-        const newRating = new Rating({
-            customer_id,
-            product_id,
-            order_id,
-            rating,
-            review,
-            images: images || [],
-            verified_purchase: true,
-            status: 'pending' // pending approval
-        });
+        // Update product rating stats if the rating was previously approved
+        if (isUpdate && existingRating.status === 'approved') {
+            await updateProductRating(product_id);
+        }
 
-        await newRating.save();
-
-        res.status(201).json({
+        res.status(isUpdate ? 200 : 201).json({
             success: true,
-            message: "Review submitted successfully! It will be visible after approval.",
-            data: newRating
+            message: isUpdate
+                ? "Review updated successfully! It will be visible after approval."
+                : "Review submitted successfully! It will be visible after approval.",
+            data: savedRating,
+            isUpdate
         });
 
     } catch (err) {

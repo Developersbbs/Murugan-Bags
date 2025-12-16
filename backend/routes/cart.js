@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Cart = require('../models/Cart');
 const Product = require('../models/Product');
+const ComboOffer = require('../models/ComboOffer');
 const { authenticateToken } = require('../middleware/auth');
 const { authenticateHybridToken } = require('../middleware/hybridAuth');
 
@@ -54,7 +55,8 @@ router.post('/add', authenticateToken, async (req, res) => {
       product_name,
       product_image,
       variant_name,
-      variant_attributes
+      variant_attributes,
+      isCombo = false
     } = req.body;
 
     // Validate required fields
@@ -65,12 +67,21 @@ router.post('/add', authenticateToken, async (req, res) => {
       });
     }
 
-    // Verify product exists
-    const product = await Product.findById(product_id);
+    let modelType = 'Product';
+    let product;
+
+    if (isCombo) {
+      product = await ComboOffer.findById(product_id);
+      modelType = 'ComboOffer';
+    } else {
+      product = await Product.findById(product_id);
+    }
+
+    // Verify product/combo exists
     if (!product) {
       return res.status(404).json({
         success: false,
-        message: 'Product not found'
+        message: isCombo ? 'Combo offer not found' : 'Product not found'
       });
     }
 
@@ -100,7 +111,9 @@ router.post('/add', authenticateToken, async (req, res) => {
         product_name,
         product_image,
         variant_name,
-        variant_attributes
+        variant_attributes,
+        isCombo,
+        modelType
       });
     }
 

@@ -18,7 +18,6 @@ router.get('/', async (req, res) => {
         });
     }
 });
-
 // Get all bulk orders (Admin side)
 router.get('/admin', async (req, res) => {
     try {
@@ -28,6 +27,30 @@ router.get('/admin', async (req, res) => {
         res.json({
             success: true,
             data: orders
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+// Get single bulk order
+router.get('/:id', async (req, res) => {
+    try {
+        const order = await BulkOrder.findOne({ _id: req.params.id, isActive: true });
+
+        if (!order) {
+            return res.status(404).json({
+                success: false,
+                error: 'Bulk order not found'
+            });
+        }
+
+        res.json({
+            success: true,
+            data: order
         });
     } catch (error) {
         res.status(500).json({
