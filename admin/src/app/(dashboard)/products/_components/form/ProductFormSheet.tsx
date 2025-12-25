@@ -421,7 +421,7 @@ export default function ProductFormSheet({
 
       // For string URLs (when editing existing products), convert to full URL
       if (typeof firstImage === 'string') {
-        if (firstImage.startsWith('http')) {
+        if ((firstImage as string).startsWith('http')) {
           form.setValue('seoOgImage', firstImage, {
             shouldValidate: false,
             shouldDirty: false,
@@ -476,7 +476,7 @@ export default function ProductFormSheet({
     if (images && images.length > 0) {
       const firstImage = images[0];
       if (typeof firstImage === 'string') {
-        if (firstImage.startsWith('http')) {
+        if ((firstImage as string).startsWith('http')) {
           return firstImage;
         }
         const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:5000';
@@ -661,7 +661,7 @@ export default function ProductFormSheet({
               },
             });
             toast.success(
-              `Product "${result.product.name}" ${actionVerb} successfully!`,
+              `Product "${result.product?.name || 'Product'}" ${actionVerb} successfully!`,
               { position: "top-center" }
             );
             queryClient.invalidateQueries({ queryKey: ["products"] });
@@ -818,6 +818,11 @@ export default function ProductFormSheet({
                         control={form.control}
                         name="showRatings"
                         label="Show Ratings"
+                      />
+                      <FormSwitch
+                        control={form.control}
+                        name="isNewArrival"
+                        label="New Arrival Product"
                       />
                     </div>
                   </div>

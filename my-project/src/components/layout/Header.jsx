@@ -2,7 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { FaShoppingCart, FaUser, FaSearch, FaBars, FaTimes, FaHeart, FaShoppingBag, FaSuitcaseRolling, FaSchool, FaLaptop } from 'react-icons/fa';
 import { useSelector, useDispatch } from 'react-redux';
-import { userLogout, forceLogout, fetchUserProfile } from '../../redux/slices/authSlice';
+import { fetchUserProfile, forceLogout, userLogout } from '../../redux/slices/authSlice';
+import { useGetSearchSuggestionsQuery } from '../../redux/services/products';
+
 import { useCart } from '../../context/CartContext';
 import { useWishlist } from '../../context/WishlistContext';
 
@@ -54,6 +56,8 @@ const Header = () => {
 
   const location = useLocation();
   const isHome = location.pathname === '/';
+  const isSearchPage = location.pathname === '/search';
+
 
   // Use new Context-based cart and wishlist
   const { itemCount: cartItemCount, openSidebar } = useCart();
@@ -80,14 +84,21 @@ const Header = () => {
     }
   }, [isAuthenticated, user, backendUser, backendUserLoading, dispatch]);
 
+  const { data: suggestionsData, isLoading: suggestionsLoading } = useGetSearchSuggestionsQuery(searchQuery, {
+    skip: searchQuery.length < 2
+  });
+
   const handleSearch = (e) => {
     e.preventDefault();
     if (searchQuery.trim()) {
       navigate(`/products?search=${encodeURIComponent(searchQuery.trim())}`);
       setSearchQuery('');
       setIsMobileMenuOpen(false);
+    } else {
+      navigate('/search');
     }
   };
+
 
   const handleLogout = async () => {
     setIsProfileDropdownOpen(false);
@@ -201,7 +212,7 @@ const Header = () => {
     { name: 'Combos', path: '/combo-offers' },
     { name: 'Bulk Orders', path: '/bulk-orders' },
     { name: 'Discover More', path: '/products' },
-    { name: 'New Arrivals', path: '/products?sort=newest' }
+    { name: 'New Arrivals', path: '/new-arrivals' }
   ];
 
   // Determine styling based on route and scroll
@@ -281,22 +292,69 @@ const Header = () => {
 
           {/* Search, Cart, and Auth */}
           <div className="hidden xl:flex items-center space-x-4">
-            <form onSubmit={handleSearch} className="relative group">
-              <div className="relative">
-                <input
-                  type="text"
-                  placeholder="Search..."
-                  className={`pl-10 pr-4 py-2.5 rounded-full text-sm focus:outline-none w-48 lg:w-64 transition-all duration-300 glass-input ${!isTransparent ? 'bg-slate-100 text-slate-800 placeholder-slate-400 focus:bg-white' : 'bg-white/10 text-white placeholder-white/70 focus:bg-white/20 border-white/30'
-                    }`}
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-                <div className={`absolute left-3 top-1/2 transform -translate-y-1/2 transition-colors duration-300 ${!isTransparent ? 'text-slate-400 group-hover:text-rose-500' : 'text-white/70'
-                  }`}>
-                  <FaSearch className="w-4 h-4" />
+            {!isSearchPage && (
+              <form onSubmit={handleSearch} className="relative group">
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="Search..."
+                    className={`pl-10 pr-4 py-2.5 rounded-full text-sm focus:outline-none w-48 lg:w-64 transition-all duration-300 glass-input ${!isTransparent ? 'bg-slate-100 text-slate-800 placeholder-slate-400 focus:bg-white' : 'bg-white/10 text-white placeholder-white/70 focus:bg-white/20 border-white/30'
+                      }`}
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onFocus={() => searchQuery.length === 0 && navigate('/search')}
+                  />
+                  <div className={`absolute left-3 top-1/2 transform -translate-y-1/2 transition-colors duration-300 ${!isTransparent ? 'text-slate-400 group-hover:text-rose-500' : 'text-white/70'
+                    }`}>
+                    <FaSearch className="w-4 h-4" />
+                  </div>
                 </div>
-              </div>
-            </form>
+
+                {/* Suggestions Dropdown in Header */}
+                {searchQuery.length >= 2 && suggestionsData?.data?.length > 0 && (
+                  <div className="absolute top-full mt-2 left-0 right-0 bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden z-50 min-w-[300px]">
+                    <div className="py-2">
+                      {suggestionsData.data.slice(0, 5).map((item, idx) => (
+                        <button
+                          key={idx}
+                          onClick={() => {
+                            if (item.type === 'product') {
+                              navigate(`/product/${item.slug}`);
+                            } else {
+                              navigate(`/products?category=${item.slug}`);
+                            }
+                            setSearchQuery('');
+                          }}
+                          className="w-full flex items-center px-4 py-3 hover:bg-rose-50 transition-colors text-left"
+                        >
+                          {item.type === 'product' ? (
+                            <div className="w-10 h-10 bg-slate-100 rounded-lg overflow-hidden mr-3">
+                              <img src={item.image} alt="" className="w-full h-full object-cover" />
+                            </div>
+                          ) : (
+                            <div className="w-10 h-10 bg-rose-100 rounded-lg flex items-center justify-center mr-3">
+                              <FaFire className="text-rose-500 text-xs" />
+                            </div>
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-bold text-slate-800 truncate">{item.name}</p>
+                            <p className="text-[10px] text-slate-400 uppercase tracking-tighter">{item.type}</p>
+                          </div>
+                        </button>
+                      ))}
+                      <button
+                        onClick={() => handleSearch({ preventDefault: () => { } })}
+                        className="w-full py-2 px-4 text-center text-xs font-bold text-rose-600 hover:bg-rose-50 border-t border-slate-50 transition-colors"
+                      >
+                        View all results for "{searchQuery}"
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </form>
+            )}
+
+
 
             <div className="flex items-center space-x-2">
               <button onClick={() => openWishlistSidebar()} className={`relative p-2.5 rounded-full transition-all duration-300 group cursor-pointer ${iconClass}`} title="Wishlist">
@@ -449,21 +507,54 @@ const Header = () => {
         {/* Mobile Menu */}
         {isMobileMenuOpen && (
           <div className="xl:hidden mt-4 pb-6 border-t border-white/10 animate-fade-in-up bg-white/95 backdrop-blur-xl rounded-2xl p-4 shadow-2xl absolute left-4 right-4 top-16">
-            <form onSubmit={handleSearch} className="my-4 relative">
-              <input
-                type="text"
-                placeholder="Search..."
-                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-rose-500"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-              <button
-                type="submit"
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-rose-500"
-              >
-                <FaSearch />
-              </button>
-            </form>
+            {!isSearchPage && (
+              <form onSubmit={handleSearch} className="my-4 relative">
+                <input
+                  type="text"
+                  placeholder="Search..."
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-rose-500"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onFocus={() => searchQuery.length === 0 && navigate('/search')}
+                />
+                <button
+                  type="submit"
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-rose-500"
+                >
+                  <FaSearch />
+                </button>
+
+                {/* Mobile Suggestions */}
+                {searchQuery.length >= 2 && suggestionsData?.data?.length > 0 && (
+                  <div className="absolute top-full mt-2 left-0 right-0 bg-white rounded-xl shadow-xl border border-slate-100 overflow-hidden z-50">
+                    <div className="py-2">
+                      {suggestionsData.data.slice(0, 5).map((item, idx) => (
+                        <button
+                          key={idx}
+                          onClick={() => {
+                            if (item.type === 'product') {
+                              navigate(`/product/${item.slug}`);
+                            } else {
+                              navigate(`/products?category=${item.slug}`);
+                            }
+                            setSearchQuery('');
+                            setIsMobileMenuOpen(false);
+                          }}
+                          className="w-full flex items-center px-4 py-3 hover:bg-rose-50 transition-colors text-left"
+                        >
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-bold text-slate-800 truncate">{item.name}</p>
+                            <p className="text-[10px] text-slate-400 uppercase tracking-tighter">{item.type}</p>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </form>
+            )}
+
+
 
             <nav className="flex flex-col space-y-1">
               <div

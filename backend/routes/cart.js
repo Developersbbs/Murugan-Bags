@@ -7,7 +7,7 @@ const { authenticateToken } = require('../middleware/auth');
 const { authenticateHybridToken } = require('../middleware/hybridAuth');
 
 // Get cart for authenticated user
-router.get('/', authenticateToken, async (req, res) => {
+router.get('/', authenticateHybridToken, async (req, res) => {
   try {
     const customerId = req.user.id;
 
@@ -43,7 +43,7 @@ router.get('/', authenticateToken, async (req, res) => {
 });
 
 // Add item to cart
-router.post('/add', authenticateToken, async (req, res) => {
+router.post('/add', authenticateHybridToken, async (req, res) => {
   try {
     const customerId = req.user.id;
     const {

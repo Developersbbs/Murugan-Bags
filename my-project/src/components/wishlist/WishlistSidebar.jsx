@@ -5,6 +5,7 @@ import { HeartIcon as HeartSolidIcon } from '@heroicons/react/24/solid';
 import { useWishlist } from '../../context/WishlistContext';
 import { useCart } from '../../context/CartContext';
 import { formatCurrency } from '../../utils/format';
+import { getFullImageUrl } from '../../utils/imageUtils';
 import toast from 'react-hot-toast';
 
 const WishlistSidebar = () => {
@@ -30,16 +31,6 @@ const WishlistSidebar = () => {
         };
     }, [isSidebarOpen]);
 
-    // Helper to resolve full image URL
-    const getFullImageUrl = (imagePath) => {
-        if (!imagePath) return '/images/products/placeholder-product.svg';
-        if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) return imagePath;
-        if (imagePath.startsWith('/images/')) return imagePath; // Local assets
-
-        // Convert relative path to full URL
-        const API_BASE = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
-        return `${API_BASE}${imagePath}`;
-    };
 
     const handleRemoveItem = async (productId, variantId) => {
         try {

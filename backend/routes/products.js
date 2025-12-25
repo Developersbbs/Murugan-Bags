@@ -343,6 +343,86 @@ router.get("/colors", async (req, res) => {
   }
 });
 
+// GET search suggestions (minimal data for fast autocomplete)
+router.get("/suggestions", async (req, res) => {
+  try {
+    const { query } = req.query;
+    if (!query || query.trim().length < 2) {
+      return res.json({ success: true, data: [] });
+    }
+
+    const searchQuery = query.trim();
+
+    // Find products matching the query
+    const products = await Product.find(
+      {
+        published: true,
+        $or: [
+          { name: { $regex: searchQuery, $options: "i" } },
+          { tags: { $regex: searchQuery, $options: "i" } }
+        ]
+      },
+      { name: 1, slug: 1, image_url: 1, selling_price: 1, product_structure: 1, product_variants: 1 }
+    ).limit(8);
+
+    // Transform products to include first image and variant price if needed
+    const suggestions = products.map(product => {
+      let image = "";
+      if (product.image_url && product.image_url.length > 0) {
+        image = product.image_url[0];
+      }
+
+      let price = product.selling_price;
+      if (product.product_structure === 'variant' && product.product_variants && product.product_variants.length > 0) {
+        // Find first published variant price
+        const firstVariant = product.product_variants.find(v => v.published);
+        if (firstVariant) {
+          price = firstVariant.selling_price;
+          if (firstVariant.images && firstVariant.images.length > 0) {
+            image = firstVariant.images[0];
+          }
+        }
+      }
+
+      // Ensure image URL is absolute if it's a local path
+      if (image && !image.startsWith('http') && !image.startsWith('/uploads')) {
+        image = `/uploads/products/${image}`;
+      }
+
+      return {
+        id: product._id,
+        name: product.name,
+        slug: product.slug,
+        image: image,
+        price: price,
+        type: 'product'
+      };
+    });
+
+    // Also suggest categories
+    const categories = await Category.find(
+      { name: { $regex: searchQuery, $options: "i" } },
+      { name: 1, slug: 1 }
+    ).limit(3);
+
+    const categorySuggestions = categories.map(cat => ({
+      id: cat._id,
+      name: cat.name,
+      slug: cat.slug,
+      type: 'category'
+    }));
+
+    res.json({
+      success: true,
+      data: [...categorySuggestions, ...suggestions]
+    });
+  } catch (err) {
+    console.error("Suggestions API Error:", err);
+    res.status(500).json({ success: false, error: "Failed to fetch suggestions" });
+  }
+});
+
+
 // GET all products with pagination, search, and filtering
 router.get("/", async (req, res) => {
   try {
@@ -358,6 +438,7 @@ router.get("/", async (req, res) => {
       dateSort,
       productType,
       color,
+      isNewArrival,
     } = req.query;
 
     const pageNum = parseInt(page);
@@ -402,7 +483,17 @@ router.get("/", async (req, res) => {
       filter.product_type = productType;
     }
 
-    if (published !== undefined) {
+    if (isNewArrival !== undefined) {
+      filter.isNewArrival = isNewArrival === "true";
+    }
+
+    if (status) {
+      filter.status = status;
+    }
+
+    if (status === 'archived') {
+      filter.published = false;
+    } else if (published !== undefined) {
       filter.published = published === "true";
     }
 
@@ -438,6 +529,10 @@ router.get("/", async (req, res) => {
     } else {
       sort.created_at = -1;
     }
+
+    // Debug logging
+    console.log("GET /products query:", req.query);
+    console.log("GET /products built filter:", JSON.stringify(filter, null, 2));
 
     const products = await Product.find(filter)
       .sort(sort)
@@ -2067,6 +2162,181 @@ router.patch("/toggle-status", async (req, res) => {
   }
 });
 
+
+// PATCH archive/restore product
+router.patch("/toggle-archive-status", async (req, res) => {
+  try {
+    const { id, variantId, archived } = req.body;
+    console.log(`PATCH /toggle-archive-status called. ID: ${id}, VariantID: ${variantId}, Archived: ${archived}`);
+
+    if (!id) {
+      return res.status(400).json({
+        success: false,
+        error: "Product ID is required"
+      });
+    }
+
+    // First, get the current product
+    const currentProduct = await Product.findById(id);
+    if (!currentProduct) {
+      return res.status(404).json({
+        success: false,
+        error: "Product not found"
+      });
+    }
+
+    // If this is a variant product and we have a variantId
+    if (currentProduct.product_structure === 'variant' && variantId) {
+      // Find the variant
+      const variantIndex = currentProduct.product_variants.findIndex(
+        v => v._id.toString() === variantId
+      );
+
+      if (variantIndex === -1) {
+        return res.status(404).json({
+          success: false,
+          error: "Variant not found"
+        });
+      }
+
+      // Update variant status
+      if (archived) {
+        currentProduct.product_variants[variantIndex].status = 'archived';
+        currentProduct.product_variants[variantIndex].published = false;
+      } else {
+        // Restoring - set to draft by default for safety
+        currentProduct.product_variants[variantIndex].status = 'draft';
+        currentProduct.product_variants[variantIndex].published = false;
+      }
+
+      const updateData = {
+        'product_variants': currentProduct.product_variants
+      };
+
+      const updatedProduct = await Product.findByIdAndUpdate(
+        id,
+        updateData,
+        { new: true }
+      );
+
+      return res.json({
+        success: true,
+        data: updatedProduct,
+        message: archived ? 'Variant archived' : 'Variant restored to draft'
+      });
+    }
+
+    // For simple products
+    const updateData = {
+      published: false // Always unpublish when archiving or restoring (safety)
+    };
+
+    if (archived) {
+      updateData.status = 'archived';
+      updateData['seo.robots'] = 'noindex,nofollow';
+    } else {
+      // Restoring - set to draft
+      updateData.status = 'draft';
+      // SEO remains noindex until published
+    }
+
+    const product = await Product.findByIdAndUpdate(
+      id,
+      updateData,
+      { new: true }
+    );
+
+    res.json({
+      success: true,
+      data: product,
+      message: archived ? 'Product archived' : 'Product restored to draft'
+    });
+
+  } catch (err) {
+    console.error("Toggle archive status error:", err);
+    res.status(500).json({
+      success: false,
+      error: "Failed to update archive status"
+    });
+  }
+});
+
+// PATCH bulk archive/restore
+router.patch("/bulk-archive", async (req, res) => {
+  try {
+    const { ids, archived } = req.body; // ids: array of strings, archived: boolean
+
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: "No product IDs provided"
+      });
+    }
+
+    // Convert string IDs to ObjectIds
+    const objectIds = ids.map(id => {
+      try {
+        return new mongoose.Types.ObjectId(id);
+      } catch (e) {
+        return null;
+      }
+    }).filter(Boolean);
+
+    const updateData = {
+      published: false
+    };
+
+    if (archived) {
+      updateData.status = 'archived';
+      updateData['seo.robots'] = 'noindex,nofollow';
+    } else {
+      // Restoring - set to draft
+      updateData.status = 'draft';
+      // SEO remains noindex until published
+    }
+
+    if (archived) {
+      await Product.updateMany(
+        { _id: { $in: objectIds }, product_structure: 'variant' },
+        {
+          $set: {
+            "product_variants.$[].status": 'archived',
+            "product_variants.$[].published": false
+          }
+        }
+      );
+    } else {
+      await Product.updateMany(
+        { _id: { $in: objectIds }, product_structure: 'variant' },
+        {
+          $set: {
+            "product_variants.$[].status": 'draft',
+            "product_variants.$[].published": false
+          }
+        }
+      );
+    }
+
+    const result = await Product.updateMany(
+      { _id: { $in: objectIds } },
+      updateData
+    );
+
+    res.json({
+      success: true,
+      message: `${result.modifiedCount} products ${archived ? 'archived' : 'restored'} successfully`,
+      data: { modifiedCount: result.modifiedCount }
+    });
+
+  } catch (err) {
+    console.error("Bulk archive error:", err);
+    res.status(500).json({
+      success: false,
+      error: "Failed to process bulk archive/restore"
+    });
+  }
+});
+
 // GET all ratings for a product
 router.get("/:id/ratings", async (req, res) => {
   try {
@@ -2319,6 +2589,184 @@ router.get("/:id/customer-rating", async (req, res) => {
       success: false,
       error: "Failed to fetch rating"
     });
+  }
+});
+
+// GET /api/products/export/csv - Export products as CSV
+router.get("/export/csv", async (req, res) => {
+  try {
+    const { sendCSVResponse, formatCurrency, formatDate } = require('../utils/csvExport');
+
+    // Fetch all products with populated data
+    const products = await Product.find({})
+      .populate('categories.category', 'name')
+      .populate('categories.subcategories', 'name')
+      .lean();
+
+    // Flatten products for CSV export
+    const csvData = products.map(product => {
+      const categories = product.categories?.map(c => c.category?.name).filter(Boolean).join('; ') || '';
+      const subcategories = product.categories?.flatMap(c =>
+        c.subcategories?.map(s => s.name).filter(Boolean) || []
+      ).join('; ') || '';
+
+      return {
+        name: product.name,
+        slug: product.slug,
+        sku: product.sku,
+        description: product.description || '',
+        product_type: product.product_type,
+        product_structure: product.product_structure,
+        categories: categories,
+        subcategories: subcategories,
+        cost_price: product.cost_price || '',
+        selling_price: product.selling_price || '',
+        baseStock: product.baseStock || '',
+        minStock: product.minStock || '',
+        status: product.status || '',
+        published: product.published ? 'Yes' : 'No',
+        averageRating: product.averageRating || 0,
+        totalRatings: product.totalRatings || 0,
+        weight: product.weight || '',
+        color: product.color || '',
+        warranty: product.warranty || '',
+        isCodAvailable: product.isCodAvailable ? 'Yes' : 'No',
+        isFreeShipping: product.isFreeShipping ? 'Yes' : 'No',
+        tags: product.tags?.join('; ') || '',
+        created_at: formatDate(product.created_at),
+        updated_at: formatDate(product.updated_at)
+      };
+    });
+
+    const fields = [
+      { key: 'name', label: 'Product Name' },
+      { key: 'slug', label: 'Slug' },
+      { key: 'sku', label: 'SKU' },
+      { key: 'description', label: 'Description' },
+      { key: 'product_type', label: 'Product Type' },
+      { key: 'product_structure', label: 'Product Structure' },
+      { key: 'categories', label: 'Categories' },
+      { key: 'subcategories', label: 'Subcategories' },
+      { key: 'cost_price', label: 'Cost Price' },
+      { key: 'selling_price', label: 'Selling Price' },
+      { key: 'baseStock', label: 'Stock' },
+      { key: 'minStock', label: 'Min Stock' },
+      { key: 'status', label: 'Status' },
+      { key: 'published', label: 'Published' },
+      { key: 'averageRating', label: 'Average Rating' },
+      { key: 'totalRatings', label: 'Total Ratings' },
+      { key: 'weight', label: 'Weight' },
+      { key: 'color', label: 'Color' },
+      { key: 'warranty', label: 'Warranty' },
+      { key: 'isCodAvailable', label: 'COD Available' },
+      { key: 'isFreeShipping', label: 'Free Shipping' },
+      { key: 'tags', label: 'Tags' },
+      { key: 'created_at', label: 'Created At' },
+      { key: 'updated_at', label: 'Updated At' }
+    ];
+
+    sendCSVResponse(res, csvData, fields, `products_${new Date().toISOString().split('T')[0]}`);
+  } catch (error) {
+    console.error('CSV export error:', error);
+    res.status(500).json({ success: false, error: 'Failed to export products as CSV' });
+  }
+});
+
+// POST /api/products/import/csv - Import products from CSV
+router.post("/import/csv", upload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, error: 'No file uploaded' });
+    }
+
+    const fs = require('fs');
+    const csv = require('csv-parser');
+    const results = [];
+    const errors = [];
+
+    // Read and parse CSV file
+    fs.createReadStream(req.file.path)
+      .pipe(csv())
+      .on('data', (data) => results.push(data))
+      .on('end', async () => {
+        let imported = 0;
+        let skipped = 0;
+
+        for (let i = 0; i < results.length; i++) {
+          const row = results[i];
+          try {
+            // Validate required fields
+            if (!row['Product Name'] || !row['SKU']) {
+              errors.push({ row: i + 2, error: 'Missing required fields: Product Name or SKU' });
+              skipped++;
+              continue;
+            }
+
+            // Check if product with same SKU exists
+            const existingProduct = await Product.findOne({ sku: row['SKU'] });
+            if (existingProduct) {
+              errors.push({ row: i + 2, error: `Product with SKU ${row['SKU']} already exists` });
+              skipped++;
+              continue;
+            }
+
+            // Prepare product data
+            const productData = {
+              name: row['Product Name'],
+              slug: row['Slug'] || row['Product Name'].toLowerCase().replace(/\s+/g, '-'),
+              sku: row['SKU'],
+              description: row['Description'] || '',
+              product_type: row['Product Type'] || 'physical',
+              product_structure: row['Product Structure'] || 'simple',
+              cost_price: parseFloat(row['Cost Price']) || 0,
+              selling_price: parseFloat(row['Selling Price']) || 0,
+              baseStock: parseInt(row['Stock']) || 0,
+              minStock: parseInt(row['Min Stock']) || 0,
+              status: row['Status'] || 'draft',
+              published: row['Published']?.toLowerCase() === 'yes',
+              weight: parseFloat(row['Weight']) || undefined,
+              color: row['Color'] || undefined,
+              warranty: row['Warranty'] || undefined,
+              isCodAvailable: row['COD Available']?.toLowerCase() !== 'no',
+              isFreeShipping: row['Free Shipping']?.toLowerCase() === 'yes',
+              tags: row['Tags'] ? row['Tags'].split(';').map(t => t.trim()) : []
+            };
+
+            // Create product
+            const product = await Product.create(productData);
+            imported++;
+
+          } catch (error) {
+            errors.push({ row: i + 2, error: error.message });
+            skipped++;
+          }
+        }
+
+        // Delete uploaded file
+        fs.unlinkSync(req.file.path);
+
+        res.json({
+          success: true,
+          message: `Import completed. ${imported} products imported, ${skipped} skipped.`,
+          imported,
+          skipped,
+          errors: errors.length > 0 ? errors : undefined
+        });
+      })
+      .on('error', (error) => {
+        console.error('CSV parsing error:', error);
+        if (req.file && fs.existsSync(req.file.path)) {
+          fs.unlinkSync(req.file.path);
+        }
+        res.status(500).json({ success: false, error: 'Failed to parse CSV file' });
+      });
+
+  } catch (error) {
+    console.error('CSV import error:', error);
+    if (req.file && fs.existsSync(req.file.path)) {
+      fs.unlinkSync(req.file.path);
+    }
+    res.status(500).json({ success: false, error: 'Failed to import products from CSV' });
   }
 });
 

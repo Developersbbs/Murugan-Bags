@@ -160,7 +160,8 @@ const productSchema = new mongoose.Schema(
       default: false,
       required: function () { return this.product_structure === 'simple'; },
       select: function () { return this.product_structure === 'simple'; }
-    }
+    },
+    isNewArrival: { type: Boolean, default: false }
   },
   {
     timestamps: {

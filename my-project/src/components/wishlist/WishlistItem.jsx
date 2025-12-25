@@ -2,12 +2,13 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { TrashIcon, ShoppingCartIcon, EyeIcon } from '@heroicons/react/24/outline';
 import { formatCurrency } from '../../utils/format';
+import { getFullImageUrl } from '../../utils/imageUtils';
 import { useCart } from '../../context/CartContext';
 import toast from 'react-hot-toast';
 
-const WishlistItem = ({ 
-  item, 
-  onRemove, 
+const WishlistItem = ({
+  item,
+  onRemove,
   loading = false,
   viewMode = 'grid',
   isSelected = false,
@@ -19,7 +20,7 @@ const WishlistItem = ({
 
   const handleRemove = async () => {
     if (isRemoving) return;
-    
+
     setIsRemoving(true);
     try {
       // Use _id or id, whichever is available
@@ -37,7 +38,7 @@ const WishlistItem = ({
 
   const handleAddToCart = async () => {
     if (isAddingToCart) return;
-    
+
     setIsAddingToCart(true);
     try {
       await addToCart({
@@ -47,7 +48,7 @@ const WishlistItem = ({
         image_url: [item.image]
       });
       toast.success('Added to cart');
-      
+
       // Optionally remove from wishlist after adding to cart
       // await handleRemove();
     } catch (error) {
@@ -61,9 +62,8 @@ const WishlistItem = ({
 
   if (viewMode === 'list') {
     return (
-      <div className={`bg-white rounded-lg shadow-sm border-2 transition-all hover:shadow-md ${
-        isSelected ? 'border-blue-500 bg-blue-50' : 'border-gray-200'
-      }`}>
+      <div className={`bg-white rounded-lg shadow-sm border-2 transition-all hover:shadow-md ${isSelected ? 'border-blue-500 bg-blue-50' : 'border-gray-200'
+        }`}>
         <div className="p-4">
           <div className="flex items-center space-x-4">
             {/* Selection Checkbox */}
@@ -77,13 +77,13 @@ const WishlistItem = ({
                 />
               </div>
             )}
-            
+
             {/* Product Image */}
             <div className="flex-shrink-0">
               <Link to={`/product/${item._id || item.id}`} className="block">
-                <img 
-                  src={item.image || defaultImage} 
-                  alt={item.name} 
+                <img
+                  src={getFullImageUrl(item.image)}
+                  alt={item.name}
                   className="w-20 h-20 object-cover rounded-lg"
                   onError={(e) => {
                     e.target.onerror = null;
@@ -93,7 +93,7 @@ const WishlistItem = ({
                 />
               </Link>
             </div>
-            
+
             {/* Product Details */}
             <div className="flex-1 min-w-0">
               <Link to={`/product/${item._id || item.id}`} className="block group">
@@ -101,7 +101,7 @@ const WishlistItem = ({
                   {item.name}
                 </h3>
               </Link>
-              
+
               <div className="flex items-center space-x-2 mt-1">
                 <span className="text-lg font-semibold text-gray-900">
                   {formatCurrency(item.price)}
@@ -117,17 +117,17 @@ const WishlistItem = ({
                   </>
                 )}
               </div>
-              
+
               {item.addedAt && (
                 <div className="text-xs text-gray-500 mt-1">
                   Added {new Date(item.addedAt).toLocaleDateString()}
                 </div>
               )}
             </div>
-            
+
             {/* Actions */}
             <div className="flex items-center space-x-2">
-              <button 
+              <button
                 onClick={handleAddToCart}
                 disabled={isAddingToCart || loading || item.stock === 0}
                 className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center space-x-2"
@@ -137,8 +137,8 @@ const WishlistItem = ({
                   {isAddingToCart ? 'Adding...' : item.stock === 0 ? 'Out of Stock' : 'Add to Cart'}
                 </span>
               </button>
-              
-              <button 
+
+              <button
                 onClick={handleRemove}
                 disabled={isRemoving || loading}
                 className="p-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
@@ -155,9 +155,8 @@ const WishlistItem = ({
 
   // Grid view
   return (
-    <div className={`bg-white rounded-lg shadow-sm border-2 overflow-hidden hover:shadow-lg transition-all group ${
-      isSelected ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-200'
-    }`}>
+    <div className={`bg-white rounded-lg shadow-sm border-2 overflow-hidden hover:shadow-lg transition-all group ${isSelected ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-200'
+      }`}>
       {/* Selection Checkbox */}
       {onSelect && (
         <div className="absolute top-3 left-3 z-10">
@@ -169,13 +168,13 @@ const WishlistItem = ({
           />
         </div>
       )}
-      
+
       {/* Product Image */}
       <div className="relative">
         <Link to={`/product/${item._id || item.id}`} className="block">
-          <img 
-            src={item.image || defaultImage} 
-            alt={item.name} 
+          <img
+            src={getFullImageUrl(item.image)}
+            alt={item.name}
             className="w-full h-48 object-cover group-hover:scale-105 transition-transform"
             onError={(e) => {
               e.target.onerror = null;
@@ -184,7 +183,7 @@ const WishlistItem = ({
             loading="lazy"
           />
         </Link>
-        
+
         {/* Quick Actions Overlay */}
         <div className="absolute top-3 right-3 flex flex-col space-y-2 opacity-0 group-hover:opacity-100 transition-opacity">
           <Link
@@ -194,8 +193,8 @@ const WishlistItem = ({
           >
             <EyeIcon className="h-4 w-4 text-gray-600" />
           </Link>
-          
-          <button 
+
+          <button
             onClick={handleRemove}
             disabled={isRemoving || loading}
             className="p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-lg hover:bg-red-50 hover:text-red-600 transition-colors disabled:opacity-50"
@@ -228,7 +227,7 @@ const WishlistItem = ({
             {item.name}
           </h3>
         </Link>
-        
+
         {/* Price */}
         <div className="flex items-center space-x-2 mb-3">
           <span className="text-lg font-bold text-gray-900">
@@ -248,7 +247,7 @@ const WishlistItem = ({
 
         {/* Action Buttons */}
         <div className="flex space-x-2">
-          <button 
+          <button
             onClick={handleAddToCart}
             disabled={isAddingToCart || loading || item.stock === 0}
             className="flex-1 bg-blue-600 text-white py-2 px-3 rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center space-x-1 text-sm font-medium"
@@ -258,8 +257,8 @@ const WishlistItem = ({
               {isAddingToCart ? 'Adding...' : item.stock === 0 ? 'Out of Stock' : 'Add to Cart'}
             </span>
           </button>
-          
-          <button 
+
+          <button
             onClick={handleRemove}
             disabled={isRemoving || loading}
             className="p-2 border border-gray-300 rounded-lg hover:bg-red-50 hover:border-red-300 hover:text-red-600 transition-colors disabled:opacity-50"

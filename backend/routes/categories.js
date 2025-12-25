@@ -91,7 +91,7 @@ router.put("/bulk", async (req, res) => {
 
     const objectIds = ids
       .map(id => {
-        try { return new ObjectId(id); } 
+        try { return new ObjectId(id); }
         catch { return null; }
       })
       .filter(Boolean);
@@ -121,7 +121,7 @@ router.delete("/bulk", async (req, res) => {
 
     const objectIds = ids
       .map(id => {
-        try { return new ObjectId(id); } 
+        try { return new ObjectId(id); }
         catch { return null; }
       })
       .filter(Boolean);
@@ -165,7 +165,7 @@ router.get("/", async (req, res) => {
     let filter = {};
     if (search) {
       const searchRegex = new RegExp(search, 'i');
-      
+
       // First, find subcategories that match the search
       const matchingSubcategories = await Subcategory.find({
         $or: [
@@ -187,7 +187,7 @@ router.get("/", async (req, res) => {
           { seo_title: { $regex: searchRegex } },
           { seo_description: { $regex: searchRegex } },
           // Include categories that have matching subcategories
-          ...(categoryIdsFromSubcategories.length > 0 
+          ...(categoryIdsFromSubcategories.length > 0
             ? [{ _id: { $in: categoryIdsFromSubcategories.map(id => new ObjectId(id)) } }]
             : []
           )
@@ -325,16 +325,16 @@ router.put("/:id", async (req, res) => {
   try {
     // Ensure req.body exists and is an object
     if (!req.body || typeof req.body !== 'object') {
-      return res.status(400).json({ 
-        success: false, 
-        error: "Invalid request body" 
+      return res.status(400).json({
+        success: false,
+        error: "Invalid request body"
       });
     }
 
     console.log('PUT Request body:', req.body);
 
     const { name, description, slug, published, image } = req.body || {};
-    const updateData = { 
+    const updateData = {
       updated_at: new Date(),
       ...(name && { name }),
       ...(description !== undefined && { description }),
@@ -347,11 +347,11 @@ router.put("/:id", async (req, res) => {
 
     // Update the category
     const category = await Category.findByIdAndUpdate(
-      req.params.id, 
+      req.params.id,
       { $set: updateData },
       { new: true, runValidators: true }
     );
-    
+
     if (!category) {
       return res.status(404).json({ success: false, error: "Category not found" });
     }
@@ -504,7 +504,7 @@ router.get("/export/csv", async (req, res) => {
     let filter = {};
     if (search) {
       const searchRegex = new RegExp(search, 'i');
-      
+
       // Find subcategories that match the search
       const matchingSubcategories = await Subcategory.find({
         $or: [
@@ -522,7 +522,7 @@ router.get("/export/csv", async (req, res) => {
         { slug: { $regex: searchRegex } },
         { seo_title: { $regex: searchRegex } },
         { seo_description: { $regex: searchRegex } },
-        ...(categoryIdsFromSubcategories.length > 0 
+        ...(categoryIdsFromSubcategories.length > 0
           ? [{ _id: { $in: categoryIdsFromSubcategories.map(id => new ObjectId(id)) } }]
           : []
         )
@@ -588,7 +588,7 @@ router.get("/export/json", async (req, res) => {
     let filter = {};
     if (search) {
       const searchRegex = new RegExp(search, 'i');
-      
+
       // Find subcategories that match the search
       const matchingSubcategories = await Subcategory.find({
         $or: [
@@ -606,7 +606,7 @@ router.get("/export/json", async (req, res) => {
         { slug: { $regex: searchRegex } },
         { seo_title: { $regex: searchRegex } },
         { seo_description: { $regex: searchRegex } },
-        ...(categoryIdsFromSubcategories.length > 0 
+        ...(categoryIdsFromSubcategories.length > 0
           ? [{ _id: { $in: categoryIdsFromSubcategories.map(id => new ObjectId(id)) } }]
           : []
         )
@@ -657,6 +657,112 @@ router.get("/export/json", async (req, res) => {
   } catch (err) {
     console.error('JSON export error:', err);
     res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// POST /api/categories/import/csv - Import categories from CSV
+router.post("/import/csv", upload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, error: 'No file uploaded' });
+    }
+
+    const csv = require('csv-parser');
+    const results = [];
+    const errors = [];
+
+    // Read and parse CSV file
+    fs.createReadStream(req.file.path)
+      .pipe(csv())
+      .on('data', (data) => results.push(data))
+      .on('end', async () => {
+        let imported = 0;
+        let skipped = 0;
+
+        for (let i = 0; i < results.length; i++) {
+          const row = results[i];
+          try {
+            // Validate required fields
+            if (!row['Name'] || !row['Slug']) {
+              errors.push({ row: i + 2, error: 'Missing required fields: Name or Slug' });
+              skipped++;
+              continue;
+            }
+
+            // Check if category with same slug exists
+            const existingCategory = await Category.findOne({ slug: row['Slug'] });
+            if (existingCategory) {
+              errors.push({ row: i + 2, error: `Category with slug ${row['Slug']} already exists` });
+              skipped++;
+              continue;
+            }
+
+            // Prepare category data
+            const categoryData = {
+              name: row['Name'],
+              slug: row['Slug'],
+              description: row['Description'] || '',
+              image_url: row['Image URL'] || null,
+              published: true
+            };
+
+            // Create category
+            const category = await Category.create(categoryData);
+
+            // Handle subcategories if provided
+            if (row['Subcategories']) {
+              const subcategoryNames = row['Subcategories'].split(';').map(s => s.trim()).filter(Boolean);
+
+              if (subcategoryNames.length > 0) {
+                const subcategoriesToCreate = subcategoryNames.map(name => ({
+                  name: name,
+                  slug: name.toLowerCase().replace(/\s+/g, '-'),
+                  category_id: category._id,
+                  published: true
+                }));
+
+                const createdSubcategories = await Subcategory.insertMany(subcategoriesToCreate);
+
+                // Update category with subcategory IDs
+                await Category.findByIdAndUpdate(category._id, {
+                  subcategories: createdSubcategories.map(sub => sub._id)
+                });
+              }
+            }
+
+            imported++;
+
+          } catch (error) {
+            errors.push({ row: i + 2, error: error.message });
+            skipped++;
+          }
+        }
+
+        // Delete uploaded file
+        fs.unlinkSync(req.file.path);
+
+        res.json({
+          success: true,
+          message: `Import completed. ${imported} categories imported, ${skipped} skipped.`,
+          imported,
+          skipped,
+          errors: errors.length > 0 ? errors : undefined
+        });
+      })
+      .on('error', (error) => {
+        console.error('CSV parsing error:', error);
+        if (req.file && fs.existsSync(req.file.path)) {
+          fs.unlinkSync(req.file.path);
+        }
+        res.status(500).json({ success: false, error: 'Failed to parse CSV file' });
+      });
+
+  } catch (error) {
+    console.error('CSV import error:', error);
+    if (req.file && fs.existsSync(req.file.path)) {
+      fs.unlinkSync(req.file.path);
+    }
+    res.status(500).json({ success: false, error: 'Failed to import categories from CSV' });
   }
 });
 

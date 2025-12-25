@@ -1,6 +1,6 @@
 import { MdOutlineDashboard, MdRateReview } from "react-icons/md";
 import { LuUsers } from "react-icons/lu";
-import { TbPackages, TbTruckDelivery } from "react-icons/tb";
+import { TbPackages, TbTruckDelivery, TbChartBar, TbArchive } from "react-icons/tb";
 import { RiCoupon2Line } from "react-icons/ri";
 import { TbTag } from "react-icons/tb";
 import { TbBriefcase } from "react-icons/tb";
@@ -18,14 +18,39 @@ export const navItems = [
     icon: <MdOutlineDashboard />,
   },
   {
-    title: "Products",
-    url: "/products",
-    icon: <MdOutlineShoppingCart />,
+    title: "Orders",
+    url: "/orders",
+    icon: <TbTruckDelivery />,
+  },
+  {
+    title: "Customers",
+    url: "/customers",
+    icon: <LuUsers />,
   },
   {
     title: "Categories",
     url: "/categories",
     icon: <TbTag />,
+  },
+  {
+    title: "Products",
+    url: "/products",
+    icon: <MdOutlineShoppingCart />,
+  },
+  {
+    title: "Archives",
+    url: "/archives",
+    icon: <TbArchive />,
+  },
+  {
+    title: "Stocks",
+    url: "/stock",
+    icon: <TbPackages />,
+  },
+  {
+    title: "Reviews",
+    url: "/reviews",
+    icon: <MdRateReview />,
   },
   {
     title: "Home Page",
@@ -62,28 +87,17 @@ export const navItems = [
         url: "/offer-popups",
         icon: <FaGift />,
       },
+      {
+        title: "New Arrival Banners",
+        url: "/new-arrival-banners",
+        icon: <MdOutlineViewCarousel />,
+      },
     ]
   },
-
   {
-    title: "Stocks",
-    url: "/stock",
-    icon: <TbPackages />,
-  },
-  {
-    title: "Customers",
-    url: "/customers",
-    icon: <LuUsers />,
-  },
-  {
-    title: "Orders",
-    url: "/orders",
-    icon: <TbTruckDelivery />,
-  },
-  {
-    title: "Reviews",
-    url: "/reviews",
-    icon: <MdRateReview />,
+    title: "Sales & Analytics",
+    url: "/analytics",
+    icon: <TbChartBar />,
   },
 
   // {

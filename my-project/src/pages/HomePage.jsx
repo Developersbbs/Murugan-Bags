@@ -267,7 +267,7 @@ const HomePage = () => {
         const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
         console.log('Fetching new arrivals from:', `${API_URL}/products`);
 
-        const res = await fetch(`${API_URL}/products?page=1&limit=4&dateSort=added-desc&published=true`);
+        const res = await fetch(`${API_URL}/products?page=1&limit=4&isNewArrival=true&published=true`);
         const data = await res.json();
 
         console.log('New arrivals response:', data);
@@ -347,13 +347,25 @@ const HomePage = () => {
         const res = await fetch(`${API_URL}/products/colors`);
         const data = await res.json();
 
-        if (data.success && data.data) {
+        if (data.success && data.data && data.data.length > 0) {
           // Map colors to gradients
           const mappedColors = data.data.map(colorName => ({
             name: colorName,
             gradient: colorGradients[colorName] || colorGradients['default']
           }));
           setColors(mappedColors);
+        } else {
+          // Fallback colors if no colors found in DB
+          setColors([
+            { name: "Black", gradient: "from-gray-900 to-black" },
+            { name: "Red", gradient: "from-red-600 to-red-800" },
+            { name: "Blue", gradient: "from-blue-600 to-blue-800" },
+            { name: "Green", gradient: "from-green-600 to-green-800" },
+            { name: "Yellow", gradient: "from-yellow-400 to-yellow-600" },
+            { name: "Purple", gradient: "from-purple-600 to-purple-800" },
+            { name: "Pink", gradient: "from-pink-500 to-pink-700" },
+            { name: "White", gradient: "from-slate-100 to-white" }
+          ]);
         }
       } catch (error) {
         console.error('Error fetching colors:', error);

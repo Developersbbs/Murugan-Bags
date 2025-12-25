@@ -119,7 +119,7 @@ export const productFormSchema = z
       .optional()
       .transform((val) => {
         // If value is 0, NaN, or empty string, treat as undefined (not set)
-        if (val === 0 || val === undefined || val === null || (typeof val === 'string' && val.trim() === '')) {
+        if (val === 0 || val === undefined || val === null || (typeof val === 'string' && (val as string).trim() === '')) {
           return undefined;
         }
         return val;
@@ -142,6 +142,7 @@ export const productFormSchema = z
     isCodAvailable: z.boolean().default(true),
     isFreeShipping: z.boolean().default(false),
     showRatings: z.boolean().default(true),
+    isNewArrival: z.boolean().default(false),
     // Digital product fields
     fileUpload: z.instanceof(File).optional(),
     fileSize: z.coerce.number().min(0).optional(),

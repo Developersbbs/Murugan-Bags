@@ -7,7 +7,7 @@ const GUEST_WISHLIST_KEY = 'guest_wishlist_items';
 // Guest Cart Functions
 export const getGuestCart = () => {
   try {
-    const cartData = sessionStorage.getItem(GUEST_CART_KEY);
+    const cartData = localStorage.getItem(GUEST_CART_KEY);
     return cartData ? JSON.parse(cartData) : [];
   } catch (error) {
     console.error('Error reading guest cart:', error);
@@ -17,7 +17,7 @@ export const getGuestCart = () => {
 
 export const saveGuestCart = (items) => {
   try {
-    sessionStorage.setItem(GUEST_CART_KEY, JSON.stringify(items));
+    localStorage.setItem(GUEST_CART_KEY, JSON.stringify(items));
     console.log('Guest cart saved:', items.length, 'items');
   } catch (error) {
     console.error('Error saving guest cart:', error);
@@ -29,12 +29,12 @@ export const addToGuestCart = (product, variant = null, quantity = 1) => {
     const currentCart = getGuestCart();
     const productId = product._id;
     const variantKey = variant ? JSON.stringify(variant) : '';
-    
+
     // Check if item already exists
-    const existingItemIndex = currentCart.findIndex(item => 
+    const existingItemIndex = currentCart.findIndex(item =>
       item.id === productId && JSON.stringify(item.variant || {}) === variantKey
     );
-    
+
     if (existingItemIndex >= 0) {
       // Update quantity
       currentCart[existingItemIndex].quantity += quantity;
@@ -52,7 +52,7 @@ export const addToGuestCart = (product, variant = null, quantity = 1) => {
       };
       currentCart.push(cartItem);
     }
-    
+
     saveGuestCart(currentCart);
     return currentCart;
   } catch (error) {
@@ -65,11 +65,11 @@ export const removeFromGuestCart = (productId, variant = {}) => {
   try {
     const currentCart = getGuestCart();
     const variantKey = JSON.stringify(variant);
-    
-    const updatedCart = currentCart.filter(item => 
+
+    const updatedCart = currentCart.filter(item =>
       !(item.id === productId && JSON.stringify(item.variant || {}) === variantKey)
     );
-    
+
     saveGuestCart(updatedCart);
     return updatedCart;
   } catch (error) {
@@ -82,14 +82,14 @@ export const updateGuestCartQuantity = (productId, variant = {}, quantity) => {
   try {
     const currentCart = getGuestCart();
     const variantKey = JSON.stringify(variant);
-    
+
     const updatedCart = currentCart.map(item => {
       if (item.id === productId && JSON.stringify(item.variant || {}) === variantKey) {
         return { ...item, quantity: Math.max(1, quantity) };
       }
       return item;
     });
-    
+
     saveGuestCart(updatedCart);
     return updatedCart;
   } catch (error) {
@@ -100,7 +100,7 @@ export const updateGuestCartQuantity = (productId, variant = {}, quantity) => {
 
 export const clearGuestCart = () => {
   try {
-    sessionStorage.removeItem(GUEST_CART_KEY);
+    localStorage.removeItem(GUEST_CART_KEY);
     console.log('Guest cart cleared');
     return [];
   } catch (error) {
@@ -112,7 +112,7 @@ export const clearGuestCart = () => {
 // Guest Wishlist Functions
 export const getGuestWishlist = () => {
   try {
-    const wishlistData = sessionStorage.getItem(GUEST_WISHLIST_KEY);
+    const wishlistData = localStorage.getItem(GUEST_WISHLIST_KEY);
     return wishlistData ? JSON.parse(wishlistData) : [];
   } catch (error) {
     console.error('Error reading guest wishlist:', error);
@@ -122,7 +122,7 @@ export const getGuestWishlist = () => {
 
 export const saveGuestWishlist = (items) => {
   try {
-    sessionStorage.setItem(GUEST_WISHLIST_KEY, JSON.stringify(items));
+    localStorage.setItem(GUEST_WISHLIST_KEY, JSON.stringify(items));
     console.log('Guest wishlist saved:', items.length, 'items');
   } catch (error) {
     console.error('Error saving guest wishlist:', error);
@@ -133,24 +133,32 @@ export const addToGuestWishlist = (product) => {
   try {
     const currentWishlist = getGuestWishlist();
     const productId = product._id;
-    
-    // Check if item already exists
-    const existingItem = currentWishlist.find(item => item._id === productId);
-    
+    const variantId = product.variant_id || null;
+
+    // Check if item already exists (matching both product_id and variant_id)
+    const existingItem = currentWishlist.find(item => {
+      const sameProduct = item._id === productId;
+      const sameVariant = variantId
+        ? item.variant_id === variantId
+        : !item.variant_id;
+      return sameProduct && sameVariant;
+    });
+
     if (!existingItem) {
       const wishlistItem = {
         _id: productId,
-        id: productId, // Keep both for compatibility
+        id: productId,
         name: product.name || 'Unknown Product',
         price: product.selling_price || product.price || 0,
-        image: product.images?.[0]?.url || product.image_url?.[0] || null,
+        image: (product.image_url && product.image_url[0]) || product.image || null,
+        variant_id: variantId,
         addedAt: new Date().toISOString()
       };
-      
+
       currentWishlist.push(wishlistItem);
       saveGuestWishlist(currentWishlist);
     }
-    
+
     return currentWishlist;
   } catch (error) {
     console.error('Error adding to guest wishlist:', error);
@@ -158,11 +166,17 @@ export const addToGuestWishlist = (product) => {
   }
 };
 
-export const removeFromGuestWishlist = (productId) => {
+export const removeFromGuestWishlist = (productId, variantId = null) => {
   try {
     const currentWishlist = getGuestWishlist();
-    const updatedWishlist = currentWishlist.filter(item => item._id !== productId);
-    
+    const updatedWishlist = currentWishlist.filter(item => {
+      const sameProduct = item._id === productId;
+      const sameVariant = variantId
+        ? item.variant_id === variantId
+        : !item.variant_id;
+      return !(sameProduct && sameVariant);
+    });
+
     saveGuestWishlist(updatedWishlist);
     return updatedWishlist;
   } catch (error) {
@@ -173,7 +187,7 @@ export const removeFromGuestWishlist = (productId) => {
 
 export const clearGuestWishlist = () => {
   try {
-    sessionStorage.removeItem(GUEST_WISHLIST_KEY);
+    localStorage.removeItem(GUEST_WISHLIST_KEY);
     console.log('Guest wishlist cleared');
     return [];
   } catch (error) {
@@ -200,14 +214,20 @@ export const clearAllGuestData = () => {
 export const isInGuestCart = (productId, variant = {}) => {
   const cart = getGuestCart();
   const variantKey = JSON.stringify(variant);
-  return cart.some(item => 
+  return cart.some(item =>
     item.id === productId && JSON.stringify(item.variant || {}) === variantKey
   );
 };
 
-export const isInGuestWishlist = (productId) => {
+export const isInGuestWishlist = (productId, variantId = null) => {
   const wishlist = getGuestWishlist();
-  return wishlist.some(item => item._id === productId);
+  return wishlist.some(item => {
+    const sameProduct = item._id === productId;
+    const sameVariant = variantId
+      ? item.variant_id === variantId
+      : !item.variant_id;
+    return sameProduct && sameVariant;
+  });
 };
 
 export const getGuestCartCount = () => {

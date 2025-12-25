@@ -189,6 +189,64 @@ router.get("/", async (req, res) => {
   }
 });
 
+// Export specific customer orders to CSV
+router.get("/:id/orders/export/csv", async (req, res) => {
+  try {
+    const customerId = req.params.id;
+    const customer = await Customer.findById(customerId);
+
+    if (!customer) {
+      return res.status(404).json({ success: false, error: "Customer not found" });
+    }
+
+    const orders = await Order.find({ customer_id: customerId })
+      .sort({ created_at: -1 })
+      .lean();
+
+    if (orders.length === 0) {
+      return res.status(404).json({ success: false, error: "No orders found for this customer" });
+    }
+
+    // Convert to CSV format
+    const csvHeaders = [
+      'Order ID',
+      'Date',
+      'Status',
+      'Total Amount',
+      'Payment Method',
+      'Payment Status',
+      'Items Count',
+      'Shipping Address'
+    ];
+
+    const csvRows = orders.map(order => [
+      order.order_id || order._id,
+      order.created_at ? new Date(order.created_at).toLocaleDateString() : '',
+      order.status || '',
+      order.total_amount || 0,
+      order.payment_info?.method || '',
+      order.payment_info?.status || '',
+      order.items ? order.items.length : 0,
+      order.shipping_address ?
+        `${order.shipping_address.street || ''}, ${order.shipping_address.city || ''}, ${order.shipping_address.zipCode || ''}`.trim().replace(/"/g, '""') :
+        ''
+    ]);
+
+    const csvContent = [
+      csvHeaders.join(','),
+      ...csvRows.map(row => row.map(field => `"${field}"`).join(','))
+    ].join('\n');
+
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename="customer_orders_${customer.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_${new Date().toISOString().split('T')[0]}.csv"`);
+    res.send(csvContent);
+
+  } catch (err) {
+    console.error('Customer orders export error:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // GET customer orders
 router.get("/:id/orders", async (req, res) => {
   try {

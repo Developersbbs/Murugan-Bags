@@ -12,7 +12,7 @@ export interface FetchProductsParams {
   category?: string;
   subcategory?: string;
   priceSort?: "lowest-first" | "highest-first";
-  status?: "selling" | "out-of-stock";
+  status?: "selling" | "out-of-stock" | "archived";
   published?: boolean;
   dateSort?: string;
   productType?: string;

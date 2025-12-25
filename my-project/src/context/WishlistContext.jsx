@@ -172,14 +172,18 @@ export const WishlistProvider = ({ children }) => {
       if (backendWishlistResponse.success && backendWishlistResponse.data && backendWishlistResponse.data.items && backendWishlistResponse.data.items.length > 0) {
         console.log('Wishlist loaded from MongoDB:', backendWishlistResponse.data.items.length, 'items');
 
-        const backendWishlistItems = backendWishlistResponse.data.items.map(item => ({
-          _id: item.product_id._id || item.product_id,
-          id: item.product_id._id || item.product_id, // Keep both for compatibility
-          name: item.product_name,
-          price: item.discounted_price,
-          image: item.product_image,
-          wishlistItemId: item._id
-        }));
+        const backendWishlistItems = backendWishlistResponse.data.items.map(item => {
+          const product = item.product_id || {};
+          return {
+            _id: product._id || item.product_id,
+            id: product._id || item.product_id,
+            name: product.name || item.product_name,
+            price: product.selling_price || item.discounted_price || item.price,
+            image: (product.image_url && product.image_url[0]) || item.product_image,
+            wishlistItemId: item._id,
+            variant_id: item.variant_id
+          };
+        });
 
         dispatch({ type: WISHLIST_ACTIONS.SET_WISHLIST, payload: backendWishlistItems });
 
@@ -275,14 +279,18 @@ export const WishlistProvider = ({ children }) => {
           console.log('Backend wishlist response after migration:', backendWishlistResponse);
 
           if (backendWishlistResponse.success && backendWishlistResponse.data && backendWishlistResponse.data.items) {
-            const backendWishlistItems = backendWishlistResponse.data.items.map(item => ({
-              _id: item.product_id._id || item.product_id,
-              id: item.product_id._id || item.product_id,
-              name: item.product_name,
-              price: item.discounted_price,
-              image: item.product_image,
-              wishlistItemId: item._id
-            }));
+            const backendWishlistItems = backendWishlistResponse.data.items.map(item => {
+              const product = item.product_id || {};
+              return {
+                _id: product._id || item.product_id,
+                id: product._id || item.product_id,
+                name: product.name || item.product_name,
+                price: product.selling_price || item.discounted_price || item.price,
+                image: (product.image_url && product.image_url[0]) || item.product_image,
+                wishlistItemId: item._id,
+                variant_id: item.variant_id
+              };
+            });
             console.log('Setting wishlist with transformed items:', backendWishlistItems);
             dispatch({ type: WISHLIST_ACTIONS.SET_WISHLIST, payload: backendWishlistItems });
 
@@ -309,6 +317,14 @@ export const WishlistProvider = ({ children }) => {
   const addToWishlist = async (product) => {
     try {
       console.log('WishlistContext: Adding to wishlist:', product._id);
+
+      // Safeguard: Check if item already exists in local state before proceeding
+      // Use the helper to ensure consistent ID comparison
+      if (product._id && isInWishlist(product._id, product.variant_id)) {
+        console.log('WishlistContext: Item already in wishlist state, skipping addition');
+        toast.info('Item is already in your wishlist');
+        return;
+      }
 
       // For authenticated users, add directly to MongoDB
       if (user && user.uid) {
@@ -363,15 +379,18 @@ export const WishlistProvider = ({ children }) => {
 
         if (response.success && response.data && response.data.items) {
           // Update local state with backend response
-          const backendWishlistItems = response.data.items.map(item => ({
-            _id: item.product_id._id || item.product_id,
-            id: item.product_id._id || item.product_id,
-            name: item.product_name,
-            price: item.discounted_price,
-            image: item.product_image,
-            wishlistItemId: item._id,
-            variant_id: item.variant_id
-          }));
+          const backendWishlistItems = response.data.items.map(item => {
+            const product = item.product_id || {};
+            return {
+              _id: product._id || item.product_id,
+              id: product._id || item.product_id,
+              name: product.name || item.product_name,
+              price: product.selling_price || item.discounted_price || item.price,
+              image: (product.image_url && product.image_url[0]) || item.product_image,
+              wishlistItemId: item._id,
+              variant_id: item.variant_id
+            };
+          });
 
           dispatch({ type: WISHLIST_ACTIONS.SET_WISHLIST, payload: backendWishlistItems });
           console.log('WishlistContext: Item added to MongoDB wishlist successfully');
@@ -416,9 +435,9 @@ export const WishlistProvider = ({ children }) => {
 
       // Find the specific item to remove
       const itemToRemove = state.items.find(item => {
-        const sameProduct = item._id === productId;
+        const sameProduct = String(item._id) === String(productId);
         const sameVariant = variantId
-          ? (item.variant_id === variantId)
+          ? (item.variant_id && String(item.variant_id) === String(variantId))
           : (!item.variant_id);
         return sameProduct && sameVariant;
       });
@@ -481,13 +500,13 @@ export const WishlistProvider = ({ children }) => {
       // If product has a variant_id, check for exact match including variant
       const wasInWishlist = state.items.some(item => {
         if (product.variant_id) {
-          return item._id === product._id && item.variant_id === product.variant_id;
+          return String(item._id) === String(product._id) && String(item.variant_id) === String(product.variant_id);
         }
         // If checking a main product, check if ANY variant of it is in wishlist?
         // Or strictly check for main product entry?
         // User wants "every product add separatly", so we should check strictly.
         // But if product has no variant_id, it might be a main product check.
-        return item._id === product._id && !item.variant_id;
+        return String(item._id) === String(product._id) && !item.variant_id;
       });
 
       if (wasInWishlist) {
@@ -532,10 +551,11 @@ export const WishlistProvider = ({ children }) => {
   };
 
   const isInWishlist = (productId, variantId = null) => {
+    if (!productId) return false;
     return state.items.some(item => {
-      const sameProduct = item._id === productId;
+      const sameProduct = String(item._id) === String(productId);
       const sameVariant = variantId
-        ? (item.variant_id === variantId)
+        ? (item.variant_id && String(item.variant_id) === String(variantId))
         : (!item.variant_id);
       return sameProduct && sameVariant;
     });
@@ -543,9 +563,9 @@ export const WishlistProvider = ({ children }) => {
 
   const getWishlistItem = (productId, variantId = null) => {
     return state.items.find(item => {
-      const sameProduct = item._id === productId;
+      const sameProduct = String(item._id) === String(productId);
       const sameVariant = variantId
-        ? (item.variant_id === variantId)
+        ? (item.variant_id && String(item.variant_id) === String(variantId))
         : (!item.variant_id);
       return sameProduct && sameVariant;
     });

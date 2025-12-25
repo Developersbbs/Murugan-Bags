@@ -92,6 +92,9 @@ const specialOffersRoutes = require("./routes/specialOffers");
 const comboOffersRoutes = require("./routes/comboOffers");
 const marqueeOffersRoutes = require("./routes/marqueeOffers");
 const offerPopupsRoutes = require("./routes/offerPopups");
+const analyticsRoutes = require("./routes/analytics");
+const newArrivalBannersRoutes = require("./routes/newArrivalBanners");
+const ratingsRoutes = require("./routes/ratings");
 console.log('✅ Payments routes loaded:', typeof paymentsRoutes);
 
 // Simple test route
@@ -141,8 +144,9 @@ app.use("/api/upload", uploadRoutes);
 const bulkOrdersRoutes = require("./routes/bulkOrders");
 app.use("/api/bulk-orders", bulkOrdersRoutes);
 console.log('✅ Payments routes mounted at /api/payments');
-const ratingsRoutes = require("./routes/ratings");
 app.use("/api/ratings", ratingsRoutes);
+app.use("/api/analytics", analyticsRoutes);
+app.use("/api/new-arrival-banners", newArrivalBannersRoutes);
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 

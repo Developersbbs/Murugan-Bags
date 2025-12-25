@@ -96,7 +96,7 @@ export async function getCurrentUser(): Promise<User> {
       throw new Error('getCurrentUser can only be called on the client side');
     }
 
-    const token = localStorage.getItem('authToken');
+    const token = getAuthToken();
     if (!token) {
       throw new Error('No authentication token found');
     }
@@ -152,19 +152,7 @@ export async function resetPassword({ email }: ResetPasswordRequest): Promise<vo
 }
 
 export function isAuthenticated(): boolean {
-  // Check if we're in a browser environment
-  if (typeof window === 'undefined') {
-    return false;
-  }
-
-  // Check both localStorage and cookies for token
-  const localToken = localStorage.getItem("authToken");
-  const cookieToken = document.cookie
-    .split('; ')
-    .find(row => row.startsWith('authToken='))
-    ?.split('=')[1];
-
-  return !!(localToken || cookieToken);
+  return !!getAuthToken();
 }
 
 export function getAuthToken(): string | null {
@@ -173,5 +161,15 @@ export function getAuthToken(): string | null {
     return null;
   }
 
-  return localStorage.getItem("authToken");
+  // Check localStorage first
+  const localToken = localStorage.getItem("authToken");
+  if (localToken) return localToken;
+
+  // Fallback to cookie
+  const cookieToken = document.cookie
+    .split('; ')
+    .find(row => row.startsWith('authToken='))
+    ?.split('=')[1];
+
+  return cookieToken || null;
 }

@@ -22,7 +22,17 @@ const axiosInstance = axios.create({
 if (typeof window !== 'undefined') {
   axiosInstance.interceptors.request.use(
     (config) => {
-      const token = localStorage.getItem('authToken');
+      // Check localStorage
+      let token = localStorage.getItem('authToken');
+
+      // Fallback to cookie if localStorage is empty
+      if (!token) {
+        token = document.cookie
+          .split('; ')
+          .find(row => row.startsWith('authToken='))
+          ?.split('=')[1] || null;
+      }
+
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }

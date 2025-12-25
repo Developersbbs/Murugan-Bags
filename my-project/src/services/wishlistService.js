@@ -11,28 +11,41 @@ const api = axios.create({
 api.interceptors.request.use(async (config) => {
   try {
     // Try multiple token storage locations
-    const jwtToken = localStorage.getItem('jwt_token') || 
-                     localStorage.getItem('authToken') || 
-                     sessionStorage.getItem('jwt_token') || 
-                     sessionStorage.getItem('authToken');
-    
+    const jwtToken = localStorage.getItem('jwt_token') ||
+      localStorage.getItem('authToken') ||
+      sessionStorage.getItem('jwt_token') ||
+      sessionStorage.getItem('authToken');
+
+    console.log('WishlistService: Available tokens:', {
+      jwt_token: localStorage.getItem('jwt_token'),
+      authToken: localStorage.getItem('authToken'),
+      session_jwt: sessionStorage.getItem('jwt_token'),
+      session_auth: sessionStorage.getItem('authToken'),
+      selected: jwtToken ? 'YES' : 'NO'
+    });
+
     if (jwtToken) {
       config.headers.Authorization = `Bearer ${jwtToken}`;
+      console.log('WishlistService: Added Authorization header with token');
       return config;
     }
-    
+
     // Fallback: Try to get Firebase ID token
+    console.log('WishlistService: No JWT token found, trying Firebase fallback...');
     const { auth } = await import('../firebase/config');
     const user = auth.currentUser;
-    
+
     if (user) {
       const firebaseToken = await user.getIdToken();
       config.headers.Authorization = `Bearer ${firebaseToken}`;
+      console.log('WishlistService: Added Authorization header with Firebase token');
+    } else {
+      console.warn('WishlistService: No user or token found for authentication');
     }
   } catch (error) {
     console.warn('Error getting authentication token:', error);
   }
-  
+
   return config;
 });
 

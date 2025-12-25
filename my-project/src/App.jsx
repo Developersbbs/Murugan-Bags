@@ -33,7 +33,10 @@ const LoadingDemoPage = lazy(() => import('./pages/LoadingDemoPage'));
 const ComboOffersPage = lazy(() => import('./pages/ComboOffersPage'));
 const ComboOfferDetailsPage = lazy(() => import('./pages/ComboOfferDetailsPage'));
 const BulkOrdersPage = lazy(() => import('./pages/BulkOrdersPage'));
+const SearchPage = lazy(() => import('./pages/SearchPage'));
 const BulkOrderDetailsPage = lazy(() => import('./pages/BulkOrderDetailsPage'));
+const NewArrivalsPage = lazy(() => import('./pages/NewArrivalsPage'));
+
 
 
 
@@ -263,7 +266,9 @@ const App = () => {
               <Route path="/" element={<Layout />}>
                 <Route index element={<HomePage />} />
                 <Route path="products" element={<ProductListPage />} />
+                <Route path="search" element={<SearchPage />} />
                 <Route path="product/:id" element={<ProductDetailPage />} />
+
                 <Route path="cart" element={<CartPage />} />
 
                 {/* Protected Routes */}
@@ -275,6 +280,7 @@ const App = () => {
                 <Route path="combo-offers/:id" element={<ComboOfferDetailsPage />} />
                 <Route path="bulk-orders" element={<BulkOrdersPage />} />
                 <Route path="bulk-orders/:id" element={<BulkOrderDetailsPage />} />
+                <Route path="new-arrivals" element={<NewArrivalsPage />} />
 
                 {/* Protected Routes */}
                 <Route

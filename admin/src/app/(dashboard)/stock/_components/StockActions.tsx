@@ -33,66 +33,66 @@ export default function StockActions({
   return (
     <Card className="mb-5">
       <div className="flex flex-col xl:flex-row xl:justify-between gap-4">
-        <ExportDataButtons action={exportStock} tableName="stock" />
+        <ExportDataButtons action={exportStock} tableName="stock" hideJson={true} />
 
         {(hasPermission("products", "canEdit") ||
           hasPermission("products", "canDelete") ||
           hasPermission("products", "canCreate")) && (
-          <div className="flex flex-col sm:flex-row gap-4">
-            
+            <div className="flex flex-col sm:flex-row gap-4">
 
-            {hasPermission("products", "canDelete") && (
-              <ActionAlertDialog
-                title={`Delete ${Object.keys(rowSelection).length} stock entries?`}
-                description="This action cannot be undone. This will permanently delete the stock entries."
-                actionButtonText="Delete Stock"
-                toastSuccessMessage="Stock entries deleted successfully"
-                queryKey="products"
-                action={async () => {
-                  const selectedIds = getSelectedStockIds();
-                  const results = await Promise.all(selectedIds.map(id => deleteStock(id)));
-                  // Return the first successful result or throw if all failed
-                  const successResult = results.find(result => "success" in result);
-                  if (successResult) {
-                    return successResult;
-                  }
-                  throw new Error("Failed to delete stock entries");
-                }}
-                onSuccess={() => setRowSelection({})}
-              >
-                <Button
-                  variant="destructive"
-                  size="lg"
-                  type="button"
-                  disabled={!Boolean(Object.keys(rowSelection).length)}
-                  className="sm:flex-grow xl:flex-grow-0 transition-opacity duration-300"
+
+              {hasPermission("products", "canDelete") && (
+                <ActionAlertDialog
+                  title={`Delete ${Object.keys(rowSelection).length} stock entries?`}
+                  description="This action cannot be undone. This will permanently delete the stock entries."
+                  actionButtonText="Delete Stock"
+                  toastSuccessMessage="Stock entries deleted successfully"
+                  queryKey="products"
+                  action={async () => {
+                    const selectedIds = getSelectedStockIds();
+                    const results = await Promise.all(selectedIds.map(id => deleteStock(id)));
+                    // Return the first successful result or throw if all failed
+                    const successResult = results.find(result => "success" in result);
+                    if (successResult) {
+                      return successResult;
+                    }
+                    throw new Error("Failed to delete stock entries");
+                  }}
+                  onSuccess={() => setRowSelection({})}
                 >
-                  <Trash2 className="mr-2 size-4" />
-                  Delete
-                </Button>
-              </ActionAlertDialog>
-            )}
-                        {hasPermission("products", "canCreate") && (
-                          <AddStockSheet
-                            title="Add Product"
-                            description="Add necessary product information here"
-                            submitButtonText="Add Product"
-                            actionVerb="added"
-                          >
-                            <SheetTrigger asChild>
-                              <Button
-                                variant="default"
-                                size="lg"
-                                className="sm:flex-grow xl:flex-grow-0"
-                              >
-                                <Plus className="mr-2 size-4" /> Add Stock
-                              </Button>
-                            </SheetTrigger>
-                          </AddStockSheet>
-                        )}
+                  <Button
+                    variant="destructive"
+                    size="lg"
+                    type="button"
+                    disabled={!Boolean(Object.keys(rowSelection).length)}
+                    className="sm:flex-grow xl:flex-grow-0 transition-opacity duration-300"
+                  >
+                    <Trash2 className="mr-2 size-4" />
+                    Delete
+                  </Button>
+                </ActionAlertDialog>
+              )}
+              {hasPermission("products", "canCreate") && (
+                <AddStockSheet
+                  title="Add Product"
+                  description="Add necessary product information here"
+                  submitButtonText="Add Product"
+                  actionVerb="added"
+                >
+                  <SheetTrigger asChild>
+                    <Button
+                      variant="default"
+                      size="lg"
+                      className="sm:flex-grow xl:flex-grow-0"
+                    >
+                      <Plus className="mr-2 size-4" /> Add Stock
+                    </Button>
+                  </SheetTrigger>
+                </AddStockSheet>
+              )}
 
-          </div>
-        )}
+            </div>
+          )}
       </div>
     </Card>
   );

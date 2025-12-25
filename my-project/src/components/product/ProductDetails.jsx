@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { formatCurrency } from '../../utils/format';
+import { getFullImageUrl } from '../../utils/imageUtils';
 import { addToCart } from '../../utils/cartUtils';
 import toast from 'react-hot-toast';
 import { useCart } from '../../context/CartContext';
@@ -154,24 +155,6 @@ const ProductDetails = ({ product, isLoading, isError, onCartUpdate }) => {
 
   const stockStatus = getStockStatus();
 
-  // Helper function to convert relative image paths to full URLs
-  const getFullImageUrl = (imagePath) => {
-    if (!imagePath) return '/images/products/placeholder-product.svg';
-
-    // If it's already a full URL (starts with http/https), return as is
-    if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
-      return imagePath;
-    }
-
-    // If it's a placeholder or local asset, return as is
-    if (imagePath.startsWith('/images/')) {
-      return imagePath;
-    }
-
-    // Convert relative path to full URL
-    const API_BASE = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
-    return `${API_BASE}${imagePath}`;
-  };
 
   // Get all available images - prioritize variant images for variant products
   const allImages = useMemo(() => {
@@ -237,10 +220,14 @@ const ProductDetails = ({ product, isLoading, isError, onCartUpdate }) => {
         await removeFromWishlist(mainProductId, variantId);
         toast.success('Removed from wishlist');
       } else {
+        // Ensure we pass the currently displayed price and image
         await addToWishlist({
-          ...displayProduct, // Keep variant details for display
-          _id: mainProductId, // Override with main product ID for backend
-          variant_id: variantId // Pass variant ID if selected
+          ...displayProduct,
+          _id: mainProductId,
+          variant_id: variantId,
+          // Explicitly pass selling_price and image_url to ensure context uses them
+          selling_price: displayPrice,
+          image_url: [currentImage]
         });
         toast.success('Added to wishlist');
       }

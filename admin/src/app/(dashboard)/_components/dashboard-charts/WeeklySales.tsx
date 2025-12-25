@@ -2,20 +2,45 @@
 
 import { Line } from "react-chartjs-2";
 import { useTheme } from "next-themes";
+import { useQuery } from "@tanstack/react-query";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import Typography from "@/components/ui/typography";
-import { getPastDates } from "@/helpers/getPastDates";
 import useGetMountStatus from "@/hooks/use-get-mount-status";
+import { getDashboardSummary } from "@/services/analytics";
 
 export default function WeeklySales() {
-  const labels = getPastDates(7);
   const { theme } = useTheme();
   const mounted = useGetMountStatus();
 
+  const { data: summary, isLoading } = useQuery({
+    queryKey: ["dashboard-summary"],
+    queryFn: getDashboardSummary,
+  });
+
   const gridColor = `rgba(161, 161, 170, ${theme === "light" ? "0.5" : "0.3"})`;
+
+  const salesData = summary?.weeklySales?.map(item => item.sales) || [];
+  const ordersData = summary?.weeklySales?.map(item => item.orders) || [];
+  const labels = summary?.weeklySales?.map(item => {
+    const date = new Date(item.date);
+    return date.toLocaleDateString('en-US', { weekday: 'short' });
+  }) || [];
+
+  if (isLoading) {
+    return (
+      <Card>
+        <Typography variant="h3" className="mb-4">
+          Weekly Sales
+        </Typography>
+        <CardContent className="pb-2">
+          <Skeleton className="h-[21rem] w-full" />
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>
@@ -48,9 +73,10 @@ export default function WeeklySales() {
                   datasets: [
                     {
                       label: "Sales",
-                      data: [400, 300, 100, 250, 200, 300, 1000],
+                      data: salesData,
                       borderColor: "rgb(34, 197, 94)",
                       backgroundColor: "rgb(34, 197, 94)",
+                      tension: 0.3,
                     },
                   ],
                 }}
@@ -65,12 +91,12 @@ export default function WeeklySales() {
                         color: gridColor,
                       },
                       ticks: {
-                        stepSize: 200,
                         callback: function (value) {
                           return "₹" + value;
                         },
                         padding: 4,
                       },
+                      beginAtZero: true,
                     },
                     x: {
                       grid: {
@@ -85,7 +111,7 @@ export default function WeeklySales() {
                     tooltip: {
                       callbacks: {
                         label: (context) =>
-                          `${context.dataset.label}: $${context.parsed.y}`,
+                          `${context.dataset.label}: ₹${context.parsed.y}`,
                       },
                     },
                   },
@@ -104,9 +130,10 @@ export default function WeeklySales() {
                   datasets: [
                     {
                       label: "Orders",
-                      data: [3, 3, 1, 4, 1, 1, 2],
+                      data: ordersData,
                       borderColor: "rgb(249, 115, 22)",
                       backgroundColor: "rgb(249, 115, 22)",
+                      tension: 0.3,
                     },
                   ],
                 }}
@@ -124,7 +151,7 @@ export default function WeeklySales() {
                         stepSize: 1,
                         padding: 4,
                       },
-                      min: 0,
+                      beginAtZero: true,
                     },
                     x: {
                       grid: {

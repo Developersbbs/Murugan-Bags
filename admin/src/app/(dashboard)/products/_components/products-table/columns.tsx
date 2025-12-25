@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ZoomIn, PenSquare, Trash2 } from "lucide-react";
+import { ZoomIn, PenSquare, Archive } from "lucide-react";
 import { ColumnDef } from "@tanstack/react-table";
 
 import { cn } from "@/lib/utils";
@@ -23,7 +23,7 @@ import { SkeletonColumn } from "@/types/skeleton";
 import { ServerActionResponse } from "@/types/server-action";
 
 import { editProduct } from "@/actions/products/editProduct";
-import { deleteProduct } from "@/actions/products/deleteProduct";
+import { archiveProduct } from "@/actions/products/archiveProduct";
 import { toggleProductPublishedStatus } from "@/actions/products/toggleProductStatus";
 import { HasPermission } from "@/hooks/use-authorization";
 
@@ -94,7 +94,7 @@ export const getColumns = ({
 
         return (
           <div className="flex gap-2 items-center">
-            
+
             <div className="flex flex-col">
               <Link
                 href={`/products/${parentProduct?.slug || product.slug}${isVariant && variantData ? `?variant=${variantData.slug}` : ''}`}
@@ -148,7 +148,7 @@ export const getColumns = ({
           'draft': 'outline',
           'archived': 'secondary'
         };
-        
+
         const statusLabels: Record<string, string> = {
           'selling': 'Selling',
           'out_of_stock': 'Out of Stock',
@@ -192,7 +192,7 @@ export const getColumns = ({
         return formatAmount(row.original.selling_price);
       },
     },
-    
+
     {
       header: "view",
       cell: ({ row }) => {
@@ -228,67 +228,67 @@ export const getColumns = ({
         // Stock information for the specific variant or product
         const stockInfo = isVariant
           ? {
-              baseStock: variantData?.stock || 0,
-              minStock: variantData?.minStock || 0,
-            }
+            baseStock: variantData?.stock || 0,
+            minStock: variantData?.minStock || 0,
+          }
           : {
-              baseStock: product.baseStock || 0,
-              minStock: product.minStock || 0,
-            };
+            baseStock: product.baseStock || 0,
+            minStock: product.minStock || 0,
+          };
 
         const handleToggle = async (): Promise<ServerActionResponse> => {
           try {
             // Get the parent product ID for variants or use the product ID for simple products
             const targetId = parentProduct?._id || product._id;
-            
+
             // For variants, include the variant ID in the request
             const variantId = isVariant && variantData?._id ? variantData._id.toString() : undefined;
-            
+
             // Call the toggle function
             const result = await toggleProductPublishedStatus(
-              targetId, 
+              targetId,
               isPublished,
               variantId // Pass variantId if this is a variant
             );
-            
+
             // Check if the response has a success property
             if ('success' in result && result.success) {
               // Show success message
               toast.success(
-                isVariant 
+                isVariant
                   ? `✅ Variant ${!isPublished ? 'published' : 'unpublished'} successfully`
                   : `✅ Product ${!isPublished ? 'published' : 'unpublished'} successfully`,
                 { position: "top-center" }
               );
-              
+
               // Manually update the UI by toggling the published state
               if (isVariant && variantData) {
                 variantData.published = !isPublished;
               } else {
                 product.published = !isPublished;
               }
-              
+
               // Force a re-render by updating the row data
               row.original = { ...row.original };
-              
+
               return { success: true };
-            } 
-            
+            }
+
             // Handle error cases
             if ('dbError' in result) {
               toast.error(result.dbError, { position: "top-center" });
               return { success: false, dbError: result.dbError };
             }
-            
+
             if ('validationErrors' in result) {
               const errorMessage = Object.values(result.validationErrors).join(' ');
               toast.error(errorMessage, { position: "top-center" });
               return { success: false, dbError: errorMessage };
             }
-            
+
             // Default error response
             return { success: false, dbError: 'An unknown error occurred' };
-            
+
           } catch (error) {
             console.error('Toggle failed:', error);
             const errorMessage = error instanceof Error ? error.message : 'Failed to update status';
@@ -361,19 +361,21 @@ export const getColumns = ({
 
             {hasPermission("products", "canDelete") && (
               <TableActionAlertDialog
-                title={`Delete ${isVariant ? 'variant' : 'product'} "${product.name}"?`}
+                title={`Archive ${isVariant ? 'variant' : 'product'} "${product.name}"?`}
                 description={
                   isVariant
-                    ? "This will delete this specific variant. The parent product and other variants will remain."
-                    : "This action cannot be undone. This will permanently delete the product and its associated data from the database."
+                    ? "This will archive this specific variant. It will be moved to the Archives page."
+                    : "This will archive the product. It will be moved to the Archives page and can be restored later."
                 }
-                tooltipContent={isVariant ? "Delete Variant" : "Delete Product"}
-                actionButtonText={isVariant ? "Delete Variant" : "Delete Product"}
-                toastSuccessMessage={`${isVariant ? 'Variant' : 'Product'} "${product.name}" deleted successfully!`}
+                tooltipContent={isVariant ? "Archive Variant" : "Archive Product"}
+                actionButtonText={isVariant ? "Archive Variant" : "Archive Product"}
+                toastSuccessMessage={`${isVariant ? 'Variant' : 'Product'} "${product.name}" archived successfully!`}
                 queryKey="products"
-                action={() => deleteProduct(parentProduct?._id || product._id)}
+                action={() => archiveProduct(parentProduct?._id || product._id, isVariant ? variantData?._id : undefined)}
               >
-                <Trash2 className="size-5" />
+                <div className="text-destructive hover:bg-destructive/10 p-2 rounded-md transition-colors cursor-pointer">
+                  <Archive className="size-5" />
+                </div>
               </TableActionAlertDialog>
             )}
           </div>

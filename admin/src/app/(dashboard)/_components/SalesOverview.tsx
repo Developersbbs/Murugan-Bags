@@ -1,43 +1,63 @@
+"use client";
+
+import { useQuery } from "@tanstack/react-query";
 import { HiOutlineRefresh } from "react-icons/hi";
 import { HiOutlineSquare3Stack3D, HiCalendarDays } from "react-icons/hi2";
 
-import { cn } from "@/lib/utils";
+import { cn, formatCurrency } from "@/lib/utils";
 import Typography from "@/components/ui/typography";
 import { DashboardCard } from "@/types/card";
+import { getDashboardSummary } from "@/services/analytics";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function SalesOverview() {
+  const { data: summary, isLoading } = useQuery({
+    queryKey: ["dashboard-summary"],
+    queryFn: getDashboardSummary,
+  });
+
   const cards: DashboardCard[] = [
     {
       icon: <HiOutlineSquare3Stack3D />,
       title: "Today Orders",
-      value: "₹897.40",
+      value: isLoading ? "..." : formatCurrency(summary?.today?.totalRevenue || 0),
       className: "bg-teal-600",
     },
     {
       icon: <HiOutlineSquare3Stack3D />,
       title: "Yesterday Orders",
-      value: "₹679.93",
+      value: isLoading ? "..." : formatCurrency(summary?.yesterday?.totalRevenue || 0),
       className: "bg-orange-400",
     },
     {
       icon: <HiOutlineRefresh />,
       title: "This Month",
-      value: "₹13146.96",
+      value: isLoading ? "..." : formatCurrency(summary?.thisMonth?.totalRevenue || 0),
       className: "bg-blue-500",
     },
     {
       icon: <HiCalendarDays />,
       title: "Last Month",
-      value: "₹31964.92",
+      value: isLoading ? "..." : formatCurrency(summary?.lastMonth?.totalRevenue || 0),
       className: "bg-cyan-600",
     },
     {
       icon: <HiCalendarDays />,
       title: "All-Time Sales",
-      value: "₹626513.05",
+      value: isLoading ? "..." : formatCurrency(summary?.allTime?.totalRevenue || 0),
       className: "bg-emerald-600",
     },
   ];
+
+  if (isLoading) {
+    return (
+      <div className="grid md:grid-cols-2 xl:grid-cols-5 gap-2">
+        {[...Array(5)].map((_, index) => (
+          <Skeleton key={index} className="h-32 w-full rounded-lg" />
+        ))}
+      </div>
+    );
+  }
 
   return (
     <div className="grid md:grid-cols-2 xl:grid-cols-5 gap-2">

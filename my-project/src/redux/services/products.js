@@ -41,6 +41,14 @@ export const productsApi = createApi({
       query: () => 'products/colors',
       providesTags: ['Product'],
     }),
+    getSearchSuggestions: builder.query({
+      query: (query) => ({
+        url: 'products/suggestions',
+        params: { query },
+      }),
+      providesTags: ['Product'],
+    }),
+
     createProduct: builder.mutation({
       query: (product) => ({
         url: 'products',
@@ -76,7 +84,9 @@ export const {
   useGetProductBySlugQuery,
   useGetCategoriesQuery,
   useGetProductColorsQuery,
+  useGetSearchSuggestionsQuery,
   useCreateProductMutation,
+
   useUpdateProductMutation,
   useDeleteProductMutation,
 } = productsApi;

@@ -8,14 +8,15 @@ import Typography from "@/components/ui/typography";
 import PageTitle from "@/components/shared/PageTitle";
 
 import CustomerOrdersTable from "./_components/Table";
+import CustomerOrdersExportButton from "./_components/CustomerOrdersExportButton";
 import CustomerProfileCard from "./_components/CustomerProfileCard";
 import WishlistTab from "./_components/WishlistTab";
 import CartTab from "./_components/CartTab";
-import { 
-  fetchCustomerOrders, 
-  fetchCustomerDetails, 
+import {
+  fetchCustomerOrders,
+  fetchCustomerDetails,
   fetchCustomerWishlist,
-  fetchCustomerCart 
+  fetchCustomerCart
 } from "@/services/customers";
 
 type PageParams = {
@@ -38,7 +39,7 @@ export async function generateMetadata({
 export default async function CustomerOrders({ params: { id } }: PageParams) {
   try {
     const [
-      { customer }, 
+      { customer },
       { customerOrders },
       wishlistData,
       cartData
@@ -52,7 +53,7 @@ export default async function CustomerOrders({ params: { id } }: PageParams) {
     return (
       <div className="space-y-6">
         <PageTitle>Customer Profile</PageTitle>
-        
+
         {/* Customer Profile Card */}
         <CustomerProfileCard customer={customer} />
 
@@ -90,10 +91,17 @@ export default async function CustomerOrders({ params: { id } }: PageParams) {
 
           <TabsContent value="orders" className="space-y-4">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold">Order History</h2>
-              <div className="text-sm text-muted-foreground">
-                {customerOrders.length} {customerOrders.length === 1 ? 'order' : 'orders'} total
+              <div>
+                <h2 className="text-lg font-semibold">Order History</h2>
+                <div className="text-sm text-muted-foreground">
+                  {customerOrders.length} {customerOrders.length === 1 ? 'order' : 'orders'} total
+                </div>
               </div>
+              <CustomerOrdersExportButton
+                customerId={id}
+                customerName={customer?.name || "Customer"}
+                hasOrders={customerOrders.length > 0}
+              />
             </div>
 
             {customerOrders.length === 0 ? (
@@ -108,14 +116,14 @@ export default async function CustomerOrders({ params: { id } }: PageParams) {
           </TabsContent>
 
           <TabsContent value="wishlist" className="space-y-4">
-            <WishlistTab 
-              items={wishlistData.items} 
-              totalItems={wishlistData.totalItems} 
+            <WishlistTab
+              items={wishlistData.items}
+              totalItems={wishlistData.totalItems}
             />
           </TabsContent>
 
           <TabsContent value="cart" className="space-y-4">
-            <CartTab 
+            <CartTab
               items={cartData.items}
               totalItems={cartData.totalItems}
               cartTotal={cartData.cartTotal}

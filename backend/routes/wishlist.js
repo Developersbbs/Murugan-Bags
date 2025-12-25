@@ -3,9 +3,11 @@ const router = express.Router();
 const Wishlist = require('../models/Wishlist');
 const Product = require('../models/Product');
 const { authenticateToken } = require('../middleware/auth');
+const { authenticateHybridToken } = require('../middleware/hybridAuth');
+
 
 // Get wishlist for authenticated user
-router.get('/', authenticateToken, async (req, res) => {
+router.get('/', authenticateHybridToken, async (req, res) => {
   try {
     const customerId = req.user.id;
 
@@ -39,7 +41,7 @@ router.get('/', authenticateToken, async (req, res) => {
 });
 
 // Add item to wishlist
-router.post('/add', authenticateToken, async (req, res) => {
+router.post('/add', authenticateHybridToken, async (req, res) => {
   try {
     const customerId = req.user.id;
     console.log(`[Wishlist] Adding item for customer: ${customerId}`);
@@ -156,7 +158,7 @@ router.post('/add', authenticateToken, async (req, res) => {
 });
 
 // Remove item from wishlist
-router.delete('/remove/:itemId', authenticateToken, async (req, res) => {
+router.delete('/remove/:itemId', authenticateHybridToken, async (req, res) => {
   try {
     const customerId = req.user.id;
     const { itemId } = req.params;
@@ -201,7 +203,7 @@ router.delete('/remove/:itemId', authenticateToken, async (req, res) => {
 });
 
 // Remove item from wishlist by product ID
-router.delete('/remove-product/:productId', authenticateToken, async (req, res) => {
+router.delete('/remove-product/:productId', authenticateHybridToken, async (req, res) => {
   try {
     const customerId = req.user.id;
     const { productId } = req.params;
@@ -249,7 +251,7 @@ router.delete('/remove-product/:productId', authenticateToken, async (req, res) 
 });
 
 // Clear entire wishlist
-router.delete('/clear', authenticateToken, async (req, res) => {
+router.delete('/clear', authenticateHybridToken, async (req, res) => {
   try {
     const customerId = req.user.id;
 
@@ -280,7 +282,7 @@ router.delete('/clear', authenticateToken, async (req, res) => {
 });
 
 // Get wishlist item count
-router.get('/count', authenticateToken, async (req, res) => {
+router.get('/count', authenticateHybridToken, async (req, res) => {
   try {
     const customerId = req.user.id;
 
@@ -302,7 +304,7 @@ router.get('/count', authenticateToken, async (req, res) => {
 });
 
 // Check if product is in wishlist
-router.get('/check/:productId', authenticateToken, async (req, res) => {
+router.get('/check/:productId', authenticateHybridToken, async (req, res) => {
   try {
     const customerId = req.user.id;
     const { productId } = req.params;
@@ -327,7 +329,7 @@ router.get('/check/:productId', authenticateToken, async (req, res) => {
 });
 
 // Sync wishlist from frontend (migration from cookies/localStorage)
-router.post('/sync', authenticateToken, async (req, res) => {
+router.post('/sync', authenticateHybridToken, async (req, res) => {
   try {
     const customerId = req.user.id;
     const { items } = req.body;
@@ -351,19 +353,24 @@ router.post('/sync', authenticateToken, async (req, res) => {
         continue; // Skip invalid items
       }
 
-      // Check if item already exists
-      const existingIndex = wishlist.items.findIndex(existingItem =>
-        existingItem.product_id.toString() === item._id
-      );
+      // Check if item already exists (considering variants)
+      const existingIndex = wishlist.items.findIndex(existingItem => {
+        const sameProduct = existingItem.product_id.toString() === item._id;
+        const sameVariant = item.variant_id
+          ? (existingItem.variant_id && existingItem.variant_id.toString() === item.variant_id.toString())
+          : (!existingItem.variant_id);
+        return sameProduct && sameVariant;
+      });
 
       if (existingIndex === -1) {
         // Add new item
         wishlist.items.push({
           product_id: item._id,
           product_name: item.name,
-          product_image: item.images?.[0]?.url || item.image,
+          product_image: item.image,
           price: parseFloat(item.price) || 0,
-          discounted_price: parseFloat(item.salePrice || item.price) || 0
+          discounted_price: parseFloat(item.price) || 0,
+          variant_id: item.variant_id || null
         });
       }
     }
