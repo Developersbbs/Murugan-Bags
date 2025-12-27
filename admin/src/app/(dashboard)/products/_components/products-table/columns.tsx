@@ -166,6 +166,12 @@ export const getColumns = ({
     {
       header: "category",
       cell: ({ row }) => {
+        // Debug logging for category issue
+        if (row.original.name.includes("Trolley")) {
+          console.log("Row:", row.original.name);
+          console.log("Categories:", row.original.categories);
+        }
+
         const categoryNames = row.original.categories?.map(cat => cat.category?.name).filter(Boolean) || [];
         const displayName = categoryNames.length > 0 ? categoryNames.join(", ") : "—";
         return (

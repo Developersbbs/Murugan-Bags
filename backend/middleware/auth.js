@@ -14,27 +14,29 @@ if (!process.env.JWT_SECRET) {
  * @param {Function} next - Express next middleware function
  */
 const authenticateToken = (req, res, next) => {
+  console.log(`AUTH MIDDLEWARE: Request to ${req.method} ${req.path}`);
   try {
     const authHeader = req.headers.authorization || req.headers.Authorization;
-    
+    console.log('AUTH MIDDLEWARE: Header present:', !!authHeader);
+
     if (!authHeader?.startsWith('Bearer ')) {
-      return res.status(401).json({ 
-        success: false, 
-        error: "Authorization header with Bearer token is required" 
+      return res.status(401).json({
+        success: false,
+        error: "Authorization header with Bearer token is required"
       });
     }
 
     const token = authHeader.split(' ')[1];
-    
+
     jwt.verify(token, process.env.JWT_SECRET, async (err, decoded) => {
       if (err) {
         console.error("JWT verification failed:", err.name);
-        const errorMessage = err.name === 'TokenExpiredError' 
-          ? 'Access token has expired' 
+        const errorMessage = err.name === 'TokenExpiredError'
+          ? 'Access token has expired'
           : 'Invalid or malformed token';
-        
-        return res.status(401).json({ 
-          success: false, 
+
+        return res.status(401).json({
+          success: false,
           error: errorMessage,
           code: 'AUTH_ERROR'
         });
@@ -47,15 +49,15 @@ const authenticateToken = (req, res, next) => {
           const staff = await Staff.findById(decoded.id);
           if (!staff) {
             console.log(`Staff not found for ID: ${decoded.id}`);
-            return res.status(401).json({ 
-              success: false, 
+            return res.status(401).json({
+              success: false,
               error: 'Staff not found',
               code: 'AUTH_ERROR'
             });
           }
-          
+
           console.log(`Authenticated staff ID: ${staff._id}, Email: ${staff.email}, Role: ${staff.role}`);
-          
+
           // Attach staff data to request
           req.user = {
             ...decoded,
@@ -69,15 +71,15 @@ const authenticateToken = (req, res, next) => {
           const customer = await Customer.findById(decoded.id);
           if (!customer) {
             console.log(`Customer not found for ID: ${decoded.id}`);
-            return res.status(401).json({ 
-              success: false, 
+            return res.status(401).json({
+              success: false,
               error: 'Customer not found',
               code: 'AUTH_ERROR'
             });
           }
-          
+
           console.log(`Authenticated customer ID: ${customer._id}, Email: ${customer.email}`);
-          
+
           // Attach customer data to request
           req.user = {
             ...decoded,
@@ -92,12 +94,12 @@ const authenticateToken = (req, res, next) => {
             code: 'AUTH_ERROR'
           });
         }
-        
+
         next();
       } catch (dbError) {
         console.error('Database error during authentication:', dbError);
-        return res.status(500).json({ 
-          success: false, 
+        return res.status(500).json({
+          success: false,
           error: 'Internal server error during authentication',
           code: 'AUTH_ERROR'
         });
@@ -105,8 +107,8 @@ const authenticateToken = (req, res, next) => {
     });
   } catch (error) {
     console.error('Authentication error:', error);
-    return res.status(500).json({ 
-      success: false, 
+    return res.status(500).json({
+      success: false,
       error: 'Internal server error during authentication',
       code: 'AUTH_ERROR'
     });
@@ -120,16 +122,16 @@ const authenticateToken = (req, res, next) => {
 const authorize = (...allowedRoles) => {
   return (req, res, next) => {
     if (!req.user) {
-      return res.status(401).json({ 
-        success: false, 
+      return res.status(401).json({
+        success: false,
         error: 'Authentication required',
         code: 'UNAUTHORIZED'
       });
     }
 
     if (!allowedRoles.includes(req.user.role)) {
-      return res.status(403).json({ 
-        success: false, 
+      return res.status(403).json({
+        success: false,
         error: 'Insufficient permissions',
         code: 'FORBIDDEN'
       });

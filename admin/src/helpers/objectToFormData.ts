@@ -71,6 +71,18 @@ export function objectToFormData(obj: Record<string, any>, namespace = ''): Form
       return;
     }
 
+    // Special handling for stock and minStockThreshold
+    if (key === 'stock') {
+      console.log('🚨 FRONTEND: Mapping stock to "stock", value:', value);
+      formData.append('stock', String(value));
+      return;
+    }
+    if (key === 'minStockThreshold') {
+      console.log('🚨 FRONTEND: Mapping minStockThreshold to "min_stock_threshold", value:', value);
+      formData.append('min_stock_threshold', String(value));
+      return;
+    }
+
     // Special handling for product_variants - send as JSON string (expected by backend)
     if (key === 'product_variants' && value !== null && value !== undefined) {
       console.log('Processing product_variants as JSON:', value);

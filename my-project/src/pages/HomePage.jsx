@@ -262,6 +262,45 @@ const HomePage = () => {
   const [loadingNewArrivals, setLoadingNewArrivals] = useState(true);
 
   useEffect(() => {
+    const processProducts = (products) => {
+      const mappedProducts = products.map(product => {
+        let imageUrl = product.image_url?.[0] || product.images?.[0];
+
+        // If no main image, check variants
+        if (!imageUrl && product.product_variants && product.product_variants.length > 0) {
+          const variant = product.product_variants[0];
+          imageUrl = variant.images?.[0] || variant.image_url?.[0] || variant.image;
+        }
+
+        if (imageUrl && imageUrl.startsWith('/')) {
+          imageUrl = `http://localhost:5000${imageUrl}`;
+        }
+
+        let price = product.selling_price || product.price;
+        let originalPrice = product.cost_price;
+
+        // If no price, check variants
+        if ((!price || price === 0) && product.product_variants && product.product_variants.length > 0) {
+          const variant = product.product_variants[0];
+          price = variant.selling_price || variant.price || variant.salesPrice;
+          originalPrice = variant.cost_price || variant.original_price || variant.costPrice;
+        }
+
+        return {
+          id: product._id,
+          name: product.name,
+          price: price,
+          originalPrice: originalPrice,
+          image: imageUrl || "https://images.unsplash.com/photo-1622560480605-d83c853bc5c3?w=400&h=400&fit=crop",
+          badge: "NEW",
+          rating: product.rating || 4.5
+        };
+      });
+
+      console.log('Setting new arrivals:', mappedProducts);
+      setNewArrivals(mappedProducts);
+    };
+
     const fetchNewArrivals = async () => {
       try {
         const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
@@ -273,58 +312,22 @@ const HomePage = () => {
         console.log('New arrivals response:', data);
 
         if (data.success && data.data && data.data.length > 0) {
-          const mappedProducts = data.data.map(product => {
-            let imageUrl = product.image_url?.[0] || product.images?.[0];
-
-            // If no main image, check variants
-            if (!imageUrl && product.product_variants && product.product_variants.length > 0) {
-              const variant = product.product_variants[0];
-              imageUrl = variant.images?.[0] || variant.image_url?.[0] || variant.image;
-            }
-
-            if (imageUrl && imageUrl.startsWith('/')) {
-              imageUrl = `http://localhost:5000${imageUrl}`;
-            }
-
-            return {
-              id: product._id,
-              name: product.name,
-              price: product.selling_price || product.price,
-              originalPrice: product.cost_price,
-              image: imageUrl || "https://images.unsplash.com/photo-1622560480605-d83c853bc5c3?w=400&h=400&fit=crop",
-              badge: "NEW",
-              rating: product.rating || 4.5
-            };
-          });
-
-          console.log('Setting new arrivals:', mappedProducts);
-          setNewArrivals(mappedProducts);
+          processProducts(data.data);
         } else {
-          console.log('No new arrivals found, using fallback');
-          setNewArrivals([
-            {
-              id: 1,
-              name: "Premium Travel Backpack",
-              price: 2999,
-              originalPrice: 4999,
-              image: "https://images.unsplash.com/photo-1622560480605-d83c853bc5c3?w=400&h=400&fit=crop",
-              badge: "NEW",
-              rating: 4.5
-            }
-          ]);
+          console.log('No specific New Arrivals found, fetching latest products...');
+          // Fallback: Fetch latest 4 products
+          const fallbackRes = await fetch(`${API_URL}/products?page=1&limit=4&sort=date-desc&published=true`);
+          const fallbackData = await fallbackRes.json();
+
+          if (fallbackData.success && fallbackData.data && fallbackData.data.length > 0) {
+            processProducts(fallbackData.data);
+          } else {
+            setNewArrivals([]);
+          }
         }
       } catch (error) {
         console.error('Error fetching new arrivals:', error);
-        setNewArrivals([
-          {
-            id: 1,
-            name: "Premium Travel Backpack",
-            price: 2999,
-            image: "https://images.unsplash.com/photo-1622560480605-d83c853bc5c3?w=400&h=400&fit=crop",
-            badge: "NEW",
-            rating: 4.5
-          }
-        ]);
+        setNewArrivals([]);
       } finally {
         setLoadingNewArrivals(false);
       }
@@ -398,11 +401,32 @@ const HomePage = () => {
         if (data.success && data.data) {
           const mappedProducts = data.data.map(product => {
             let imageUrl = product.image_url?.[0] || product.images?.[0];
+            let price = product.selling_price || product.price;
+            let originalPrice = product.cost_price;
 
-            // If no main image, check variants
-            if (!imageUrl && product.product_variants && product.product_variants.length > 0) {
-              const variant = product.product_variants[0];
-              imageUrl = variant.images?.[0] || variant.image_url?.[0] || variant.image;
+            // Find matching variant for the selected color
+            if (product.product_variants && product.product_variants.length > 0) {
+              const matchingVariant = product.product_variants.find(v => {
+                if (!v.attributes) return false;
+
+                // Helper to check attributes safely
+                const getAttribute = (attr) => {
+                  if (v.attributes instanceof Map) return v.attributes.get(attr);
+                  return v.attributes[attr];
+                };
+
+                const colorAttr = getAttribute('Color') || getAttribute('color') || getAttribute('Colour') || getAttribute('colour');
+                return colorAttr && colorAttr.toLowerCase() === selectedColor.toLowerCase();
+              });
+
+              // Use matching variant if found, otherwise fallback to first variant
+              const variantToUse = matchingVariant || product.product_variants[0];
+
+              if (variantToUse) {
+                imageUrl = variantToUse.images?.[0] || variantToUse.image_url?.[0] || variantToUse.image || imageUrl;
+                price = variantToUse.selling_price || variantToUse.price || variantToUse.salesPrice || price;
+                originalPrice = variantToUse.cost_price || variantToUse.original_price || variantToUse.costPrice || originalPrice;
+              }
             }
 
             if (imageUrl && imageUrl.startsWith('/')) {
@@ -412,8 +436,8 @@ const HomePage = () => {
             return {
               id: product._id,
               name: product.name,
-              price: product.selling_price || product.price,
-              originalPrice: product.cost_price,
+              price: price,
+              originalPrice: originalPrice,
               image: imageUrl || "https://images.unsplash.com/photo-1622560480605-d83c853bc5c3?w=400&h=400&fit=crop",
               rating: product.rating || 4.5
             };
@@ -630,7 +654,7 @@ const HomePage = () => {
                 className="w-12 h-12 flex items-center justify-center border border-white/20 text-white hover:bg-white hover:text-slate-900 transition-all duration-300"
               >
                 <FaChevronRight />
-              </button>Always – No commitment, cancel anytime
+              </button>
             </div>
           </div>
         </div>
@@ -775,7 +799,7 @@ const HomePage = () => {
                   <div className="absolute top-4 left-4 bg-rose-600 text-white px-3 py-1 rounded-full text-xs font-bold shadow-md">
                     {product.badge}
                   </div>
-                  <button className="absolute top-4 right-4 w-10 h-10 bg-white rounded-full flex items-center justify-center text-slate-400 hover:text-rose-500 hover:bg-rose-50 shadow-md transform translate-x-12 group-hover:translate-x-0 transition-all duration-300">
+                  <button className="absolute top-4 right-4 w-10 h-10 bg-white rounded-full flex items-center justify-center text-slate-400 hover:text-rose-500 hover:bg-rose-50 shadow-md transition-all duration-300">
                     <FaHeart />
                   </button>
                 </div>

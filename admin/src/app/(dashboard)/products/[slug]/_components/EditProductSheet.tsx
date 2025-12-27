@@ -158,23 +158,38 @@ export function EditProductSheet({ product, children }: Props) {
     sku: product.sku,
     productType: (product.product_type as "physical" | "digital") || "physical",
     productStructure: (product.product_variants && product.product_variants.length > 0 ? "variant" : "simple") as "variant" | "simple",
-    categories: product.categories ? product.categories.map(cat => {
-      // Add null checks for category and its properties
-      const categoryId = cat.category?._id || '';
-      const categoryName = cat.category?.name || 'Uncategorized';
-      const categorySlug = cat.category?.slug || '';
+    categories: (() => {
+      const cats = product.categories ? product.categories.map(cat => {
+        const categoryId = (cat.category as any)?._id || cat.category || '';
+        const categoryName = (cat.category as any)?.name || 'Uncategorized';
+        const categorySlug = (cat.category as any)?.slug || '';
+        const subcategories = Array.isArray(cat.subcategories) ? cat.subcategories : [];
 
-      // Handle subcategories with null check
-      const subcategories = Array.isArray(cat.subcategories) ? cat.subcategories : [];
+        return {
+          category: categoryId,
+          categoryName,
+          categorySlug,
+          subcategoryIds: subcategories.map(sub => (sub as any)?._id || sub || ''),
+          subcategoryNames: subcategories.map(sub => (sub as any)?._id || sub?.name || ''),
+        };
+      }) : [];
 
-      return {
-        categoryId,
-        categoryName,
-        categorySlug,
-        subcategoryIds: subcategories.map(sub => sub?._id || ''),
-        subcategoryNames: subcategories.map(sub => sub?.name || ''),
-      };
-    }) : [],
+      // Backward compatibility for legacy category_id
+      if (cats.length === 0 && product.category_id) {
+        const categoryId = typeof product.category_id === 'object' ? (product.category_id as any)._id : product.category_id;
+        const categoryName = typeof product.category_id === 'object' ? (product.category_id as any).name : 'Legacy Category';
+        cats.push({
+          category: categoryId,
+          categoryName,
+          categorySlug: typeof product.category_id === 'object' ? (product.category_id as any).slug : '',
+          subcategoryIds: [],
+          subcategoryNames: [],
+        });
+      }
+
+      console.log("Mapped categories for initialData:", cats);
+      return cats;
+    })(),
     costPrice: product.cost_price,
     salesPrice: product.selling_price,
     stock: product.baseStock ?? undefined,

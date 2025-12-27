@@ -53,7 +53,11 @@ export default function FormMultipleCategorySubcategoryInput<TFormData extends F
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editingSubcategoryIds, setEditingSubcategoryIds] = useState<string[]>([]);
 
-  const currentSelections = watch(name) as CategorySubcategorySelection[] || [];
+  // Ensure we handle both category and categoryId for robustness
+  const currentSelections = (watch(name) as any[] || []).map(selection => ({
+    ...selection,
+    category: selection.category || selection.categoryId
+  })) as CategorySubcategorySelection[];
 
   // Debug: Log the current form value
   console.log('Current form value for categories:', currentSelections);

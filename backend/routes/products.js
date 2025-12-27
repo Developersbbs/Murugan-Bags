@@ -291,7 +291,6 @@ router.get("/colors", async (req, res) => {
 
     // Get colors from variant attributes
     const productsWithVariants = await Product.find({
-      published: true,
       product_structure: "variant",
       "product_variants.published": true
     }).select("product_variants");

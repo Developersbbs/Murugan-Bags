@@ -137,7 +137,10 @@ const ProductListPage = () => {
               ...product,
               // Override with variant-specific data (similar to admin approach)
               _id: `${product._id}-variant-${index}`, // Unique ID for each variant
-              name: `${product.name} - ${variant.name || variant.slug}`,
+              // Clean name generation
+              name: variant.name && variant.name.toLowerCase().startsWith(product.name.toLowerCase())
+                ? variant.name
+                : `${product.name} - ${variant.name || variant.slug}`,
               slug: variant.slug,
               sku: variant.sku,
               cost_price: variant.cost_price,
@@ -520,30 +523,50 @@ const ProductListPage = () => {
 
       {/* Active filters */}
       {activeFilters.length > 0 && (
-        <div className="mb-6">
-          <h3 className="text-sm font-medium text-gray-700 mb-2">Active filters:</h3>
+        <div className="mb-8 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex flex-wrap items-center gap-3">
+          <span className="text-sm font-bold text-slate-400 uppercase tracking-wider mr-2">Active Filters:</span>
+
           <div className="flex flex-wrap gap-2">
             {activeFilters.map((filter, i) => (
               <span
                 key={i}
-                className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+                className="inline-flex items-center px-4 py-1.5 rounded-full text-sm font-medium bg-rose-50 text-rose-700 border border-rose-100 transition-all hover:bg-rose-100 hover:border-rose-200"
               >
-                {filter.type}: {filter.value}
+                <span className="opacity-70 mr-1.5 uppercase text-xs tracking-wider">{filter.type}:</span>
+                {filter.value}
                 <button
                   onClick={(e) => clearFilter(filter.type, e)}
-                  className="ml-1.5 inline-flex items-center justify-center h-4 w-4 rounded-full bg-blue-200 hover:bg-blue-300"
+                  className="ml-2 inline-flex items-center justify-center w-5 h-5 rounded-full hover:bg-rose-200 text-rose-500 hover:text-rose-700 transition-colors"
                 >
-                  <X className="h-2.5 w-2.5" />
+                  <X className="h-3 w-3" />
                 </button>
               </span>
             ))}
+
+            <button
+              onClick={() => {
+                setFilters({
+                  category: null,
+                  subcategory: null,
+                  priceRange: { min: 0, max: 100000 },
+                  rating: null,
+                  inStock: false,
+                  color: null,
+                });
+                setSearchTerm('');
+                navigate({ search: '' });
+              }}
+              className="px-4 py-1.5 text-sm font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-50 rounded-full transition-colors ml-2"
+            >
+              Clear All
+            </button>
           </div>
         </div>
       )}
 
       <div className="lg:grid lg:grid-cols-5 lg:gap-6">
-        {/* Filters sidebar */}
-        <div className="hidden lg:block space-y-6 sticky top-24 self-start pl-36">
+        {/* Filters sidebar - Fixed overlap by increasing top offset */}
+        <div className="hidden lg:block space-y-6 sticky top-28 self-start pl-4">
           <SidebarFilters
             filters={filters}
             onFilterChange={(newFilters) => setFilters(prev => ({ ...prev, ...newFilters }))}
