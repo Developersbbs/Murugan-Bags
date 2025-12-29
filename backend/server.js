@@ -21,6 +21,7 @@ const allowedOrigins = [
   'http://localhost:5173', // Vite default port
   'http://localhost:5175', // Vite alternate port
   'http://127.0.0.1:5175',  // Vite default port
+  'https://profound-snickerdoodle-771c0c.netlify.app',
 ];
 
 // Simple CORS middleware
