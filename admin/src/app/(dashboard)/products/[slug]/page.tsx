@@ -5,14 +5,15 @@ import { fetchProductDetails } from "@/services/products";
 import ProductDetailsClient from "./_components/ProductDetailsClient";
 
 type PageParams = {
-  params: {
+  params: Promise<{
     slug: string;
-  };
+  }>;
 }
 
 export async function generateMetadata({
-  params: { slug },
+  params,
 }: PageParams): Promise<Metadata> {
+  const { slug } = await params;
   try {
     const { product } = await fetchProductDetails({
       slug,
@@ -24,7 +25,8 @@ export async function generateMetadata({
   }
 }
 
-export default async function ProductDetails({ params: { slug } }: PageParams) {
+export default async function ProductDetails({ params }: PageParams) {
+  const { slug } = await params;
   try {
     console.log('🔍 SSR: Fetching product details for slug:', slug);
     const { product } = await fetchProductDetails({

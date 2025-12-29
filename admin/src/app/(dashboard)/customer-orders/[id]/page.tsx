@@ -20,14 +20,15 @@ import {
 } from "@/services/customers";
 
 type PageParams = {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 };
 
 export async function generateMetadata({
-  params: { id },
+  params,
 }: PageParams): Promise<Metadata> {
+  const { id } = await params;
   try {
     const { customer } = await fetchCustomerDetails(id);
     return { title: customer?.name || 'Customer Profile' };
@@ -36,7 +37,8 @@ export async function generateMetadata({
   }
 }
 
-export default async function CustomerOrders({ params: { id } }: PageParams) {
+export default async function CustomerOrders({ params }: PageParams) {
+  const { id } = await params;
   try {
     const [
       { customer },

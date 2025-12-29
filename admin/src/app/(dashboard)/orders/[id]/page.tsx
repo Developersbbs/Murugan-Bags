@@ -23,14 +23,15 @@ import { fetchOrderDetails } from "@/services/orders";
 import { InvoiceActions } from "./_components/InvoiceActions";
 
 type PageParams = {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 };
 
 export async function generateMetadata({
-  params: { id },
+  params,
 }: PageParams): Promise<Metadata> {
+  const { id } = await params;
   try {
     const { order } = await fetchOrderDetails({ id });
 
@@ -40,7 +41,8 @@ export async function generateMetadata({
   }
 }
 
-export default async function Order({ params: { id } }: PageParams) {
+export default async function Order({ params }: PageParams) {
+  const { id } = await params;
   try {
     const { order } = await fetchOrderDetails({ id });
 
