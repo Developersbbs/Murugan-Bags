@@ -1490,6 +1490,7 @@ router.put("/:id", uploadDigitalFile, async (req, res) => {
     if (req.body.isCodAvailable !== undefined) updateData.isCodAvailable = req.body.isCodAvailable === 'true' || req.body.isCodAvailable === true;
     if (req.body.isFreeShipping !== undefined) updateData.isFreeShipping = req.body.isFreeShipping === 'true' || req.body.isFreeShipping === true;
     if (req.body.showRatings !== undefined) updateData.showRatings = req.body.showRatings === 'true' || req.body.showRatings === true;
+    if (req.body.isNewArrival !== undefined) updateData.isNewArrival = req.body.isNewArrival === 'true' || req.body.isNewArrival === true;
 
     if (productType === 'digital') {
       if (digitalFile) {

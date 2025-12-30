@@ -311,19 +311,34 @@ const HomePage = () => {
 
         console.log('New arrivals response:', data);
 
-        if (data.success && data.data && data.data.length > 0) {
-          processProducts(data.data);
-        } else {
-          console.log('No specific New Arrivals found, fetching latest products...');
-          // Fallback: Fetch latest 4 products
+        let finalProducts = [];
+
+        if (data.success && data.data) {
+          finalProducts = data.data;
+        }
+
+        // If we have fewer than 4 items, fetch latest products to fill the gap
+        if (finalProducts.length < 4) {
+          console.log(`Only found ${finalProducts.length} New Arrivals, fetching latest products to fill gaps...`);
+
           const fallbackRes = await fetch(`${API_URL}/products?page=1&limit=4&sort=date-desc&published=true`);
           const fallbackData = await fallbackRes.json();
 
           if (fallbackData.success && fallbackData.data && fallbackData.data.length > 0) {
-            processProducts(fallbackData.data);
-          } else {
-            setNewArrivals([]);
+            // Filter out products that are already in finalProducts (avoid duplicates)
+            const existingIds = new Set(finalProducts.map(p => p._id));
+            const newItems = fallbackData.data.filter(p => !existingIds.has(p._id));
+
+            // Add enough items to reach 4
+            const needed = 4 - finalProducts.length;
+            finalProducts = [...finalProducts, ...newItems.slice(0, needed)];
           }
+        }
+
+        if (finalProducts.length > 0) {
+          processProducts(finalProducts);
+        } else {
+          setNewArrivals([]);
         }
       } catch (error) {
         console.error('Error fetching new arrivals:', error);
@@ -820,9 +835,9 @@ const HomePage = () => {
                     <FaShoppingBag className="mr-2" /> Add to Cart
                   </button>
                 </div>
-              </div>
+              </div >
             ))}
-          </div>
+          </div >
 
           <div className="text-center mt-16">
             <button
@@ -832,56 +847,58 @@ const HomePage = () => {
               <FaArrowRight className="ml-2 text-rose-500 transition-transform group-hover:translate-x-1" />
             </button>
           </div>
-        </div>
-      </section>
+        </div >
+      </section >
 
       {/* Combos & Offers Section */}
-      {comboOffers.length > 0 && (
-        <section id="combos" data-animate className="py-24 bg-slate-900 text-white relative overflow-hidden">
-          <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
-          <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-rose-900/20 to-slate-900/80 z-0"></div>
+      {
+        comboOffers.length > 0 && (
+          <section id="combos" data-animate className="py-24 bg-slate-900 text-white relative overflow-hidden">
+            <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
+            <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-rose-900/20 to-slate-900/80 z-0"></div>
 
-          <div className="container mx-auto px-4 relative z-10">
-            <div className="text-center mb-16">
-              <h2 className="text-4xl md:text-5xl font-bold mb-4 animate-text-reveal">Special Combo Offers</h2>
-              <p className="text-xl text-slate-300">Save big with our exclusive combo deals designed for you.</p>
-            </div>
+            <div className="container mx-auto px-4 relative z-10">
+              <div className="text-center mb-16">
+                <h2 className="text-4xl md:text-5xl font-bold mb-4 animate-text-reveal">Special Combo Offers</h2>
+                <p className="text-xl text-slate-300">Save big with our exclusive combo deals designed for you.</p>
+              </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {comboOffers.map((combo, index) => (
-                <Link
-                  to={`/combo-offers/${combo._id}`}
-                  key={combo._id || index}
-                  className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-3xl p-10 border border-slate-700 hover:border-rose-500/50 transition-all duration-500 transform hover:scale-[1.02] hover:shadow-2xl relative overflow-hidden group block"
-                  style={{
-                    animation: visibleSections.has('combos') ? `fadeInUp 0.6s ease-out ${index * 0.2}s both` : 'none'
-                  }}
-                >
-                  {combo.isLimitedTime && (
-                    <div className="absolute top-0 right-0 bg-rose-600 text-white text-xs font-bold px-4 py-2 rounded-bl-2xl shadow-lg">
-                      LIMITED TIME
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {comboOffers.map((combo, index) => (
+                  <Link
+                    to={`/combo-offers/${combo._id}`}
+                    key={combo._id || index}
+                    className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-3xl p-10 border border-slate-700 hover:border-rose-500/50 transition-all duration-500 transform hover:scale-[1.02] hover:shadow-2xl relative overflow-hidden group block"
+                    style={{
+                      animation: visibleSections.has('combos') ? `fadeInUp 0.6s ease-out ${index * 0.2}s both` : 'none'
+                    }}
+                  >
+                    {combo.isLimitedTime && (
+                      <div className="absolute top-0 right-0 bg-rose-600 text-white text-xs font-bold px-4 py-2 rounded-bl-2xl shadow-lg">
+                        LIMITED TIME
+                      </div>
+                    )}
+                    <h3 className="text-3xl font-bold mb-4 group-hover:text-rose-400 transition-colors">{combo.title}</h3>
+                    <p className="text-slate-300 mb-8 text-lg">{combo.description}</p>
+                    <div className="flex items-baseline mb-8">
+                      <span className="text-5xl font-bold text-white">₹{combo.price.toLocaleString()}</span>
+                      <span className="text-xl text-slate-400 line-through ml-4">₹{combo.originalPrice.toLocaleString()}</span>
                     </div>
-                  )}
-                  <h3 className="text-3xl font-bold mb-4 group-hover:text-rose-400 transition-colors">{combo.title}</h3>
-                  <p className="text-slate-300 mb-8 text-lg">{combo.description}</p>
-                  <div className="flex items-baseline mb-8">
-                    <span className="text-5xl font-bold text-white">₹{combo.price.toLocaleString()}</span>
-                    <span className="text-xl text-slate-400 line-through ml-4">₹{combo.originalPrice.toLocaleString()}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="bg-emerald-500/20 text-emerald-400 px-4 py-2 rounded-full text-sm font-bold border border-emerald-500/30">
-                      Save {combo.savingsPercent}%
-                    </span>
-                    <button className="bg-white text-slate-900 px-8 py-3 rounded-xl font-bold hover:bg-rose-500 hover:text-white transition-all duration-300 shadow-lg">
-                      Shop Now
-                    </button>
-                  </div>
-                </Link>
-              ))}
+                    <div className="flex items-center justify-between">
+                      <span className="bg-emerald-500/20 text-emerald-400 px-4 py-2 rounded-full text-sm font-bold border border-emerald-500/30">
+                        Save {combo.savingsPercent}%
+                      </span>
+                      <button className="bg-white text-slate-900 px-8 py-3 rounded-xl font-bold hover:bg-rose-500 hover:text-white transition-all duration-300 shadow-lg">
+                        Shop Now
+                      </button>
+                    </div>
+                  </Link>
+                ))}
+              </div>
             </div>
-          </div>
-        </section>
-      )}
+          </section>
+        )
+      }
 
       {/* Shop By Shade */}
       <section id="colors" data-animate className="pt-20 pb-8 bg-slate-50">
@@ -919,79 +936,81 @@ const HomePage = () => {
         </div>
       </section>
       {/* Color-specific Bags Section */}
-      {selectedColor && (
-        <section id="color-bags" className="pt-4 pb-20 bg-slate-50">
-          <div className="container mx-auto px-4">
-            <h2 className="text-4xl font-bold mb-4 text-slate-900">
-              {selectedColor} <span className="text-rose-600">Collection</span>
-            </h2>
-            <p className="text-lg text-slate-500 mb-10">Discover our premium {selectedColor.toLowerCase()} bags</p>
+      {
+        selectedColor && (
+          <section id="color-bags" className="pt-4 pb-20 bg-slate-50">
+            <div className="container mx-auto px-4">
+              <h2 className="text-4xl font-bold mb-4 text-slate-900">
+                {selectedColor} <span className="text-rose-600">Collection</span>
+              </h2>
+              <p className="text-lg text-slate-500 mb-10">Discover our premium {selectedColor.toLowerCase()} bags</p>
 
-            {loadingColorProducts ? (
-              <div className="flex justify-center items-center py-20">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-rose-600"></div>
-              </div>
-            ) : colorProducts.length > 0 ? (
-              <>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-                  {colorProducts.map((product, index) => (
-                    <div key={product.id || index} className="group bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2">
-                      <div className="aspect-square overflow-hidden bg-slate-100 relative">
-                        <img
-                          src={product.image}
-                          alt={product.name}
-                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                          loading="lazy"
-                          onError={(e) => {
-                            e.target.onerror = null;
-                            e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100%25' height='100%25' viewBox='0 0 800 600' preserveAspectRatio='none'%3E%3Crect width='800' height='600' fill='%23f1f5f9'/%3E%3Ctext x='400' y='300' font-family='sans-serif' font-size='48' fill='%2394a3b8' text-anchor='middle' dy='.3em'%3ENo Image%3C/text%3E%3C/svg%3E";
-                          }}
-                        />
-                        <div className="absolute top-4 right-4 bg-rose-600 text-white px-3 py-1 rounded-full text-xs font-bold">
-                          NEW
-                        </div>
-                      </div>
-                      <div className="p-6">
-                        <h3 className="text-lg font-bold mb-3 text-slate-800 group-hover:text-rose-600 transition-colors duration-300">{product.name}</h3>
-                        <div className="flex items-center justify-between mb-4">
-                          <div>
-                            <span className="text-2xl font-bold text-slate-900">₹{product.price}</span>
-                            {product.originalPrice && (
-                              <span className="text-sm text-slate-400 line-through ml-2">₹{product.originalPrice}</span>
-                            )}
+              {loadingColorProducts ? (
+                <div className="flex justify-center items-center py-20">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-rose-600"></div>
+                </div>
+              ) : colorProducts.length > 0 ? (
+                <>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                    {colorProducts.map((product, index) => (
+                      <div key={product.id || index} className="group bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2">
+                        <div className="aspect-square overflow-hidden bg-slate-100 relative">
+                          <img
+                            src={product.image}
+                            alt={product.name}
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                            loading="lazy"
+                            onError={(e) => {
+                              e.target.onerror = null;
+                              e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100%25' height='100%25' viewBox='0 0 800 600' preserveAspectRatio='none'%3E%3Crect width='800' height='600' fill='%23f1f5f9'/%3E%3Ctext x='400' y='300' font-family='sans-serif' font-size='48' fill='%2394a3b8' text-anchor='middle' dy='.3em'%3ENo Image%3C/text%3E%3C/svg%3E";
+                            }}
+                          />
+                          <div className="absolute top-4 right-4 bg-rose-600 text-white px-3 py-1 rounded-full text-xs font-bold">
+                            NEW
                           </div>
                         </div>
-                        <button className="w-full bg-slate-900 hover:bg-rose-600 text-white py-3 rounded-xl font-bold transition-all duration-300 transform active:scale-95 shadow-lg hover:shadow-rose-500/30 flex items-center justify-center">
-                          <FaShoppingBag className="mr-2" /> Add to Cart
-                        </button>
+                        <div className="p-6">
+                          <h3 className="text-lg font-bold mb-3 text-slate-800 group-hover:text-rose-600 transition-colors duration-300">{product.name}</h3>
+                          <div className="flex items-center justify-between mb-4">
+                            <div>
+                              <span className="text-2xl font-bold text-slate-900">₹{product.price}</span>
+                              {product.originalPrice && (
+                                <span className="text-sm text-slate-400 line-through ml-2">₹{product.originalPrice}</span>
+                              )}
+                            </div>
+                          </div>
+                          <button className="w-full bg-slate-900 hover:bg-rose-600 text-white py-3 rounded-xl font-bold transition-all duration-300 transform active:scale-95 shadow-lg hover:shadow-rose-500/30 flex items-center justify-center">
+                            <FaShoppingBag className="mr-2" /> Add to Cart
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-                <div className="text-center mt-12">
-                  <Link
-                    to={`/products?color=${encodeURIComponent(selectedColor)}`}
-                    className="inline-flex items-center px-8 py-3 bg-white text-slate-900 border border-slate-200 rounded-full font-bold hover:bg-rose-600 hover:text-white hover:border-transparent transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg group"
+                    ))}
+                  </div>
+                  <div className="text-center mt-12">
+                    <Link
+                      to={`/products?color=${encodeURIComponent(selectedColor)}`}
+                      className="inline-flex items-center px-8 py-3 bg-white text-slate-900 border border-slate-200 rounded-full font-bold hover:bg-rose-600 hover:text-white hover:border-transparent transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg group"
+                    >
+                      View More {selectedColor} Bags
+                      <FaArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" />
+                    </Link>
+                  </div>
+                </>
+              ) : (
+                <div className="text-center py-10">
+                  <p className="text-xl text-slate-500">No products found in {selectedColor}.</p>
+                  <button
+                    onClick={() => setSelectedColor(null)}
+                    className="mt-4 px-6 py-2 bg-slate-900 text-white rounded-full hover:bg-rose-600 transition-colors"
                   >
-                    View More {selectedColor} Bags
-                    <FaArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" />
-                  </Link>
+                    View All Colors
+                  </button>
                 </div>
-              </>
-            ) : (
-              <div className="text-center py-10">
-                <p className="text-xl text-slate-500">No products found in {selectedColor}.</p>
-                <button
-                  onClick={() => setSelectedColor(null)}
-                  className="mt-4 px-6 py-2 bg-slate-900 text-white rounded-full hover:bg-rose-600 transition-colors"
-                >
-                  View All Colors
-                </button>
-              </div>
-            )}
-          </div>
-        </section>
-      )}
+              )}
+            </div>
+          </section>
+        )
+      }
 
       {/* Why Shop With Us */}
       <section id="features" data-animate className="py-20 bg-white">
@@ -1097,7 +1116,7 @@ const HomePage = () => {
           animation: fade-in 1s ease-out forwards;
         }
       `}</style>
-    </div>
+    </div >
   );
 };
 
