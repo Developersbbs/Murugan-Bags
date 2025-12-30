@@ -42,11 +42,15 @@ router.get('/admin', async (req, res) => {
 // POST new slide
 router.post('/', upload.single('image'), async (req, res) => {
     try {
-        if (!req.file) {
+        let imageUrl = '';
+
+        if (req.file) {
+            imageUrl = `/uploads/hero/${req.file.filename}`;
+        } else if (req.body.image) {
+            imageUrl = req.body.image;
+        } else {
             return res.status(400).json({ success: false, error: 'Image is required' });
         }
-
-        const imageUrl = `/uploads/hero/${req.file.filename}`;
 
         // Get highest order to append to end
         const lastSlide = await HeroSection.findOne().sort({ order: -1 });
@@ -73,6 +77,7 @@ router.put('/:id', upload.single('image'), async (req, res) => {
         if (req.file) {
             updateData.image = `/uploads/hero/${req.file.filename}`;
         }
+        // If req.body.image is present (from Firebase upload), it's already in updateData
 
         const slide = await HeroSection.findByIdAndUpdate(
             req.params.id,

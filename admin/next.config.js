@@ -68,6 +68,12 @@ const nextConfig = {
         port: "",
         pathname: "**",
       },
+      {
+        protocol: "https",
+        hostname: "murugan-bags.onrender.com",
+        port: "",
+        pathname: "**",
+      },
     ],
     domains: [
       "localhost",

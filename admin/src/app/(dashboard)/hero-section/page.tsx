@@ -3,13 +3,27 @@
 import { useState, useEffect } from 'react';
 import { FaPlus, FaTrash, FaEdit, FaImage, FaSave, FaTimes } from 'react-icons/fa';
 import Image from 'next/image';
+import { uploadFile, deleteFile } from '@/lib/firebase/storage';
+
+interface Slide {
+    _id: string;
+    title: string;
+    subtitle: string;
+    description: string;
+    image: string;
+    gradient: string;
+    ctaText: string;
+    ctaLink: string;
+    isActive: boolean;
+    order: number;
+}
 
 export default function HeroSectionPage() {
-    const [slides, setSlides] = useState([]);
+    const [slides, setSlides] = useState<Slide[]>([]);
     const [loading, setLoading] = useState(true);
     const [isEditing, setIsEditing] = useState(false);
     const [currentSlide, setCurrentSlide] = useState(null);
-    const [imageFile, setImageFile] = useState(null);
+    const [imageFile, setImageFile] = useState<File | null>(null);
     const [previewUrl, setPreviewUrl] = useState('');
 
     // Form state
@@ -30,6 +44,13 @@ export default function HeroSectionPage() {
     console.log('API_URL:', API_URL);
     console.log('NEXT_PUBLIC_API_URL:', process.env.NEXT_PUBLIC_API_URL);
 
+    // Helper to handle both external URLs (Firebase) and local paths
+    const getImageUrl = (path: string) => {
+        if (!path) return '';
+        if (path.startsWith('http') || path.startsWith('https')) return path;
+        return `${API_URL.replace('/api', '')}${path}`;
+    };
+
     useEffect(() => {
         fetchSlides();
     }, []);
@@ -48,16 +69,17 @@ export default function HeroSectionPage() {
         }
     };
 
-    const handleInputChange = (e) => {
-        const { name, value, type, checked } = e.target;
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+        const { name, value, type } = e.target;
+        const checked = (e.target as HTMLInputElement).checked;
         setFormData(prev => ({
             ...prev,
             [name]: type === 'checkbox' ? checked : value
         }));
     };
 
-    const handleImageChange = (e) => {
-        const file = e.target.files[0];
+    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
         if (file) {
             setImageFile(file);
             setPreviewUrl(URL.createObjectURL(file));
@@ -80,8 +102,8 @@ export default function HeroSectionPage() {
         setCurrentSlide(null);
     };
 
-    const handleEdit = (slide) => {
-        setCurrentSlide(slide);
+    const handleEdit = (slide: Slide) => {
+        setCurrentSlide(slide as any);
         setFormData({
             title: slide.title,
             subtitle: slide.subtitle || '',
@@ -91,15 +113,25 @@ export default function HeroSectionPage() {
             gradient: slide.gradient || 'from-black/90 via-black/40 to-transparent',
             isActive: slide.isActive
         });
-        setPreviewUrl(`${API_URL.replace('/api', '')}${slide.image}`);
+        setPreviewUrl(getImageUrl(slide.image));
         setIsEditing(true);
     };
 
-    const handleDelete = async (id) => {
+    const handleDelete = async (slider: Slide) => {
         if (!confirm('Are you sure you want to delete this slide?')) return;
 
         try {
-            const res = await fetch(`${API_URL}/hero-section/${id}`, {
+            // Delete from Firebase if it's a firebase URL
+            if (slider.image && slider.image.startsWith('https://firebasestorage')) {
+                try {
+                    await deleteFile(slider.image);
+                } catch (err) {
+                    console.error('Error deleting image from Firebase:', err);
+                    // Continue with DB deletion even if image deletion fails
+                }
+            }
+
+            const res = await fetch(`${API_URL}/hero-section/${slider._id}`, {
                 method: 'DELETE'
             });
             const data = await res.json();
@@ -113,46 +145,58 @@ export default function HeroSectionPage() {
         }
     };
 
-    const handleSubmit = async (e) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        const data = new FormData();
-        Object.keys(formData).forEach(key => {
-            data.append(key, formData[key]);
-        });
-
-        if (imageFile) {
-            data.append('image', imageFile);
-        }
-
         try {
+            let imageUrl = '';
+
+            // Handle image upload to Firebase if a new file is selected
+            if (imageFile) {
+                console.log('Uploading image to Firebase...');
+                imageUrl = await uploadFile(imageFile, 'hero-section');
+                console.log('Image uploaded:', imageUrl);
+            }
+
+            // Prepare data for backend
+            const payload: any = { ...formData };
+            if (imageUrl) {
+                payload.image = imageUrl;
+            }
+
             const url = isEditing && currentSlide
                 ? `${API_URL}/hero-section/${currentSlide._id}`
                 : `${API_URL}/hero-section`;
 
             const method = isEditing && currentSlide ? 'PUT' : 'POST';
 
-            console.log('Submitting to:', url);
-            console.log('Method:', method);
-            console.log('Has image file:', !!imageFile);
+            // If we are editing and have a current slide with a Firebase URL, 
+            // and we are uploading a new image, we should delete the old one.
+            // Note: This is an optimization we can add, but for now let's focus on the upload workflow.
+
+            // Construct request
+            // Note: We are now sending JSON instead of FormData because we are sending a URL string
+            // However, the backend uses `upload.single('image')` which expects multipart/form-data
+            // BUT our modified backend can also handle JSON body if `req.file` is missing.
+            // So let's send JSON.
 
             const res = await fetch(url, {
                 method,
-                body: data
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(payload)
             });
 
             console.log('Response status:', res.status);
-            console.log('Response ok:', res.ok);
 
             if (!res.ok) {
                 const errorText = await res.text();
-                console.error('Error response:', errorText);
-                alert(`Failed to save slide: ${res.status} ${res.statusText}`);
-                return;
+                // console.error('Error response:', errorText);
+                throw new Error(`Failed to save slide: ${res.status} ${res.statusText}`);
             }
 
             const result = await res.json();
-            console.log('Result:', result);
 
             if (result.success) {
                 fetchSlides();
@@ -163,7 +207,7 @@ export default function HeroSectionPage() {
             }
         } catch (error) {
             console.error('Error saving slide:', error);
-            alert(`Error saving slide: ${error.message}`);
+            alert(`Error saving slide: ${(error as Error).message}`);
         }
     };
 
@@ -335,7 +379,7 @@ export default function HeroSectionPage() {
                     <div key={slide._id} className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden group hover:shadow-md transition-shadow">
                         <div className="relative h-48">
                             <Image
-                                src={`${API_URL.replace('/api', '')}${slide.image}`}
+                                src={getImageUrl(slide.image)}
                                 alt={slide.title}
                                 fill
                                 className="object-cover"
@@ -353,7 +397,7 @@ export default function HeroSectionPage() {
                                     <FaEdit size={14} />
                                 </button>
                                 <button
-                                    onClick={() => handleDelete(slide._id)}
+                                    onClick={() => handleDelete(slide)}
                                     className="p-2 bg-white/90 text-slate-700 rounded-full hover:bg-white hover:text-red-600 transition-colors"
                                 >
                                     <FaTrash size={14} />
