@@ -840,12 +840,13 @@ const HomePage = () => {
           </div >
 
           <div className="text-center mt-16">
-            <button
+            <Link
+              to="/products"
               className="inline-flex items-center px-10 py-4 bg-white text-slate-900 font-bold rounded-full hover:bg-slate-50 transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl border border-slate-200 group"
             >
               View All Products
               <FaArrowRight className="ml-2 text-rose-500 transition-transform group-hover:translate-x-1" />
-            </button>
+            </Link>
           </div>
         </div >
       </section >
