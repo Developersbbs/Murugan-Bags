@@ -34,10 +34,6 @@ export default function LoginForm() {
 
   const form = useForm<FormData>({
     resolver: zodResolver(loginFormSchema),
-    defaultValues: {
-      email: "fathimaamreen351@gmail.com",
-      password: "123456",
-    },
   });
 
   const { mutate, isPending, isSuccess } = useMutation({
