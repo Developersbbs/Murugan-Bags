@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+import { API_BASE_URL } from '../config/api';
 
 // Create axios instance with default config
 const api = axios.create({
@@ -41,8 +41,8 @@ const addressService = {
     try {
       // Ensure we have the required fields for structured format
       if (addressData.firstName && addressData.lastName && addressData.email &&
-          addressData.phone && addressData.street && addressData.city &&
-          addressData.state && addressData.zipCode) {
+        addressData.phone && addressData.street && addressData.city &&
+        addressData.state && addressData.zipCode) {
         // Use structured format
         const structuredData = {
           type: addressData.type || 'Home',
@@ -87,10 +87,10 @@ const addressService = {
 
       // Check if structured fields are provided
       if (addressData.firstName !== undefined || addressData.lastName !== undefined ||
-          addressData.email !== undefined || addressData.phone !== undefined ||
-          addressData.street !== undefined || addressData.city !== undefined ||
-          addressData.state !== undefined || addressData.zipCode !== undefined ||
-          addressData.country !== undefined) {
+        addressData.email !== undefined || addressData.phone !== undefined ||
+        addressData.street !== undefined || addressData.city !== undefined ||
+        addressData.state !== undefined || addressData.zipCode !== undefined ||
+        addressData.country !== undefined) {
         // Add structured fields
         if (addressData.firstName !== undefined) updateData.firstName = addressData.firstName;
         if (addressData.lastName !== undefined) updateData.lastName = addressData.lastName;

@@ -1,11 +1,12 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+import { API_BASE_URL } from '../../config/api';
 
-console.log('API URL:', import.meta.env.VITE_API_URL); // Debug log
+console.log('API URL:', API_BASE_URL); // Debug log
 
 export const categoriesApi = createApi({
   reducerPath: 'categoriesApi',
-  baseQuery: fetchBaseQuery({ 
-    baseUrl: `${import.meta.env.VITE_API_URL}/categories`,
+  baseQuery: fetchBaseQuery({
+    baseUrl: `${API_BASE_URL}/categories`,
     prepareHeaders: (headers) => {
       const token = localStorage.getItem('token');
       if (token) {

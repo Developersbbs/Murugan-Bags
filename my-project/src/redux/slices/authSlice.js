@@ -9,8 +9,8 @@ import {
   signInWithGoogle as signInWithGoogleService,
   checkPhoneNumber as checkPhoneNumberService
 } from '../../services/authService';
-import { auth } from '../../firebase/config';
-
+import { auth } from '../../firebase/config'; // Import initialized auth instance
+import { API_BASE_URL } from '../../config/api';
 // Logout User
 export const logoutUser = createAsyncThunk(
   'auth/logout',
@@ -245,7 +245,7 @@ const fetchBackendUserDataForLogin = async (firebaseUser, dispatch) => {
 
     console.log('LoginThunk: Using token:', token ? 'present' : 'missing');
 
-    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+    const API_URL = API_BASE_URL;
     const response = await fetch(`${API_URL}/auth/profile/${firebaseUser.uid}`, {
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -347,7 +347,7 @@ export const fetchUserProfile = createAsyncThunk(
         throw new Error('No authentication token found');
       }
 
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+      const API_URL = API_BASE_URL;
       const response = await fetch(`${API_URL}/auth/profile/${uid}`, {
         headers: {
           'Authorization': `Bearer ${token}`,

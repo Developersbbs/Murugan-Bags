@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+import { API_BASE_URL } from '../config/api';
 
 // Create axios instance with default config
 const api = axios.create({
@@ -90,7 +90,7 @@ const orderService = {
       const response = await api.get(API_ENDPOINTS.ORDER_INVOICE(orderId), {
         responseType: 'blob',
       });
-      
+
       // Create blob link to download
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
@@ -100,7 +100,7 @@ const orderService = {
       link.click();
       link.remove();
       window.URL.revokeObjectURL(url);
-      
+
       return { success: true };
     } catch (error) {
       console.error('Error downloading invoice:', error);

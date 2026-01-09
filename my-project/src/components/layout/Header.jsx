@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../../config/api';
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { FaShoppingCart, FaUser, FaSearch, FaBars, FaTimes, FaHeart, FaShoppingBag, FaSuitcaseRolling, FaSchool, FaLaptop } from 'react-icons/fa';
@@ -161,11 +162,12 @@ const Header = () => {
     };
   }, [categoryTimeout]);
 
+
   // Fetch categories from backend
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+        const API_URL = API_BASE_URL;
         const res = await fetch(`${API_URL}/categories`);
         const data = await res.json();
 

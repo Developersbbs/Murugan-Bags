@@ -5,6 +5,8 @@ import { Helmet } from 'react-helmet-async';
 import { FaShoppingBag, FaTag, FaClock, FaArrowLeft, FaCheck, FaShieldAlt, FaTruck } from 'react-icons/fa';
 import toast from 'react-hot-toast';
 
+import { API_BASE_URL } from '../config/api';
+
 const ComboOfferDetailsPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
@@ -12,12 +14,11 @@ const ComboOfferDetailsPage = () => {
     const [loading, setLoading] = useState(true);
     const { addToCart } = useCart();
 
-    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-
     useEffect(() => {
+        window.scrollTo(0, 0);
         const fetchOfferDetails = async () => {
             try {
-                const res = await fetch(`${API_URL}/combo-offers/${id}`);
+                const res = await fetch(`${API_BASE_URL}/combo-offers/${id}`);
                 const data = await res.json();
 
                 if (data.success) {
@@ -37,7 +38,7 @@ const ComboOfferDetailsPage = () => {
         if (id) {
             fetchOfferDetails();
         }
-    }, [id, API_URL, navigate]);
+    }, [id, navigate]);
 
     const handleAddToCart = async () => {
         if (!offer) return;

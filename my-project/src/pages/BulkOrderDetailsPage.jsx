@@ -3,18 +3,18 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { FaArrowLeft, FaBox, FaPhone, FaEnvelope, FaWhatsapp } from 'react-icons/fa';
 import { Helmet } from 'react-helmet-async';
 
+import { API_BASE_URL } from '../config/api';
+
 const BulkOrderDetailsPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const [order, setOrder] = useState(null);
     const [loading, setLoading] = useState(true);
 
-    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-
     useEffect(() => {
         const fetchOrderDetails = async () => {
             try {
-                const res = await fetch(`${API_URL}/bulk-orders/${id}`);
+                const res = await fetch(`${API_BASE_URL}/bulk-orders/${id}`);
                 const data = await res.json();
 
                 if (data.success) {
@@ -32,7 +32,7 @@ const BulkOrderDetailsPage = () => {
         if (id) {
             fetchOrderDetails();
         }
-    }, [id, API_URL, navigate]);
+    }, [id, navigate]);
 
     if (loading) {
         return (

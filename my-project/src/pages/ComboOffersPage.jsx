@@ -4,15 +4,17 @@ import { useCart } from '../context/CartContext';
 import { Helmet } from 'react-helmet-async';
 import { FaShoppingBag, FaTag, FaClock } from 'react-icons/fa';
 import toast from 'react-hot-toast';
+import { API_BASE_URL } from '../config/api';
 
 const ComboOffersPage = () => {
     const [offers, setOffers] = useState([]);
     const [loading, setLoading] = useState(true);
     const { addToCart } = useCart();
 
-    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+    const API_URL = API_BASE_URL;
 
     useEffect(() => {
+        window.scrollTo(0, 0);
         fetchOffers();
     }, []);
 

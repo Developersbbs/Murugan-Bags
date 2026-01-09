@@ -4,14 +4,13 @@ import ProductCard from '../components/product/ProductCard';
 import Loading from '../components/common/Loading';
 import Skeleton from '../components/common/Skeleton';
 import { motion } from 'framer-motion';
+import { API_BASE_URL } from '../config/api';
 
 const NewArrivalsPage = () => {
     const [banners, setBanners] = useState([]);
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [bannerLoading, setBannerLoading] = useState(true);
-
-    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
     useEffect(() => {
         fetchBanners();
@@ -20,7 +19,7 @@ const NewArrivalsPage = () => {
 
     const fetchBanners = async () => {
         try {
-            const res = await fetch(`${API_URL}/new-arrival-banners`);
+            const res = await fetch(`${API_BASE_URL}/new-arrival-banners`);
             const data = await res.json();
             if (data.success) {
                 setBanners(data.data);
@@ -35,7 +34,7 @@ const NewArrivalsPage = () => {
     const fetchNewArrivals = async () => {
         try {
             // Fetch products with isNewArrival=true
-            const res = await fetch(`${API_URL}/products?isNewArrival=true&limit=20`);
+            const res = await fetch(`${API_BASE_URL}/products?isNewArrival=true&limit=20`);
             const data = await res.json();
             if (data.products) {
                 setProducts(data.products);
@@ -50,7 +49,7 @@ const NewArrivalsPage = () => {
     const getFullImageUrl = (imagePath) => {
         if (!imagePath) return '';
         if (imagePath.startsWith('http')) return imagePath;
-        const baseUrl = API_URL.replace('/api', '');
+        const baseUrl = API_BASE_URL.replace('/api', '');
         return `${baseUrl}${imagePath}`;
     };
 

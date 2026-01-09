@@ -2,6 +2,7 @@ import { auth } from '../firebase/config';
 import { onAuthStateChanged } from 'firebase/auth';
 import { exchangeFirebaseToken, storeJWTToken, clearStoredJWTToken } from './authTokenService';
 import axios from 'axios';
+import { API_BASE_URL } from '../config/api';
 
 /**
  * Enhanced authentication initialization service
@@ -24,11 +25,11 @@ class AuthInitService {
 
     this.initPromise = new Promise((resolve) => {
       console.log('AuthInitService: Starting authentication initialization...');
-      
+
       // Check if we have stored user data
       const storedUser = localStorage.getItem('sbbs_auth');
       let hasStoredUser = false;
-      
+
       if (storedUser) {
         try {
           const userData = JSON.parse(storedUser);
@@ -48,17 +49,39 @@ class AuthInitService {
       // Set up Firebase auth state listener
       const unsubscribe = onAuthStateChanged(auth, async (user) => {
         console.log('AuthInitService: Firebase auth state changed:', user ? user.uid : 'null');
-        
+
         let processedUser = user;
-        
+
         // If user exists, exchange for JWT and sync with backend
         if (user) {
           try {
             console.log('AuthInitService: Exchanging Firebase token for JWT...');
-            const tokenResult = await exchangeFirebaseToken(user);
-            storeJWTToken(tokenResult.data.token);
-            console.log('AuthInitService: JWT token stored successfully');
-            
+
+            // Add retry logic for token exchange
+            let tokenResult = null;
+            let retryCount = 0;
+            const maxRetries = 3;
+
+            while (!tokenResult && retryCount < maxRetries) {
+              try {
+                tokenResult = await exchangeFirebaseToken(user);
+              } catch (e) {
+                console.warn(`AuthInitService: Token exchange attempt ${retryCount + 1} failed:`, e);
+                retryCount++;
+                if (retryCount < maxRetries) {
+                  // Wait increasing amount of time before retry (500ms, 1000ms, 1500ms)
+                  await new Promise(r => setTimeout(r, 500 * retryCount));
+                }
+              }
+            }
+
+            if (tokenResult) {
+              storeJWTToken(tokenResult.data.token);
+              console.log('AuthInitService: JWT token stored successfully');
+            } else {
+              throw new Error('Failed to exchange token after multiple retries');
+            }
+
             // Sync with backend to get complete user data
             const syncedUser = await this.syncUserWithBackend(user);
             processedUser = syncedUser || user;
@@ -75,17 +98,17 @@ class AuthInitService {
           // Clear JWT token on logout
           clearStoredJWTToken();
         }
-        
+
         if (!authStateResolved) {
           // Clear timeout if Firebase resolves quickly
           if (timeoutId) {
             clearTimeout(timeoutId);
             timeoutId = null;
           }
-          
+
           authStateResolved = true;
           this.isInitialized = true;
-          
+
           // Notify all listeners
           this.notifyListeners(processedUser);
           resolve(processedUser);
@@ -95,15 +118,14 @@ class AuthInitService {
         }
       });
 
-      // If we have stored user data but Firebase hasn't resolved within 1.5 seconds,
-      // use the stored data to prevent logout
+      // If we have stored user data but Firebase hasn't resolved, use stored data
       if (hasStoredUser) {
         timeoutId = setTimeout(() => {
           if (!authStateResolved) {
             console.log('AuthInitService: Firebase timeout, using stored user data');
             authStateResolved = true;
             this.isInitialized = true;
-            
+
             try {
               const userData = JSON.parse(localStorage.getItem('sbbs_auth'));
               this.notifyListeners(userData);
@@ -114,9 +136,9 @@ class AuthInitService {
               resolve(null);
             }
           }
-        }, 1500); // Reduced from 3000ms to 1500ms
+        }, 3000); // Increased to 3000ms to give slow networks more time
       } else {
-        // No stored user, set shorter timeout
+        // No stored user
         timeoutId = setTimeout(() => {
           if (!authStateResolved) {
             console.log('AuthInitService: No stored user, Firebase timeout');
@@ -125,7 +147,7 @@ class AuthInitService {
             this.notifyListeners(null);
             resolve(null);
           }
-        }, 800); // Reduced from 1000ms to 800ms
+        }, 2000); // Increased to 2000ms
       }
 
       // Keep the unsubscribe function for cleanup
@@ -140,7 +162,7 @@ class AuthInitService {
    */
   addAuthStateListener(callback) {
     this.authStateListeners.push(callback);
-    
+
     // If already initialized, immediately call the callback
     if (this.isInitialized && this.currentUser !== undefined) {
       callback(this.currentUser);
@@ -162,10 +184,10 @@ class AuthInitService {
    */
   async syncUserWithBackend(user, additionalData = {}) {
     if (!user) return null;
-    
+
     try {
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-      
+      const API_URL = API_BASE_URL;
+
       const userData = {
         firebaseUid: user.uid,
         email: user.email,
@@ -204,7 +226,7 @@ class AuthInitService {
   forceLogout() {
     console.log('AuthInitService: Force logout initiated');
     this.currentUser = null;
-    
+
     // Clear localStorage
     const authKeys = [
       'sbbs_auth',
@@ -216,12 +238,12 @@ class AuthInitService {
       'user_data',
       'authToken'
     ];
-    
+
     authKeys.forEach(key => {
       localStorage.removeItem(key);
       sessionStorage.removeItem(key);
     });
-    
+
     // Notify listeners
     this.notifyListeners(null);
   }

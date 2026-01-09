@@ -19,7 +19,7 @@ const Categories = () => {
     console.log('Error:', error);
     console.log('Is Loading:', isLoading);
   }, [categoriesData, error, isLoading]);
-
+ 
   if (isLoading) {
     return (
       <div className="py-8">

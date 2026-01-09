@@ -2,11 +2,11 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { FaBox, FaPhone, FaEnvelope } from 'react-icons/fa';
 
+import { API_BASE_URL } from '../config/api';
+
 export default function BulkOrdersPage() {
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
-
-    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
     useEffect(() => {
         fetchBulkOrders();
@@ -14,7 +14,7 @@ export default function BulkOrdersPage() {
 
     const fetchBulkOrders = async () => {
         try {
-            const res = await fetch(`${API_URL}/bulk-orders`);
+            const res = await fetch(`${API_BASE_URL}/bulk-orders`);
             const data = await res.json();
 
             if (data.success && data.data && data.data.length > 0) {

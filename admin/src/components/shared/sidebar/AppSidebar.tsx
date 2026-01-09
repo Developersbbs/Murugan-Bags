@@ -77,6 +77,7 @@ export default function AppSidebar() {
                   {navItem.children ? (
                     <Collapsible className="group/collapsible">
                       <CollapsibleTrigger
+                        suppressHydrationWarning
                         className={cn(
                           buttonVariants({ variant: "ghost" }),
                           "relative w-full justify-between px-5 py-4 gap-x-2.5 [&_svg]:size-6 [&_svg]:flex-shrink-0 font-medium text-base focus-visible:bg-accent focus-visible:text-accent-foreground group/trigger"
@@ -88,7 +89,7 @@ export default function AppSidebar() {
                         </div>
                         <ChevronDown className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-180" />
                       </CollapsibleTrigger>
-                      <CollapsibleContent>
+                      <CollapsibleContent suppressHydrationWarning>
                         <ul className="pl-6 flex flex-col gap-y-1 mt-1">
                           {navItem.children.map((childItem, childIndex) => (
                             <li key={`child-item-${index}-${childIndex}`}>

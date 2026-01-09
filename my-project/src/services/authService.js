@@ -1,5 +1,5 @@
-import { 
-  auth, 
+import {
+  auth,
   RecaptchaVerifier,
   googleProvider,
   signInWithPopup,
@@ -17,16 +17,18 @@ import { clearAllAuthData } from '../utils/authUtils';
 import { exchangeFirebaseToken, storeJWTToken, clearStoredJWTToken } from './authTokenService';
 
 // Use environment variable if set, otherwise default to local development URL
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+import { API_BASE_URL } from '../config/api';
+
+const API_URL = API_BASE_URL;
 
 // Sync user with backend
 const syncUserWithBackend = async (user, additionalData = {}) => {
   if (!user) return null;
-  
+
   try {
     // For phone authentication, prioritize the provided name
     const userName = additionalData.name || user.displayName || 'User';
-    
+
     const userData = {
       firebaseUid: user.uid,
       email: user.email,
@@ -37,7 +39,7 @@ const syncUserWithBackend = async (user, additionalData = {}) => {
       providerId: user.providerData?.[0]?.providerId,
       ...additionalData
     };
-    
+
     console.log('syncUserWithBackend: Sending user data:', userData);
 
     const response = await axios.post(`${API_URL}/auth/firebase/sync`, userData);
@@ -66,10 +68,10 @@ const syncUserWithBackend = async (user, additionalData = {}) => {
 // Set up auth state listener
 export const setupAuthListener = (callback) => {
   console.log('Setting up Firebase auth state listener...');
-  
+
   return onAuthStateChanged(auth, async (user) => {
     console.log('Firebase auth state changed:', user ? { uid: user.uid, email: user.email } : 'null');
-    
+
     if (user) {
       try {
         // Exchange Firebase user for JWT token
@@ -77,7 +79,7 @@ export const setupAuthListener = (callback) => {
         const tokenResult = await exchangeFirebaseToken(user);
         storeJWTToken(tokenResult.data.token);
         console.log('JWT token stored successfully');
-        
+
         const syncedUser = await syncUserWithBackend(user);
         callback(syncedUser || user);
       } catch (error) {
@@ -138,18 +140,18 @@ const setupRecaptcha = (elementId = 'recaptcha-container') => {
         }
       }
     });
-    
+
     console.log('reCAPTCHA verifier created successfully');
     return window.recaptchaVerifier;
   } catch (error) {
     console.error('Error setting up reCAPTCHA:', error);
-    
+
     // Additional cleanup on error
     if (recaptchaElement) {
       recaptchaElement.innerHTML = '';
     }
     window.recaptchaVerifier = null;
-    
+
     return null;
   }
 };
@@ -158,12 +160,12 @@ const setupRecaptcha = (elementId = 'recaptcha-container') => {
 export const registerWithEmail = async (email, password, userData = {}) => {
   const { firstName = '', lastName = '', phone = '' } = userData;
   const displayName = [firstName, lastName].filter(Boolean).join(' ').trim();
-  
+
   try {
     // Validate required fields
     if (!email || !password) {
-      return { 
-        user: null, 
+      return {
+        user: null,
         error: 'Email and password are required',
         code: 'auth/missing-credentials'
       };
@@ -171,16 +173,16 @@ export const registerWithEmail = async (email, password, userData = {}) => {
 
     // First create the Firebase user
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-    
+
     try {
       // Update the user's display name if provided
       if (displayName) {
         await updateProfile(userCredential.user, { displayName });
       }
-      
+
       // Force token refresh to get the latest claims
       await userCredential.user.getIdToken(true);
-      
+
       try {
         // Exchange Firebase user for JWT token (same as Google auth)
         console.log('Exchanging Firebase token for JWT during registration...');
@@ -190,7 +192,7 @@ export const registerWithEmail = async (email, password, userData = {}) => {
       } catch (tokenError) {
         console.warn('Failed to exchange Firebase token for JWT during registration:', tokenError);
       }
-      
+
       // Then sync with our backend
       const syncedUser = await syncUserWithBackend(userCredential.user, {
         name: displayName,
@@ -198,44 +200,44 @@ export const registerWithEmail = async (email, password, userData = {}) => {
         lastName,
         phone: phone
       });
-      
-      return { 
-        user: { 
-          ...userCredential.user, 
+
+      return {
+        user: {
+          ...userCredential.user,
           displayName: displayName || userCredential.user.displayName,
           firstName,
           lastName,
           phone,
           ...(syncedUser || {})
-        }, 
-        error: null 
+        },
+        error: null
       };
-      
+
     } catch (syncError) {
       console.error('Registration sync error:', syncError);
-      
+
       // Clean up Firebase user if sync fails
       try {
         await userCredential.user.delete();
       } catch (deleteError) {
         console.error('Error cleaning up user after failed sync:', deleteError);
       }
-      
-      return { 
-        user: null, 
+
+      return {
+        user: null,
         error: 'Failed to create user profile. Please try again.',
         code: syncError.code || 'auth/sync-failed'
       };
     }
-    
+
   } catch (error) {
     console.error('Registration error:', error);
     let errorMessage = 'Failed to create account. Please try again.';
-    
+
     if (error.code === 'auth/email-already-in-use') {
       // Return a specific error code that we can check in the UI
-      return { 
-        user: null, 
+      return {
+        user: null,
         error: 'An account with this email already exists. Please log in instead.',
         code: 'auth/email-already-in-use',
         existingEmail: email // Include the email that's already in use
@@ -249,12 +251,12 @@ export const registerWithEmail = async (email, password, userData = {}) => {
     } else if (error.code === 'auth/too-many-requests') {
       errorMessage = 'Too many attempts. Please try again later.';
     }
-    
-    return { 
-      user: null, 
+
+    return {
+      user: null,
       error: errorMessage,
       code: error.code || 'auth/registration-failed'
-    }; 
+    };
   }
 };
 
@@ -281,8 +283,8 @@ export const loginWithEmail = async (email, password) => {
       if (!userExists) {
         // Sign out the user if they were somehow authenticated
         await signOut(auth);
-        return { 
-          user: null, 
+        return {
+          user: null,
           error: 'No account found with this email. Please register first.',
           code: 'auth/user-not-found'
         };
@@ -299,18 +301,18 @@ export const loginWithEmail = async (email, password) => {
       userCredential = await signInWithEmailAndPassword(auth, email, password);
     } catch (firebaseError) {
       console.error('Firebase authentication error:', firebaseError);
-      return { 
-        user: null, 
+      return {
+        user: null,
         error: firebaseError.message || 'Failed to sign in. Please check your credentials.',
         code: firebaseError.code
       };
     }
-    
+
     // Force token refresh and reload user data to get the latest information
     await userCredential.user.reload();
     const refreshedUser = auth.currentUser;
     await refreshedUser.getIdToken(true);
-    
+
     // Get the latest user data from Firebase
     const userData = {
       uid: refreshedUser.uid,
@@ -328,7 +330,7 @@ export const loginWithEmail = async (email, password) => {
         photoURL: provider.photoURL
       })) : []
     };
-    
+
     try {
       // Exchange Firebase user for JWT token (same as Google auth)
       console.log('Exchanging Firebase token for JWT...');
@@ -338,20 +340,20 @@ export const loginWithEmail = async (email, password) => {
     } catch (tokenError) {
       console.warn('Failed to exchange Firebase token for JWT:', tokenError);
     }
-    
+
     // Sync with backend
     const syncedUser = await syncUserWithBackend(userData);
-    
-    return { 
-      user: { 
+
+    return {
+      user: {
         ...userData,
-        ...(syncedUser || {}) 
-      }, 
-      error: null 
+        ...(syncedUser || {})
+      },
+      error: null
     };
   } catch (error) {
     console.error('Login error:', error);
-    
+
     let errorMessage = 'Failed to sign in. Please try again.';
     if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
       errorMessage = 'Invalid email or password.';
@@ -360,10 +362,10 @@ export const loginWithEmail = async (email, password) => {
     } else if (error.code === 'auth/user-disabled') {
       errorMessage = 'This account has been disabled. Please contact support.';
     }
-    
-    return { 
-      user: null, 
-      error: error.message || 'Failed to sign in. Please check your credentials and try again.' 
+
+    return {
+      user: null,
+      error: error.message || 'Failed to sign in. Please check your credentials and try again.'
     };
   }
 };
@@ -371,7 +373,7 @@ export const loginWithEmail = async (email, password) => {
 // Clean up reCAPTCHA verifier and DOM element
 export const cleanupRecaptcha = (elementId = 'recaptcha-container') => {
   console.log('Cleaning up reCAPTCHA...');
-  
+
   // Clear Firebase verifier
   if (window.recaptchaVerifier) {
     try {
@@ -381,7 +383,7 @@ export const cleanupRecaptcha = (elementId = 'recaptcha-container') => {
     }
     window.recaptchaVerifier = null;
   }
-  
+
   // Clear DOM element
   const recaptchaElement = document.getElementById(elementId);
   if (recaptchaElement) {
@@ -390,7 +392,7 @@ export const cleanupRecaptcha = (elementId = 'recaptcha-container') => {
     recaptchaElement.removeAttribute('data-callback');
     recaptchaElement.removeAttribute('data-expired-callback');
   }
-  
+
   // Clear confirmation result
   if (window.confirmationResult) {
     window.confirmationResult = null;
@@ -402,21 +404,21 @@ export const sendOTP = async (phoneNumber, recaptchaContainerId = 'recaptcha-con
   try {
     // Format phone number
     const formattedPhone = phoneNumber.startsWith('+') ? phoneNumber : `+91${phoneNumber}`;
-    
+
     // Setup reCAPTCHA
     const appVerifier = setupRecaptcha(recaptchaContainerId);
     if (!appVerifier) {
       throw new Error('Failed to setup reCAPTCHA verifier');
     }
-    
+
     // Send OTP
     const confirmationResult = await signInWithPhoneNumber(auth, formattedPhone, appVerifier);
     window.confirmationResult = confirmationResult;
-    
+
     return { success: true, error: null, confirmationResult };
   } catch (error) {
     console.error('Send OTP error:', error);
-    
+
     // Clean up reCAPTCHA on error
     if (window.recaptchaVerifier) {
       try {
@@ -427,14 +429,14 @@ export const sendOTP = async (phoneNumber, recaptchaContainerId = 'recaptcha-con
       }
       window.recaptchaVerifier = null;
     }
-    
+
     // Also clean up DOM element
     const recaptchaElement = document.getElementById(recaptchaContainerId);
     if (recaptchaElement) {
       console.log('Cleaning up reCAPTCHA DOM element after error...');
       recaptchaElement.innerHTML = '';
     }
-    
+
     let errorMessage = error.message;
     if (error.code === 'auth/too-many-requests') {
       errorMessage = 'Too many attempts. Please try again later.';
@@ -446,7 +448,7 @@ export const sendOTP = async (phoneNumber, recaptchaContainerId = 'recaptcha-con
     } else if (error.code === 'auth/app-not-authorized') {
       errorMessage = 'App not authorized for phone authentication. Please contact support.';
     }
-    
+
     return { success: false, error: errorMessage };
   }
 };
@@ -456,10 +458,10 @@ export const verifyOTP = async (otp, name = '') => {
     if (!window.confirmationResult) {
       throw new Error('No OTP verification in progress');
     }
-    
+
     const result = await window.confirmationResult.confirm(otp);
     const user = result.user;
-    
+
     try {
       // Exchange Firebase user for JWT token (same as Google auth)
       console.log('Exchanging Firebase token for JWT during phone verification...');
@@ -479,13 +481,13 @@ export const verifyOTP = async (otp, name = '') => {
         throw new Error('Failed to generate authentication token. Please try logging in again.');
       }
     }
-    
+
     // Sync with backend for phone authentication
     const syncedUser = await syncUserWithBackend(user, {
       name: name || user.displayName || 'User',
       phone: user.phoneNumber
     });
-    
+
     // Clean up
     window.confirmationResult = null;
     if (window.recaptchaVerifier) {
@@ -496,12 +498,12 @@ export const verifyOTP = async (otp, name = '') => {
       }
       window.recaptchaVerifier = null;
     }
-    
+
     // Create a comprehensive user object with all necessary fields
     const userName = name || user.displayName || 'User';
     const backendUserName = (syncedUser?.user?.name || syncedUser?.name);
     const finalUserName = backendUserName && backendUserName !== 'User' ? backendUserName : userName;
-    
+
     const completeUser = {
       uid: user.uid,
       email: user.email,
@@ -521,7 +523,7 @@ export const verifyOTP = async (otp, name = '') => {
       phoneNumber: user.phoneNumber,
       phone: user.phoneNumber
     };
-    
+
     console.log('verifyOTP: Complete user object:', {
       uid: completeUser.uid,
       name: completeUser.name,
@@ -529,14 +531,14 @@ export const verifyOTP = async (otp, name = '') => {
       phone: completeUser.phone,
       email: completeUser.email
     });
-    
-    return { 
-      user: completeUser, 
-      error: null 
+
+    return {
+      user: completeUser,
+      error: null
     };
   } catch (error) {
     console.error('Verify OTP error:', error);
-    
+
     let errorMessage = error.message;
     if (error.code === 'auth/invalid-verification-code') {
       errorMessage = 'Invalid OTP. Please enter the correct code.';
@@ -544,7 +546,7 @@ export const verifyOTP = async (otp, name = '') => {
       errorMessage = 'OTP has expired. Please request a new one.';
       window.confirmationResult = null;
     }
-    
+
     return { user: null, error: errorMessage };
   }
 };
@@ -561,19 +563,19 @@ export const logoutUser = async () => {
       }
       window.recaptchaVerifier = null;
     }
-    
+
     // Clean up confirmation result
     window.confirmationResult = null;
-    
+
     // Clear JWT token
     clearStoredJWTToken();
-    
+
     // Use utility function to clear all auth data
     clearAllAuthData();
-    
+
     // Sign out from Firebase
     await firebaseSignOut(auth);
-    
+
     return { success: true, error: null };
   } catch (error) {
     console.error('Logout error:', error);
@@ -587,10 +589,10 @@ export const signInWithGoogle = async () => {
     const result = await signInWithPopup(auth, googleProvider);
     const credential = GoogleAuthProvider.credentialFromResult(result);
     const user = result.user;
-    
+
     // Extract Google ID from the credential or user data
     const googleId = credential?.accessToken || user.providerData?.[0]?.uid || user.uid;
-    
+
     try {
       // Exchange Firebase user for JWT token
       const tokenResult = await exchangeFirebaseToken(user);
@@ -599,23 +601,23 @@ export const signInWithGoogle = async () => {
     } catch (tokenError) {
       console.warn('Failed to exchange Firebase token for JWT:', tokenError);
     }
-    
+
     // Sync with backend after successful Google sign-in
     const syncedUser = await syncUserWithBackend(user, {
       googleId: googleId,
       name: user.displayName
     });
-    
-    return { 
+
+    return {
       user: {
         ...user,
         ...(syncedUser || {})
-      }, 
-      error: null 
+      },
+      error: null
     };
   } catch (error) {
     console.error('Google sign in error:', error);
-    
+
     let errorMessage = error.message;
     if (error.code === 'auth/popup-closed-by-user') {
       errorMessage = 'Sign-in was cancelled. Please try again.';
@@ -624,7 +626,7 @@ export const signInWithGoogle = async () => {
     } else if (error.code === 'auth/cancelled-popup-request') {
       errorMessage = 'Sign-in was cancelled. Please try again.';
     }
-    
+
     return { user: null, error: errorMessage };
   }
 };
@@ -639,7 +641,7 @@ export const checkPhoneNumber = async (phoneNumber) => {
     // Format phone number consistently
     const formattedPhone = phoneNumber.startsWith('+') ? phoneNumber : `+91${phoneNumber}`;
     const normalizedPhone = formattedPhone.replace(/\D/g, '').slice(-10); // Get last 10 digits
-    
+
     const response = await axios.post(`${API_URL}/auth/check-account`, {
       phone: normalizedPhone
     });
@@ -656,7 +658,7 @@ export const checkPhoneNumber = async (phoneNumber) => {
 // Get current user
 export const getCurrentUser = () => {
   return new Promise((resolve, reject) => {
-    const unsubscribe = onAuthStateChanged(auth, 
+    const unsubscribe = onAuthStateChanged(auth,
       (user) => {
         unsubscribe();
         resolve(user);

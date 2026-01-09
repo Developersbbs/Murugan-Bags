@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { FaTimes } from 'react-icons/fa';
 
+import { API_BASE_URL } from '../config/api';
+
 const OfferPopup = () => {
     const [popup, setPopup] = useState(null);
     const [isVisible, setIsVisible] = useState(false);
@@ -18,7 +20,7 @@ const OfferPopup = () => {
 
     const fetchPopup = async () => {
         try {
-            const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+            const API_URL = API_BASE_URL;
             const res = await fetch(`${API_URL}/offer-popups`);
             const data = await res.json();
 
@@ -44,7 +46,7 @@ const OfferPopup = () => {
 
     if (!isVisible || !popup) return null;
 
-    const API_BASE = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
+    const API_BASE = API_BASE_URL.replace('/api', '');
     const imageUrl = `${API_BASE}${popup.image}`;
 
     return (

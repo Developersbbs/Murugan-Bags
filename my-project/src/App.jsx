@@ -74,7 +74,7 @@ const App = () => {
         console.log('App: fetchBackendUserData called for user:', firebaseUser.uid);
         dispatch(setBackendUserLoading(true)); // Set loading to true
 
-        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+        const API_URL = API_BASE_URL;
 
         // Check if we already have backend user data in localStorage (cache)
         const cachedBackendUser = localStorage.getItem('sbbs_backend_user');
@@ -93,18 +93,25 @@ const App = () => {
           }
         }
 
-        // Wait for JWT token to be available (retry up to 5 times with 200ms delay)
+        // Wait for JWT token to be available (retry up to 20 times with 200ms delay = 4 seconds total)
+        // Increased from 5 times to ensure we don't fail on slow networks
         let token = localStorage.getItem('authToken') || localStorage.getItem('jwt_token');
         let attempts = 0;
-        while (!token && attempts < 5) {
-          console.log('App: Waiting for JWT token, attempt:', attempts + 1);
+        const maxAttempts = 20;
+
+        while (!token && attempts < maxAttempts) {
+          if (attempts % 5 === 0) {
+            console.log(`App: Waiting for JWT token, attempt: ${attempts + 1}/${maxAttempts}`);
+          }
           await new Promise(resolve => setTimeout(resolve, 200));
           token = localStorage.getItem('authToken') || localStorage.getItem('jwt_token');
           attempts++;
         }
 
         if (!token) {
-          console.error('App: JWT token not found after waiting');
+          console.error('App: JWT token not found after waiting 4 seconds');
+          // Don't clear user here, just stop loading backend data
+          // This allows basic Firebase auth to still work even if backend sync fails
           dispatch(setBackendUserLoading(false));
           return;
         }

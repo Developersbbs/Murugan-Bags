@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { API_BASE_URL } from '../config/api';
 import { Link } from 'react-router-dom';
 import { FaShoppingBag, FaSuitcaseRolling, FaSchool, FaLaptop, FaTruck, FaShieldAlt, FaCreditCard, FaHeadset, FaArrowRight, FaChevronLeft, FaChevronRight, FaStar, FaEnvelope, FaHeart } from 'react-icons/fa';
 import OfferPopup from '../components/OfferPopup';
@@ -21,6 +22,7 @@ const colorGradients = {
   "Teal": "from-teal-500 to-teal-700",
   "Gold": "from-yellow-500 to-yellow-700",
   "Silver": "from-gray-300 to-gray-500",
+  "Coral": "from-rose-400 to-orange-400",
   "default": "from-slate-400 to-slate-600"
 };
 
@@ -74,7 +76,7 @@ const HomePage = () => {
   useEffect(() => {
     const fetchHeroSlides = async () => {
       try {
-        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+        const API_URL = API_BASE_URL;
         console.log('Fetching hero slides from:', `${API_URL}/hero-section`);
 
         const res = await fetch(`${API_URL}/hero-section`);
@@ -124,7 +126,7 @@ const HomePage = () => {
               description: "Curated sets for the savvy traveler. Get more value without compromising on quality.",
               image: "/images/hero/slide3.jpg",
               ctaText: "View Offers",
-              ctaLink: "/products",
+              ctaLink: "/combo-offers",
               gradient: "from-black/90 via-slate-900/40 to-transparent"
             }
           ]);
@@ -162,6 +164,16 @@ const HomePage = () => {
     return () => clearInterval(timer);
   }, [heroSlides.length]); // Add dependency on heroSlides.length
 
+  // Preload images
+  useEffect(() => {
+    if (heroSlides.length === 0) return;
+
+    heroSlides.forEach(slide => {
+      const img = new Image();
+      img.src = slide.image;
+    });
+  }, [heroSlides]);
+
   const nextSlide = () => {
     setCurrentSlide((prev) => (prev + 1) % heroSlides.length);
   };
@@ -177,7 +189,7 @@ const HomePage = () => {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+        const API_URL = API_BASE_URL;
         console.log('Fetching categories from:', `${API_URL}/categories`);
 
         const res = await fetch(`${API_URL}/categories`);
@@ -303,7 +315,7 @@ const HomePage = () => {
 
     const fetchNewArrivals = async () => {
       try {
-        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+        const API_URL = API_BASE_URL;
         console.log('Fetching new arrivals from:', `${API_URL}/products`);
 
         const res = await fetch(`${API_URL}/products?page=1&limit=4&isNewArrival=true&published=true`);
@@ -321,7 +333,7 @@ const HomePage = () => {
         if (finalProducts.length < 4) {
           console.log(`Only found ${finalProducts.length} New Arrivals, fetching latest products to fill gaps...`);
 
-          const fallbackRes = await fetch(`${API_URL}/products?page=1&limit=4&sort=date-desc&published=true`);
+          const fallbackRes = await fetch(`${API_URL}/products?page=1&limit=10&sort=date-desc&published=true`);
           const fallbackData = await fallbackRes.json();
 
           if (fallbackData.success && fallbackData.data && fallbackData.data.length > 0) {
@@ -361,7 +373,7 @@ const HomePage = () => {
   useEffect(() => {
     const fetchColors = async () => {
       try {
-        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+        const API_URL = API_BASE_URL;
         const res = await fetch(`${API_URL}/products/colors`);
         const data = await res.json();
 
@@ -408,7 +420,7 @@ const HomePage = () => {
     const fetchColorProducts = async () => {
       setLoadingColorProducts(true);
       try {
-        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+        const API_URL = API_BASE_URL;
         // Use regex search for color to be flexible
         const res = await fetch(`${API_URL}/products?color=${encodeURIComponent(selectedColor)}&limit=4`);
         const data = await res.json();
@@ -513,7 +525,7 @@ const HomePage = () => {
   useEffect(() => {
     const fetchFeatures = async () => {
       try {
-        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+        const API_URL = API_BASE_URL;
         const res = await fetch(`${API_URL}/special-offers`);
         const data = await res.json();
 
@@ -548,7 +560,7 @@ const HomePage = () => {
   useEffect(() => {
     const fetchComboOffers = async () => {
       try {
-        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+        const API_URL = API_BASE_URL;
         const res = await fetch(`${API_URL}/combo-offers?isHomeFeatured=true&limit=2`);
         const data = await res.json();
 
@@ -567,7 +579,7 @@ const HomePage = () => {
   useEffect(() => {
     const fetchMarqueeOffers = async () => {
       try {
-        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+        const API_URL = API_BASE_URL;
         const res = await fetch(`${API_URL}/marquee-offers`);
         const data = await res.json();
 
@@ -597,12 +609,19 @@ const HomePage = () => {
           >
             {/* Background Image with Parallax */}
             <div
-              className="absolute inset-0 bg-cover bg-center transition-transform duration-[2000ms] ease-out"
+              className="absolute inset-0 transition-transform duration-[2000ms] ease-out"
               style={{
-                backgroundImage: `url(${slide.image})`,
                 transform: index === currentSlide ? `scale(1.05) translateY(${scrollY * 0.5}px)` : 'scale(1.0) translateY(0)'
               }}
-            ></div>
+            >
+              <img
+                src={slide.image}
+                alt={slide.title}
+                className="w-full h-full object-cover"
+                loading={index === 0 ? "eager" : "lazy"}
+                fetchPriority={index === 0 ? "high" : "auto"}
+              />
+            </div>
 
             {/* Sophisticated Gradient Overlay */}
             <div className={`absolute inset-0 bg-gradient-to-r ${slide.gradient}`}></div>
@@ -794,7 +813,7 @@ const HomePage = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
             {newArrivals.map((product, index) => (
               <div
-                key={product.id}
+                key={product._id || product.id}
                 className="group bg-white rounded-3xl shadow-sm hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 border border-slate-100 overflow-hidden"
                 style={{
                   animation: visibleSections.has('new-arrivals') ? `fadeInUp 0.6s ease-out ${index * 0.1}s both` : 'none'
@@ -835,7 +854,7 @@ const HomePage = () => {
                     <FaShoppingBag className="mr-2" /> Add to Cart
                   </button>
                 </div>
-              </div >
+              </div>
             ))}
           </div >
 

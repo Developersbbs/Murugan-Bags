@@ -61,6 +61,9 @@ const ProductListPage = () => {
       setSearchTerm(searchParam);
     }
 
+    // Scroll to top when filters or search params change
+    window.scrollTo(0, 0);
+
     // Reset to first page when filters change
     setCurrentPage(1);
   }, [searchParams]);
