@@ -100,7 +100,15 @@ class AuthInitService {
         }
 
         if (!authStateResolved) {
-          // Clear timeout if Firebase resolves quickly
+          // If we have a stored user but Firebase returns null initially, 
+          // we ignore this initial null state and wait for the timeout to fallback to stored user.
+          // This fixes the "logout on refresh" issue where Firebase might be slow to restore persistence.
+          if (!processedUser && hasStoredUser) {
+            console.log('AuthInitService: Ignoring initial null auth state in favor of stored user');
+            return;
+          }
+
+          // Clear timeout if Firebase resolves quickly (with user, or null if no stored user)
           if (timeoutId) {
             clearTimeout(timeoutId);
             timeoutId = null;
