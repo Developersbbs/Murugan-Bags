@@ -101,8 +101,15 @@ class AuthInitService {
             }
           }
         } else {
-          // Clear JWT token on logout
-          clearStoredJWTToken();
+          // Check if we should ignore this null state (e.g. initial load with stored user)
+          if (!authStateResolved && hasStoredUser) {
+            console.log('[AUTH_DEBUG] AuthInitService: Ignoring initial null auth state in favor of stored user - KEEPING TOKEN');
+            // Do NOT clear token yet
+          } else {
+            // Real logout or no stored user -> Clear JWT token
+            console.log('[AUTH_DEBUG] AuthInitService: Clearing JWT token (Real logout or no stored user)');
+            clearStoredJWTToken();
+          }
         }
 
         if (!authStateResolved) {
