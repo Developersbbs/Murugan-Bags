@@ -117,6 +117,52 @@ app.get('/health', (req, res) => {
   });
 });
 
+// Firebase Debug Route
+app.get('/api/debug/firebase', (req, res) => {
+  const admin = require('./lib/firebase');
+  const envCheck = {
+    FIREBASE_PROJECT_ID: !!process.env.FIREBASE_PROJECT_ID,
+    FIREBASE_CLIENT_EMAIL: !!process.env.FIREBASE_CLIENT_EMAIL,
+    FIREBASE_PRIVATE_KEY: !!process.env.FIREBASE_PRIVATE_KEY,
+    FIREBASE_PRIVATE_KEY_LENGTH: process.env.FIREBASE_PRIVATE_KEY ? process.env.FIREBASE_PRIVATE_KEY.length : 0,
+    NODE_ENV: process.env.NODE_ENV
+  };
+
+  try {
+    const apps = admin.apps ? admin.apps.length : 0;
+    const isInit = apps > 0;
+
+    // Try to re-initialize if empty (for debugging)
+    let reInitResult = 'Not attempted';
+    if (!isInit && process.env.FIREBASE_PRIVATE_KEY) {
+      try {
+        const serviceAccount = {
+          projectId: process.env.FIREBASE_PROJECT_ID,
+          clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+          privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+        };
+        admin.initializeApp({
+          credential: admin.credential.cert(serviceAccount),
+        });
+        reInitResult = 'Success';
+      } catch (e) {
+        reInitResult = `Failed: ${e.message}`;
+      }
+    }
+
+    res.json({
+      success: true,
+      initialized: isInit,
+      appsCount: apps,
+      envCheck,
+      reInitAttempt: reInitResult,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message, stack: error.stack });
+  }
+});
+
 // Use routes
 app.use("/api/auth", authRoutes);
 app.use("/api/staffRoles", staffRolesRoutes);
