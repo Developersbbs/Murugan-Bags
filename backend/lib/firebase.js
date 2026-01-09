@@ -16,23 +16,29 @@ const serviceAccount = {
 };
 
 // Initialize Firebase Admin SDK only if we have valid credentials
-let firebaseAdmin = null;
-if (process.env.FIREBASE_PRIVATE_KEY && process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PROJECT_ID) {
-  try {
-    firebaseAdmin = admin.initializeApp({
+// Initialize Firebase Admin SDK
+let firebaseApp = null;
+
+try {
+  if (admin.apps.length) {
+    console.log('[FIREBASE_DEBUG] Application already initialized');
+    firebaseApp = admin.app();
+  } else if (process.env.FIREBASE_PRIVATE_KEY && process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PROJECT_ID) {
+    console.log('[FIREBASE_DEBUG] Initializing Firebase Admin SDK...');
+    firebaseApp = admin.initializeApp({
       credential: admin.credential.cert(serviceAccount),
       projectId: process.env.FIREBASE_PROJECT_ID,
       storageBucket: process.env.FIREBASE_STORAGE_BUCKET || `${process.env.FIREBASE_PROJECT_ID}.appspot.com`
     });
-    console.log("✅ Firebase Admin SDK initialized successfully");
-    console.log(`✅ Firebase Storage Bucket: ${process.env.FIREBASE_STORAGE_BUCKET || `${process.env.FIREBASE_PROJECT_ID}.appspot.com`}`);
-  } catch (error) {
-    console.error("❌ Failed to initialize Firebase Admin SDK:", error.message);
-    console.error("Please check your Firebase environment variables in .env file");
+    console.log("✅ [FIREBASE_DEBUG] Firebase Admin SDK initialized successfully");
+    console.log(`✅ [FIREBASE_DEBUG] Firebase Storage Bucket: ${process.env.FIREBASE_STORAGE_BUCKET || `${process.env.FIREBASE_PROJECT_ID}.appspot.com`}`);
+  } else {
+    console.log("⚠️ [FIREBASE_DEBUG] Firebase Admin SDK not initialized - missing credentials");
+    console.log(`[FIREBASE_DEBUG] Missing: ${!process.env.FIREBASE_PRIVATE_KEY ? 'FIREBASE_PRIVATE_KEY ' : ''}${!process.env.FIREBASE_CLIENT_EMAIL ? 'FIREBASE_CLIENT_EMAIL ' : ''}${!process.env.FIREBASE_PROJECT_ID ? 'FIREBASE_PROJECT_ID' : ''}`);
   }
-} else {
-  console.log("⚠️ Firebase Admin SDK not initialized - missing credentials");
-  console.log("Required environment variables: FIREBASE_PRIVATE_KEY, FIREBASE_CLIENT_EMAIL, FIREBASE_PROJECT_ID");
+} catch (error) {
+  console.error("❌ [FIREBASE_DEBUG] Failed to initialize Firebase Admin SDK:", error.message);
+  console.error("Please check your Firebase environment variables in .env file");
 }
 
-module.exports = firebaseAdmin || admin;
+module.exports = firebaseApp || admin;

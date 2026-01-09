@@ -39,25 +39,10 @@ router.get('/check-email', async (req, res) => {
   }
 });
 
-// Initialize Firebase Admin if not already done
+// Firebase initialization is handled in lib/firebase.js which is loaded at startup
+// We can check if it's initialized for debugging purposes
 if (!admin.apps.length) {
-  if (!process.env.FIREBASE_PROJECT_ID || !process.env.FIREBASE_CLIENT_EMAIL || !process.env.FIREBASE_PRIVATE_KEY) {
-    console.error('⚠️ Missing Firebase Admin environment variables. Firebase features will be disabled.');
-  } else {
-    try {
-      admin.initializeApp({
-        credential: admin.credential.cert({
-          projectId: process.env.FIREBASE_PROJECT_ID,
-          clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-          privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n')
-        })
-      });
-      console.log('✅ Firebase Admin initialized successfully in customers route');
-    } catch (error) {
-      console.error('❌ Failed to initialize Firebase Admin in customers route:', error.message);
-      console.error('Firebase features will be disabled. Please check your Firebase credentials in .env file.');
-    }
-  }
+  console.warn('⚠️ [CUSTOMERS_ROUTE] Firebase Admin not initialized. Some features may not work.');
 }
 
 // Register/Sync Firebase user with MongoDB
