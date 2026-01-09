@@ -121,6 +121,8 @@ app.get('/health', (req, res) => {
 app.get('/api/debug/firebase', (req, res) => {
   const admin = require('./lib/firebase');
   const envCheck = {
+    FIREBASE_SERVICE_ACCOUNT: !!process.env.FIREBASE_SERVICE_ACCOUNT,
+    FIREBASE_SERVICE_ACCOUNT_LENGTH: process.env.FIREBASE_SERVICE_ACCOUNT ? process.env.FIREBASE_SERVICE_ACCOUNT.length : 0,
     FIREBASE_PROJECT_ID: !!process.env.FIREBASE_PROJECT_ID,
     FIREBASE_CLIENT_EMAIL: !!process.env.FIREBASE_CLIENT_EMAIL,
     FIREBASE_PRIVATE_KEY: !!process.env.FIREBASE_PRIVATE_KEY,

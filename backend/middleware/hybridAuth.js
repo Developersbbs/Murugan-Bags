@@ -32,13 +32,22 @@ const authenticateHybridToken = async (req, res, next) => {
 
     // Check if it's the module with no apps
     if (admin.apps && Array.isArray(admin.apps) && admin.apps.length === 0) {
-      console.warn('[AUTH_DEBUG] Firebase Admin module found but no apps initialized.');
-    } else if (typeof admin.auth === 'function') {
+      console.warn('[AUTH_DEBUG] Firebase Admin module found but no apps initialized. Skipping Firebase auth.');
+      // authService remains null, will fall through to JWT
+    } else {
       try {
         // If it's an app instance or module with default app, this returns the service
-        authService = admin.auth();
+        // But if no apps are initialized, calling admin.auth() throws "The default Firebase app does not exist."
+        // So we must check apps.length first if it's the module.
+        if (admin.apps && admin.apps.length > 0) {
+          authService = admin.auth();
+        } else if (admin.app && typeof admin.app === 'function') {
+          // It might be an app instance itself, or the default app of the module
+          authService = admin.auth();
+        }
       } catch (e) {
         console.warn('[AUTH_DEBUG] Failed to get auth service:', e.message);
+        // authService remains null, will fall through to JWT
       }
     }
 
