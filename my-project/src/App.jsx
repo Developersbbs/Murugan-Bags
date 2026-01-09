@@ -164,6 +164,7 @@ const App = () => {
 
           if (user) {
             // User is authenticated
+            console.log('[AUTH_DEBUG] App: Setting Firebase user in Redux', user.uid);
             console.log('App: Setting Firebase user in Redux');
             dispatch(setUser(serializeUser(user)));
             isRealLogout = false;
@@ -180,11 +181,13 @@ const App = () => {
             // User is not authenticated
             if (isRealLogout) {
               // This is a real logout, clear everything
+              console.log('[AUTH_DEBUG] App: Real logout detected, clearing auth data');
               console.log('App: Real logout detected, clearing auth data');
               dispatch(clearError());
               authInitService.forceLogout();
             } else {
               // This might be initial load or Firebase not ready yet
+              console.log('[AUTH_DEBUG] App: User not authenticated on initial load - dispatching null');
               console.log('App: User not authenticated on initial load');
               dispatch(setUser(null));
               dispatch(setBackendUser(null));

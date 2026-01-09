@@ -603,7 +603,7 @@ const HomePage = () => {
       <section className="relative h-screen min-h-[600px] overflow-hidden bg-slate-900">
         {heroSlides.map((slide, index) => (
           <div
-            key={slide.id}
+            key={`hero-slide-${index}`}
             className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${index === currentSlide ? 'opacity-100 z-10' : 'opacity-0 z-0'
               }`}
           >
@@ -619,7 +619,6 @@ const HomePage = () => {
                 alt={slide.title}
                 className="w-full h-full object-cover"
                 loading={index === 0 ? "eager" : "lazy"}
-                fetchPriority={index === 0 ? "high" : "auto"}
               />
             </div>
 

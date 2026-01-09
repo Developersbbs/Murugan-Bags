@@ -401,6 +401,7 @@ export const userLogout = createAsyncThunk(
   'auth/logout',
   async (_, { rejectWithValue, dispatch }) => {
     try {
+      console.log('[AUTH_DEBUG] userLogout thunk called');
       // Clear all auth data first
       clearAuthData();
 
@@ -481,6 +482,7 @@ const authSlice = createSlice({
       state.backendUserLoading = action.payload;
     },
     forceLogout: (state) => {
+      console.log('[AUTH_DEBUG] forceLogout reducer triggered');
       state.user = null;
       state.backendUser = null; // Clear backend user data
       state.backendUserLoading = false; // Reset loading state

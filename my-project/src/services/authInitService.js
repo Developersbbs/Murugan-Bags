@@ -24,10 +24,14 @@ class AuthInitService {
     }
 
     this.initPromise = new Promise((resolve) => {
-      console.log('AuthInitService: Starting authentication initialization...');
+      console.log('[AUTH_DEBUG] AuthInitService: Starting authentication initialization...');
+      console.log('[AUTH_DEBUG] Time:', new Date().toISOString());
 
       // Check if we have stored user data
       const storedUser = localStorage.getItem('sbbs_auth');
+      const authKeys = Object.keys(localStorage).filter(k => k.includes('auth') || k.includes('user') || k.includes('token'));
+      console.log('[AUTH_DEBUG] LocalStorage Keys present:', authKeys);
+
       let hasStoredUser = false;
 
       if (storedUser) {
@@ -48,6 +52,8 @@ class AuthInitService {
 
       // Set up Firebase auth state listener
       const unsubscribe = onAuthStateChanged(auth, async (user) => {
+        console.log('[AUTH_DEBUG] onAuthStateChanged triggered');
+        console.log('[AUTH_DEBUG] User object:', user ? { uid: user.uid, email: user.email } : 'null');
         console.log('AuthInitService: Firebase auth state changed:', user ? user.uid : 'null');
 
         let processedUser = user;
@@ -104,12 +110,14 @@ class AuthInitService {
           // we ignore this initial null state and wait for the timeout to fallback to stored user.
           // This fixes the "logout on refresh" issue where Firebase might be slow to restore persistence.
           if (!processedUser && hasStoredUser) {
+            console.log('[AUTH_DEBUG] AuthInitService: Ignoring initial null auth state in favor of stored user');
             console.log('AuthInitService: Ignoring initial null auth state in favor of stored user');
             return;
           }
 
           // Clear timeout if Firebase resolves quickly (with user, or null if no stored user)
           if (timeoutId) {
+            console.log('[AUTH_DEBUG] Clearing timeout, Firebase resolved first');
             clearTimeout(timeoutId);
             timeoutId = null;
           }
@@ -139,6 +147,7 @@ class AuthInitService {
               this.notifyListeners(userData);
               resolve(userData);
             } catch (error) {
+              console.error('[AUTH_DEBUG] AuthInitService: Error using stored user data:', error);
               console.error('AuthInitService: Error using stored user data:', error);
               this.notifyListeners(null);
               resolve(null);
@@ -149,6 +158,7 @@ class AuthInitService {
         // No stored user
         timeoutId = setTimeout(() => {
           if (!authStateResolved) {
+            console.log('[AUTH_DEBUG] AuthInitService: No stored user, Firebase timeout');
             console.log('AuthInitService: No stored user, Firebase timeout');
             authStateResolved = true;
             this.isInitialized = true;
