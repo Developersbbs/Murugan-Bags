@@ -40,3 +40,4 @@ const checkProducts = async () => {
 };
 
 checkProducts();
+

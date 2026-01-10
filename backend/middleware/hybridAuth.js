@@ -30,10 +30,9 @@ const authenticateHybridToken = async (req, res, next) => {
     // SAFEGUARD: If it's the module, ensure an app is initialized.
     let authService = null;
 
-    // FIX_VERSION: 1.2 (Force Update)
     // Check if it's the module with no apps
     if (admin.apps && Array.isArray(admin.apps) && admin.apps.length === 0) {
-      console.warn('[AUTH_DEBUG] (v1.2) Firebase Admin module found but no apps initialized. Skipping Firebase auth.');
+      console.warn('[AUTH_DEBUG] Firebase Admin module found but no apps initialized. Skipping Firebase auth.');
       // authService remains null, will fall through to JWT
     } else {
       try {
@@ -43,11 +42,12 @@ const authenticateHybridToken = async (req, res, next) => {
         if (admin.apps && admin.apps.length > 0) {
           authService = admin.auth();
         } else if (admin.app && typeof admin.app === 'function') {
-          // It might be an app instance itself
+          // It might be an app instance itself, or the default app of the module
           authService = admin.auth();
         }
       } catch (e) {
         console.warn('[AUTH_DEBUG] Failed to get auth service:', e.message);
+        // authService remains null, will fall through to JWT
       }
     }
 

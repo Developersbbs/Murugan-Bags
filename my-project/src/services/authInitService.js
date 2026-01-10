@@ -101,15 +101,8 @@ class AuthInitService {
             }
           }
         } else {
-          // Check if we should ignore this null state (e.g. initial load with stored user)
-          if (!authStateResolved && hasStoredUser) {
-            console.log('[AUTH_DEBUG] AuthInitService: Ignoring initial null auth state in favor of stored user - KEEPING TOKEN');
-            // Do NOT clear token yet
-          } else {
-            // Real logout or no stored user -> Clear JWT token
-            console.log('[AUTH_DEBUG] AuthInitService: Clearing JWT token (Real logout or no stored user)');
-            clearStoredJWTToken();
-          }
+          // Clear JWT token on logout
+          clearStoredJWTToken();
         }
 
         if (!authStateResolved) {
@@ -160,7 +153,7 @@ class AuthInitService {
               resolve(null);
             }
           }
-        }, 3000); // Increased to 3000ms to give slow networks more time
+        }, 6000); // Increased to 6000ms to give slow networks more time
       } else {
         // No stored user
         timeoutId = setTimeout(() => {
@@ -172,7 +165,7 @@ class AuthInitService {
             this.notifyListeners(null);
             resolve(null);
           }
-        }, 2000); // Increased to 2000ms
+        }, 6000); // Increased to 6000ms
       }
 
       // Keep the unsubscribe function for cleanup
