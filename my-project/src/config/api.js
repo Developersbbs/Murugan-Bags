@@ -1,6 +1,6 @@
 // API Configuration
 const getApiBaseUrl = () => {
-  let url = 'https://murugan-bags.onrender.com/api';
+  let url = 'http://localhost:5000/api';
 
   // Try different environment variable approaches
   // Check for Vite environment variables first
