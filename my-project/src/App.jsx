@@ -186,6 +186,23 @@ const App = () => {
               dispatch(clearError());
               authInitService.forceLogout();
             } else {
+              // Safeguard: Check if we have stored user in localStorage before giving up
+              const storedAuth = localStorage.getItem('sbbs_auth');
+              if (storedAuth) {
+                try {
+                  const parsedUser = JSON.parse(storedAuth);
+                  if (parsedUser && parsedUser.uid) {
+                    console.log('[AUTH_DEBUG] App: Ignoring null auth notification - restoring from storage');
+                    dispatch(setUser(parsedUser));
+                    // Also try to fetch backend user again 
+                    fetchBackendUserData(parsedUser);
+                    return;
+                  }
+                } catch (e) {
+                  console.error('App: Error parsing stored auth for safeguard:', e);
+                }
+              }
+
               // This might be initial load or Firebase not ready yet
               console.log('[AUTH_DEBUG] App: User not authenticated on initial load - dispatching null');
               console.log('App: User not authenticated on initial load');
