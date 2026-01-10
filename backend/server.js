@@ -29,9 +29,11 @@ const allowedOrigins = [
 app.use((req, res, next) => {
   const origin = req.headers.origin;
 
-  // Check if the request origin is in the allowed list
-  if (allowedOrigins.includes(origin)) {
-    res.header('Access-Control-Allow-Origin', origin);
+  // Check if the request origin is in the allowed list or is a Netlify app
+  const isAllowed = allowedOrigins.includes(origin) || (origin && origin.endsWith('.netlify.app'));
+
+  if (isAllowed || !origin) {
+    res.header('Access-Control-Allow-Origin', origin || '*');
     res.header('Access-Control-Allow-Credentials', 'true');
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
     res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept');
