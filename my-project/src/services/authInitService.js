@@ -164,7 +164,7 @@ class AuthInitService {
               resolve(null);
             }
           }
-        }, 6000); // Increased to 6000ms to give slow networks more time
+        }, 45000); // Increased to 45000ms (45s) to handle Render cold starts
       } else {
         // No stored user
         timeoutId = setTimeout(() => {
@@ -175,7 +175,7 @@ class AuthInitService {
             this.notifyListeners(null);
             resolve(null);
           }
-        }, 6000); // Increased to 6000ms
+        }, 45000); // Increased to 45000ms (45s)
       }
 
       // Keep the unsubscribe function for cleanup
