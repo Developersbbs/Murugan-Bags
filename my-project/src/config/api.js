@@ -3,19 +3,25 @@ const getApiBaseUrl = () => {
   let url = 'http://localhost:5000/api';
 
   // Try different environment variable approaches
-  if (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_URL) {
-    url = import.meta.env.VITE_API_URL;
-    console.log('API Config: Found VITE_API_URL:', url);
-  } else if (typeof process !== 'undefined' && process.env?.REACT_APP_API_URL) {
-    url = process.env.REACT_APP_API_URL;
-    console.log('API Config: Found REACT_APP_API_URL:', url);
-  } else if (typeof window !== 'undefined' && process.env.NODE_ENV === 'production') {
-    // If we're in production but no env var is found, try to infer it
-    // Default to /api relative path which works if served from same origin
-    console.warn('API Config: Production mode but no API URL found. defaulting to /api');
-    // You can also hardcode your live backend URL here as a fallback
-    // url = 'https://murugan-bags-backend.onrender.com/api'; 
-    url = '/api';
+  // Check for Vite environment variables first
+  if (typeof import.meta !== 'undefined' && import.meta.env) {
+    if (import.meta.env.VITE_API_URL) {
+      url = import.meta.env.VITE_API_URL;
+      console.log('API Config: Found VITE_API_URL:', url);
+    } else if (import.meta.env.MODE === 'production' || import.meta.env.PROD) {
+      // Production build without strict VITE_API_URL - default to relative path for proxy
+      console.log('API Config: Production mode detected (Vite), defaulting to /api');
+      url = '/api';
+    }
+  }
+
+  // Fallback for non-Vite environments (e.g. legacy or tests)
+  else if (typeof process !== 'undefined') {
+    if (process.env?.REACT_APP_API_URL) {
+      url = process.env.REACT_APP_API_URL;
+    } else if (process.env.NODE_ENV === 'production') {
+      url = '/api';
+    }
   }
 
   // Force HTTP for localhost to prevent SSL errors during development
