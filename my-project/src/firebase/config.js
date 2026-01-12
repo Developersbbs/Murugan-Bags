@@ -1,7 +1,7 @@
 import { initializeApp } from 'firebase/app';
-import { 
-  getAuth, 
-  RecaptchaVerifier, 
+import {
+  getAuth,
+  RecaptchaVerifier,
   GoogleAuthProvider,
   signInWithPopup,
   signInWithPhoneNumber,
@@ -18,7 +18,7 @@ import { getStorage } from 'firebase/storage';
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
- apiKey: "AIzaSyCJexHhgYNkQMoVMpFnAzuAWqhhQ09sLDc",
+  apiKey: "AIzaSyCJexHhgYNkQMoVMpFnAzuAWqhhQ09sLDc",
   authDomain: "murugan-bags.firebaseapp.com",
   projectId: "murugan-bags",
   storageBucket: "murugan-bags.firebasestorage.app",
@@ -32,12 +32,22 @@ const auth = getAuth(app);
 const storage = getStorage(app);
 
 // Set auth persistence to LOCAL (survives browser restarts)
-try {
-  setPersistence(auth, browserLocalPersistence);
-  console.log('Firebase auth persistence set to LOCAL');
-} catch (error) {
-  console.error('Failed to set Firebase auth persistence:', error);
-}
+// This MUST be done before any auth operations
+(async () => {
+  try {
+    await setPersistence(auth, browserLocalPersistence);
+    console.log('✅ Firebase auth persistence set to LOCAL (browserLocalPersistence)');
+  } catch (error) {
+    console.error('❌ CRITICAL: Failed to set Firebase auth persistence:', error);
+    // Fallback: try again synchronously
+    try {
+      setPersistence(auth, browserLocalPersistence);
+      console.log('✅ Firebase auth persistence set (sync fallback)');
+    } catch (syncError) {
+      console.error('❌ CRITICAL: Sync fallback also failed:', syncError);
+    }
+  }
+})();
 
 // Configure Google Auth Provider
 const googleProvider = new GoogleAuthProvider();
@@ -50,10 +60,10 @@ googleProvider.setCustomParameters({
 // Set auth language to avoid CORS issues
 auth.languageCode = 'en';
 
-export { 
-  auth, 
+export {
+  auth,
   storage,
-  RecaptchaVerifier, 
+  RecaptchaVerifier,
   googleProvider,
   signInWithPopup,
   signInWithPhoneNumber,
