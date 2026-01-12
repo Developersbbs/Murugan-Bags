@@ -275,8 +275,21 @@ const App = () => {
     };
   }, []);
 
-  // Show loading state while checking auth
-  if (loading && location.pathname !== '/login' && location.pathname !== '/register') {
+  // Show loading state while checking auth - But allow public routes to render immediately
+  // preventing the "White Screen / Spinner of Death" on cold starts
+  const isPublicRoute =
+    location.pathname === '/' ||
+    location.pathname === '/login' ||
+    location.pathname === '/register' ||
+    location.pathname.startsWith('/product') ||
+    location.pathname.startsWith('/products') ||
+    location.pathname.startsWith('/combo-offers') ||
+    location.pathname.startsWith('/new-arrivals') ||
+    location.pathname.startsWith('/bulk-orders') ||
+    location.pathname === '/cart' || // Allow cart to show empty or local items
+    location.pathname === '/wishlist'; // Allow wishlist to show proper redirect or empty
+
+  if (loading && !isPublicRoute) {
     return <LoadingScreen message="Authenticating..." variant="ring" />;
   }
 
