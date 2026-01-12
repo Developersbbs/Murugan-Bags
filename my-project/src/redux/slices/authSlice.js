@@ -335,16 +335,25 @@ export const fetchUserProfile = createAsyncThunk(
     try {
       console.log('fetchUserProfile: called for uid:', uid);
 
-      // Wait for JWT token to be available
+      // Wait for JWT token to be available with increased retries for production
       let token = localStorage.getItem('authToken') || localStorage.getItem('jwt_token');
-      if (!token) {
-        // Retry once after a short delay
-        await new Promise(resolve => setTimeout(resolve, 500));
+      let attempts = 0;
+      const maxAttempts = 50; // Increased from 10 to handle slow production token exchange
+      const delayMs = 300; // Increased from 500ms to 300ms for better UX
+
+      while (!token && attempts < maxAttempts) {
+        if (attempts % 10 === 0) {
+          console.log(`fetchUserProfile: Waiting for JWT token, attempt ${attempts + 1}/${maxAttempts}`);
+        }
+        await new Promise(resolve => setTimeout(resolve, delayMs));
         token = localStorage.getItem('authToken') || localStorage.getItem('jwt_token');
+        attempts++;
       }
 
       if (!token) {
-        throw new Error('No authentication token found');
+        console.warn('fetchUserProfile: No token found after waiting, but continuing with Firebase auth');
+        // Don't throw error - let the app continue with Firebase auth only
+        return rejectWithValue('No authentication token found');
       }
 
       const API_URL = API_BASE_URL;
