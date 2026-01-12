@@ -272,6 +272,14 @@ class AuthInitService {
       sessionStorage.removeItem(key);
     });
 
+    // Clear all user-specific profile caches
+    Object.keys(localStorage).forEach(key => {
+      if (key.startsWith('sbbs_profile_') || key.startsWith('sbbs_backend_user')) {
+        console.log(`AuthInitService: Clearing user-specific cache: ${key}`);
+        localStorage.removeItem(key);
+      }
+    });
+
     // Notify listeners
     this.notifyListeners(null);
   }

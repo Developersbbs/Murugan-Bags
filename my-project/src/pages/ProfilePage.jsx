@@ -8,6 +8,7 @@ import orderService from '../services/orderService';
 import addressService from '../services/addressService';
 import ratingService from '../services/ratingService';
 import { Star, Trash2 } from 'lucide-react';
+import { API_BASE_URL } from '../config/api';
 
 const ProfilePage = () => {
   const [activeTab, setActiveTab] = useState('profile');
@@ -61,9 +62,6 @@ const ProfilePage = () => {
         return;
       }
 
-      setIsPageLoading(true);
-      setError(null);
-
       const currentUser = auth.currentUser;
       console.log('fetchUserData: currentUser:', currentUser ? { uid: currentUser.uid, email: currentUser.email } : 'null');
 
@@ -73,9 +71,40 @@ const ProfilePage = () => {
         return;
       }
 
+      // Check cache first
+      const CACHE_KEY = `sbbs_profile_${currentUser.uid}`;
+      const CACHE_DURATION = 1000 * 60 * 10; // 10 minutes
+      const cached = localStorage.getItem(CACHE_KEY);
+
+      if (cached) {
+        try {
+          const { timestamp, data: cachedData } = JSON.parse(cached);
+          // CRITICAL: Validate auth token exists before using cache
+          const token = localStorage.getItem('authToken') || localStorage.getItem('jwt_token');
+          const hasValidAuth = token && currentUser && currentUser.uid;
+
+          if (Date.now() - timestamp < CACHE_DURATION && hasValidAuth) {
+            console.log('fetchUserData: Using cached profile data (auth validated)');
+            setUserData(cachedData);
+            setFormData(cachedData);
+            setIsPageLoading(false);
+            // Continue to fetch fresh data in background
+          } else if (!hasValidAuth) {
+            console.log('fetchUserData: Cache invalid or auth expired, clearing cache');
+            localStorage.removeItem(CACHE_KEY);
+          }
+        } catch (e) {
+          console.warn('fetchUserData: Cache parse error', e);
+          localStorage.removeItem(CACHE_KEY);
+        }
+      }
+
+      setIsPageLoading(true);
+      setError(null);
+
       console.log('fetchUserData: Fetching profile for UID:', currentUser.uid);
       // Fetch user data from the backend using the new endpoint
-      const response = await fetch(`http://localhost:5000/api/auth/profile/${currentUser.uid}`);
+      const response = await fetch(`${API_BASE_URL}/auth/profile/${currentUser.uid}`);
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -114,13 +143,28 @@ const ProfilePage = () => {
 
       setUserData(formattedData);
       setFormData(formattedData);
+
+      // Update cache
+      localStorage.setItem(CACHE_KEY, JSON.stringify({
+        timestamp: Date.now(),
+        data: formattedData
+      }));
     } catch (error) {
       console.error('Error fetching user data:', error);
-      setError('Failed to load profile data. Please try again.');
+
+      // Don't immediately show error if we have cached data
+      // This prevents API failures from appearing as logout
+      if (userData && userData.email) {
+        console.log('fetchUserData: Using existing cached data due to fetch error');
+        setError(null); // Clear error since we have cached data
+        toast.warning('Using cached profile data. Some information may be outdated.');
+      } else {
+        setError('Failed to load profile data. Please try refreshing the page.');
+      }
     } finally {
       setIsPageLoading(false);
     }
-  }, [authChecked, authLoading, auth]);
+  }, [authChecked, authLoading, auth, userData]);
 
   const fetchUserOrders = useCallback(async () => {
     try {
@@ -433,7 +477,7 @@ const ProfilePage = () => {
         avatarUrl = userData.avatar;
       }
 
-      const response = await fetch(`http://localhost:5000/api/auth/profile/${currentUser.uid}`, {
+      const response = await fetch(`${API_BASE_URL}/auth/profile/${currentUser.uid}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
@@ -545,39 +589,6 @@ const ProfilePage = () => {
   // Redirect to login if not authenticated
   if (!auth.currentUser) {
     return <Navigate to="/login" state={{ from: location }} replace />;
-  }
-
-  if (isPageLoading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="bg-red-50 border-l-4 border-red-400 p-4">
-          <div className="flex">
-            <div className="flex-shrink-0">
-              <svg className="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-              </svg>
-            </div>
-            <div className="ml-3">
-              <p className="text-sm text-red-700">{error}</p>
-              <button
-                onClick={() => window.location.reload()}
-                className="mt-2 text-sm font-medium text-red-700 hover:text-red-600"
-              >
-                Try again
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
   }
 
   return (

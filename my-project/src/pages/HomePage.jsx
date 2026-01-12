@@ -125,14 +125,14 @@ const HomePage = () => {
     fetchColorProducts();
   }, [selectedColor]);
 
-  // Loading Skeleton
-  if (loadingData && heroSlides.length === 0) {
-    return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
-        <div className="text-white text-xl animate-pulse">Loading amazing collections...</div>
-      </div>
-    );
-  }
+  // Auto-slide effect
+  useEffect(() => {
+    if (heroSlides.length === 0) return;
+    const timer = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % heroSlides.length);
+    }, 5000);
+    return () => clearInterval(timer);
+  }, [heroSlides.length]);
 
   return (
     <div className="min-h-screen bg-slate-50 overflow-x-hidden font-sans -mt-20">
