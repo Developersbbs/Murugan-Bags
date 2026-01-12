@@ -1,5 +1,5 @@
-# Proxy API requests to backend
-/api/*  https://murugan-bags.onrender.com/api/:splat  200!
+# API Proxy - Must come BEFORE the SPA fallback
+/api/*  https://murugan-bags.onrender.com/api/:splat  200
 
-# SPA fallback - must come after API proxy
-/*  /index.html  200
+# SPA Fallback - Must come LAST (handles all routes for React Router)
+/*    /index.html   200
