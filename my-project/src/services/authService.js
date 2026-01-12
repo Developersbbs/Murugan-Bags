@@ -80,12 +80,21 @@ export const setupAuthListener = (callback) => {
         storeJWTToken(tokenResult.data.token);
         console.log('JWT token stored successfully');
 
-        const syncedUser = await syncUserWithBackend(user);
-        callback(syncedUser || user);
+        // Sync with backend (but don't use the returned object for auth state)
+        await syncUserWithBackend(user);
+
+        // CRITICAL FIX: Always pass the Firebase user object (with uid)
+        // NOT the backend synced user (which has firebaseUid, not uid)
+        callback(user);
       } catch (error) {
         console.warn('Failed to exchange Firebase token, continuing with Firebase auth:', error);
-        const syncedUser = await syncUserWithBackend(user);
-        callback(syncedUser || user);
+        try {
+          await syncUserWithBackend(user);
+        } catch (syncError) {
+          console.warn('Failed to sync with backend:', syncError);
+        }
+        // Still pass Firebase user even if backend sync fails
+        callback(user);
       }
     } else {
       // Clear JWT token on logout

@@ -113,15 +113,11 @@ class AuthInitService {
             }
           }
         } else {
-          // ONLY clear token if we are NOT waiting for stored user fallback
-          // This prevents clearing the token on the initial "null" flash from Firebase 
-          // when we actually have a valid stored session we want to use.
-          if (authStateResolved || !hasStoredUser) {
-            console.log('[AUTH_DEBUG_V2] Clearing JWT token (User is null and no stored fallback)');
-            clearStoredJWTToken();
-          } else {
-            console.log('[AUTH_DEBUG_V2] Preserving JWT token despite null user (Waiting for stored fallback)');
-          }
+          // CRITICAL FIX: Do NOT automatically clear tokens when user is null
+          // Firebase can return null temporarily during initialization
+          // Only clear tokens on EXPLICIT logout (via forceLogout method)
+          console.log('[AUTH_DEBUG_V2] User is null, but preserving tokens (will only clear on explicit logout)');
+          console.log('[AUTH_DEBUG_V2] hasStoredUser:', hasStoredUser, 'authStateResolved:', authStateResolved);
         }
 
         // If we have a stored user but Firebase returns null initially, 
