@@ -4,6 +4,7 @@ import { Helmet } from 'react-helmet-async';
 import { Toaster } from 'react-hot-toast';
 import { useDispatch, useSelector } from 'react-redux';
 import { API_BASE_URL } from './config/api';
+import { authPersistenceReady } from './firebase/config';
 
 // Layout Components
 import Layout from './components/layout/Layout';
@@ -154,14 +155,26 @@ const App = () => {
       }
     };
 
-    // Initialize the auth service
+    // Initialize authentication with proper persistence handling
     const initializeAuth = async () => {
       try {
-        console.log('App: Initializing authentication...');
+        console.log('🚀 [APP] Starting authentication initialization...');
 
-        // Add auth state listener
-        authInitService.addAuthStateListener(async (user) => {
-          console.log('App: Auth state listener called with user:', user ? user.uid : 'null');
+        // CRITICAL: Wait for Firebase persistence to be set BEFORE any auth operations
+        console.log('⏳ [APP] Waiting for Firebase persistence to be ready...');
+        const persistenceSuccess = await authPersistenceReady;
+
+        if (!persistenceSuccess) {
+          console.error('❌ [APP] CRITICAL: Firebase persistence failed to initialize!');
+          console.error('❌ [APP] Auth may not persist across sessions');
+          // Continue anyway, but log the issue
+        } else {
+          console.log('✅ [APP] Firebase persistence is ready, proceeding with auth initialization');
+        }
+
+        // Set up auth state listener
+        setupAuthListener(async (user) => {
+          console.log('[AUTH_DEBUG] App: Auth state listener called with user:', user ? { uid: user.uid, email: user.email } : 'null');
 
           if (user) {
             // User is authenticated
@@ -217,10 +230,14 @@ const App = () => {
 
         // Start the initialization process
         await authInitService.initialize();
-        console.log('App: Authentication initialization completed');
+        console.log('✅ [APP] Authentication initialization completed successfully');
 
       } catch (error) {
-        console.error('App: Error initializing authentication:', error);
+        console.error('❌ [APP] Error initializing authentication:', error);
+        console.error('❌ [APP] Error details:', {
+          message: error.message,
+          stack: error.stack
+        });
         dispatch(setInitializationComplete());
       }
     };

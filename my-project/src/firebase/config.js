@@ -32,19 +32,58 @@ const auth = getAuth(app);
 const storage = getStorage(app);
 
 // Set auth persistence to LOCAL (survives browser restarts)
-// This MUST be done before any auth operations
-(async () => {
+// CRITICAL: Export this promise so App.jsx can wait for it
+export const authPersistenceReady = (async () => {
   try {
+    console.log('🔐 [PERSISTENCE] Setting Firebase auth persistence to LOCAL...');
     await setPersistence(auth, browserLocalPersistence);
-    console.log('✅ Firebase auth persistence set to LOCAL (browserLocalPersistence)');
-  } catch (error) {
-    console.error('❌ CRITICAL: Failed to set Firebase auth persistence:', error);
-    // Fallback: try again synchronously
+    console.log('✅ [PERSISTENCE] Firebase auth persistence set to LOCAL (browserLocalPersistence)');
+
+    // Verify persistence is actually working
+    const testKey = '__firebase_persistence_test__';
     try {
+      localStorage.setItem(testKey, 'test');
+      const canRead = localStorage.getItem(testKey) === 'test';
+      localStorage.removeItem(testKey);
+
+      if (!canRead) {
+        console.error('❌ [PERSISTENCE] CRITICAL: localStorage verification failed!');
+        return false;
+      }
+      console.log('✅ [PERSISTENCE] localStorage verification passed');
+    } catch (storageError) {
+      console.error('❌ [PERSISTENCE] CRITICAL: localStorage not accessible:', storageError);
+      return false;
+    }
+
+    // Log production environment info
+    if (typeof window !== 'undefined') {
+      console.log('🌍 [PERSISTENCE] Environment:', {
+        hostname: window.location.hostname,
+        isNetlify: window.location.hostname.includes('netlify'),
+        isProduction: import.meta.env.PROD,
+        localStorageKeys: Object.keys(localStorage).filter(k => k.startsWith('sbbs_') || k.startsWith('firebase')),
+      });
+    }
+
+    return true;
+  } catch (error) {
+    console.error('❌ [PERSISTENCE] CRITICAL: Failed to set Firebase auth persistence:', error);
+    console.error('❌ [PERSISTENCE] Error details:', {
+      message: error.message,
+      code: error.code,
+      stack: error.stack
+    });
+
+    // Fallback: try synchronous setup
+    try {
+      console.log('🔄 [PERSISTENCE] Attempting synchronous fallback...');
       setPersistence(auth, browserLocalPersistence);
-      console.log('✅ Firebase auth persistence set (sync fallback)');
+      console.log('✅ [PERSISTENCE] Firebase auth persistence set (sync fallback)');
+      return true;
     } catch (syncError) {
-      console.error('❌ CRITICAL: Sync fallback also failed:', syncError);
+      console.error('❌ [PERSISTENCE] CRITICAL: Sync fallback also failed:', syncError);
+      return false;
     }
   }
 })();
