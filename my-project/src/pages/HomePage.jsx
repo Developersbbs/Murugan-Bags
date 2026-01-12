@@ -138,6 +138,14 @@ const HomePage = () => {
     <div className="min-h-screen bg-slate-50 overflow-x-hidden font-sans -mt-20">
       <OfferPopup />
 
+      {/* Server Cold Start Banner */}
+      {loadingData && heroSlides.length === 0 && (
+        <div className="fixed top-20 left-0 right-0 z-50 bg-amber-500 text-white px-4 py-3 text-center shadow-lg">
+          <p className="font-semibold">🔄 Server is waking up... This may take 30-60 seconds on first visit. Please wait or refresh shortly.</p>
+        </div>
+      )}
+
+
       {/* Hero Section */}
       <section className="relative h-screen min-h-[600px] overflow-hidden bg-slate-900">
         {heroSlides.map((slide, index) => (

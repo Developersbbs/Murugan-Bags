@@ -52,7 +52,7 @@ export const useHomeData = () => {
                 }
 
                 console.log('Fetching fresh home data...');
-                // 2. Fetch Parallel
+                // 2. Fetch Parallel with timeout handling
                 const API_URL = API_BASE_URL;
 
                 const [
@@ -73,13 +73,25 @@ export const useHomeData = () => {
                     fetch(`${API_URL}/marquee-offers`)
                 ]);
 
+                // Check if we got 504 errors (backend cold start)
+                const has504 = [heroRes, catRes, newArrRes, colorsRes, offersRes, comboRes, marqueeRes]
+                    .some(res => res.status === 'fulfilled' && res.value.status === 504);
+
+                if (has504) {
+                    console.warn('Backend is waking up (504 Gateway Timeout). Data will load on next refresh.');
+                    setError({ message: 'Server is waking up. Please refresh in a moment.', isTimeout: true });
+                }
+
                 // Helper to safely get data
                 const getVal = async (res) => {
                     if (res.status === 'fulfilled' && res.value.ok) {
                         try {
                             const json = await res.value.json();
                             return json.success ? json.data : [];
-                        } catch (e) { return []; }
+                        } catch (e) {
+                            console.warn('JSON parse error:', e);
+                            return [];
+                        }
                     }
                     return [];
                 };
@@ -150,11 +162,13 @@ export const useHomeData = () => {
                 setData(newData);
                 setLoading(false);
 
-                // 4. Update Cache
-                localStorage.setItem(CACHE_KEY, JSON.stringify({
-                    timestamp: Date.now(),
-                    data: newData
-                }));
+                // 4. Update Cache only if we got valid data
+                if (!has504 && (processedHero.length > 0 || processedCategories.length > 0)) {
+                    localStorage.setItem(CACHE_KEY, JSON.stringify({
+                        timestamp: Date.now(),
+                        data: newData
+                    }));
+                }
 
             } catch (err) {
                 console.error('Home data fetch error:', err);
