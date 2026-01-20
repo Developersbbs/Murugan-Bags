@@ -322,7 +322,7 @@ const HomePage = () => {
         if (finalProducts.length < 4) {
           console.log(`Only found ${finalProducts.length} New Arrivals, fetching latest products to fill gaps...`);
 
-          const fallbackRes = await fetch(`${API_URL}/products?page=1&limit=4&sort=date-desc&published=true`);
+          const fallbackRes = await fetch(`${API_URL}/products?page=1&limit=4&sort=date-desc`);
           const fallbackData = await fallbackRes.json();
 
           if (fallbackData.success && fallbackData.data && fallbackData.data.length > 0) {
