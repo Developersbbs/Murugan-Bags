@@ -68,8 +68,6 @@ class AuthInitService {
         console.log('[AUTH_DEBUG_V2] authStateResolved:', authStateResolved);
         console.log('[AUTH_DEBUG_V2] hasStoredUser:', hasStoredUser);
 
-        let processedUser = user;
-
         // If user exists, exchange for JWT and sync with backend
         if (user) {
           try {
@@ -100,14 +98,12 @@ class AuthInitService {
               throw new Error('Failed to exchange token after multiple retries');
             }
 
-            // Sync with backend to get complete user data
-            const syncedUser = await this.syncUserWithBackend(user);
-            processedUser = syncedUser || user;
+            // Sync with backend to get complete user data (but don't use it for auth state)
+            await this.syncUserWithBackend(user);
           } catch (error) {
             console.warn('AuthInitService: Failed to exchange Firebase token, continuing with Firebase auth:', error);
             try {
-              const syncedUser = await this.syncUserWithBackend(user);
-              processedUser = syncedUser || user;
+              await this.syncUserWithBackend(user);
             } catch (syncError) {
               console.warn('AuthInitService: Failed to sync with backend:', syncError);
             }
@@ -122,7 +118,7 @@ class AuthInitService {
 
         // If we have a stored user but Firebase returns null initially, 
         // we ignore this initial null state and wait for the timeout to fallback to stored user.
-        if (!processedUser && hasStoredUser) {
+        if (!user && hasStoredUser) {
           console.log('[AUTH_DEBUG_V2] AuthInitService: Ignoring initial null auth state in favor of stored user');
           return;
         }
@@ -137,9 +133,10 @@ class AuthInitService {
         authStateResolved = true;
         this.isInitialized = true;
 
-        // Notify all listeners
-        this.notifyListeners(processedUser);
-        resolve(processedUser);
+        // CRITICAL FIX: Pass the Firebase user object to listeners, not backend data
+        // The listeners expect Firebase user format with uid, email, etc.
+        this.notifyListeners(user);
+        resolve(user);
       });
 
       // If we have stored user data but Firebase hasn't resolved, use stored data

@@ -1,4 +1,6 @@
 import axios from "axios";
+import { validateToken } from "@/helpers/tokenUtils";
+import { getAuthCookie, removeAuthCookie } from "@/helpers/cookieUtils";
 
 // Server-safe axios instance for API calls
 export const serverAxiosInstance = axios.create({
@@ -22,20 +24,29 @@ const axiosInstance = axios.create({
 if (typeof window !== 'undefined') {
   axiosInstance.interceptors.request.use(
     (config) => {
-      // Check localStorage
+      // Check localStorage first
       let token = localStorage.getItem('authToken');
 
       // Fallback to cookie if localStorage is empty
       if (!token) {
-        token = document.cookie
-          .split('; ')
-          .find(row => row.startsWith('authToken='))
-          ?.split('=')[1] || null;
+        token = getAuthCookie();
+
+        // Sync to localStorage if found in cookie
+        if (token) {
+          localStorage.setItem('authToken', token);
+        }
       }
 
-      if (token) {
+      // Validate token before using it
+      if (token && validateToken(token)) {
         config.headers.Authorization = `Bearer ${token}`;
+      } else if (token) {
+        // Token exists but is invalid/expired - clear it
+        console.log('Axios interceptor: Clearing invalid/expired token');
+        localStorage.removeItem('authToken');
+        removeAuthCookie();
       }
+
       return config;
     },
     (error) => {
@@ -51,8 +62,14 @@ axiosInstance.interceptors.response.use(
     if (error.response?.status === 401) {
       // Handle unauthorized access (only in browser)
       if (typeof window !== 'undefined') {
+        console.log('Axios interceptor: 401 error, clearing auth state');
         localStorage.removeItem('authToken');
-        window.location.href = '/login';
+        removeAuthCookie();
+
+        // Only redirect if not already on login page
+        if (!window.location.pathname.includes('/login')) {
+          window.location.href = '/login';
+        }
       }
     }
     return Promise.reject(error);
@@ -60,3 +77,4 @@ axiosInstance.interceptors.response.use(
 );
 
 export default axiosInstance;
+

@@ -5,6 +5,8 @@ import {
   User,
   ApiResponse,
 } from "@/types/api";
+import { setAuthCookie, removeAuthCookie, getAuthCookie } from "@/helpers/cookieUtils";
+import { validateToken, isTokenExpired } from "@/helpers/tokenUtils";
 
 export interface SignUpRequest {
   name: string;
@@ -36,8 +38,8 @@ export async function signIn({ email, password }: LoginRequest): Promise<LoginRe
     // Store token in localStorage and cookie
     if (data.data?.token) {
       localStorage.setItem("authToken", data.data.token);
-      // Set cookie for middleware
-      document.cookie = `authToken=${data.data.token}; path=/; max-age=604800; SameSite=strict`; // 7 days
+      // Set cookie for middleware with improved settings
+      setAuthCookie(data.data.token);
     }
 
     return data.data!;
@@ -62,8 +64,8 @@ export async function signUp({ name, email, password, role = "staff" }: SignUpRe
     // Store token in localStorage and cookie
     if (data.data?.token) {
       localStorage.setItem("authToken", data.data.token);
-      // Set cookie for middleware
-      document.cookie = `authToken=${data.data.token}; path=/; max-age=604800; SameSite=strict`; // 7 days
+      // Set cookie for middleware with improved settings
+      setAuthCookie(data.data.token);
     }
     return data.data!;
   } catch (error: any) {
@@ -84,7 +86,7 @@ export async function signOut(): Promise<void> {
     // Always remove token from localStorage and cookie (only in browser)
     if (typeof window !== 'undefined') {
       localStorage.removeItem('authToken');
-      document.cookie = "authToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+      removeAuthCookie();
     }
   }
 }
@@ -101,9 +103,16 @@ export async function getCurrentUser(): Promise<User> {
       throw new Error('No authentication token found');
     }
 
-    console.log("getCurrentUser: Token from localStorage:", token.substring(0, 50) + "...");
+    // Validate token before making API call
+    if (!validateToken(token)) {
+      console.log("getCurrentUser: Token is invalid or expired");
+      // Clear invalid token
+      localStorage.removeItem('authToken');
+      removeAuthCookie();
+      throw new Error('Authentication token is invalid or expired');
+    }
 
-    console.log("getCurrentUser: Making API call to /api/auth/me");
+    console.log("getCurrentUser: Token validated, making API call to /api/auth/me");
     const { data } = await axiosInstance.get<ApiResponse<User>>("/api/auth/me");
     console.log("getCurrentUser: API response:", data);
 
@@ -118,6 +127,13 @@ export async function getCurrentUser(): Promise<User> {
     return data.data!;
   } catch (error: any) {
     console.error("getCurrentUser: Error:", error);
+
+    // Clear auth state on error
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('authToken');
+      removeAuthCookie();
+    }
+
     throw new Error(error.response?.data?.error || error.message || "Failed to fetch user");
   }
 }
@@ -162,14 +178,25 @@ export function getAuthToken(): string | null {
   }
 
   // Check localStorage first
-  const localToken = localStorage.getItem("authToken");
-  if (localToken) return localToken;
+  let token = localStorage.getItem("authToken");
 
-  // Fallback to cookie
-  const cookieToken = document.cookie
-    .split('; ')
-    .find(row => row.startsWith('authToken='))
-    ?.split('=')[1];
+  // Fallback to cookie if localStorage is empty
+  if (!token) {
+    token = getAuthCookie();
 
-  return cookieToken || null;
+    // Sync to localStorage if found in cookie
+    if (token) {
+      localStorage.setItem("authToken", token);
+    }
+  }
+
+  // Validate token before returning
+  if (token && !validateToken(token)) {
+    console.log("getAuthToken: Token is invalid or expired, clearing auth state");
+    localStorage.removeItem("authToken");
+    removeAuthCookie();
+    return null;
+  }
+
+  return token;
 }

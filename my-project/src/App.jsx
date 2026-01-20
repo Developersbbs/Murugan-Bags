@@ -11,7 +11,6 @@ import Layout from './components/layout/Layout';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import LoadingScreen from './components/common/Loading';
 import { setUser, clearError, serializeUser, setInitializationComplete, setBackendUser, setBackendUserLoading } from './redux/slices/authSlice';
-import { setupAuthListener } from './services/authService';
 import authInitService from './services/authInitService';
 
 // Context Providers - Load these lazily to reduce initial bundle
@@ -95,30 +94,29 @@ const App = () => {
           }
         }
 
-        // Wait for JWT token to be available (retry up to 20 times with 200ms delay = 4 seconds total)
-        // Increased from 5 times to ensure we don't fail on slow networks
-        let token = localStorage.getItem('authToken') || localStorage.getItem('jwt_token');
-        let attempts = 0;
-        const maxAttempts = 20;
+        // Import token utilities dynamically to avoid circular dependencies
+        const { getValidJWTToken } = await import('./services/authTokenService');
 
-        while (!token && attempts < maxAttempts) {
-          if (attempts % 5 === 0) {
-            console.log(`App: Waiting for JWT token, attempt: ${attempts + 1}/${maxAttempts}`);
-          }
-          await new Promise(resolve => setTimeout(resolve, 200));
-          token = localStorage.getItem('authToken') || localStorage.getItem('jwt_token');
-          attempts++;
+        // Get valid JWT token (will refresh if expired)
+        console.log('App: Getting valid JWT token...');
+        let token = await getValidJWTToken();
+
+        // If still no token after refresh attempt, wait a bit and try again
+        if (!token) {
+          console.log('App: No token after first attempt, waiting and retrying...');
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          token = await getValidJWTToken();
         }
 
         if (!token) {
-          console.error('App: JWT token not found after waiting 4 seconds');
+          console.error('App: JWT token not available after refresh attempts');
           // Don't clear user here, just stop loading backend data
           // This allows basic Firebase auth to still work even if backend sync fails
           dispatch(setBackendUserLoading(false));
           return;
         }
 
-        console.log('App: Using token for backend user fetch');
+        console.log('App: Using valid token for backend user fetch');
 
         const response = await fetch(`${API_URL}/auth/profile/${firebaseUser.uid}`, {
           headers: {
@@ -168,12 +166,13 @@ const App = () => {
           console.error('❌ [APP] CRITICAL: Firebase persistence failed to initialize!');
           console.error('❌ [APP] Auth may not persist across sessions');
           // Continue anyway, but log the issue
-        } else {
-          console.log('✅ [APP] Firebase persistence is ready, proceeding with auth initialization');
         }
 
-        // Set up auth state listener
-        setupAuthListener(async (user) => {
+        console.log('✅ [APP] Firebase persistence is ready, proceeding with auth initialization');
+
+        // CRITICAL FIX: Use ONLY authInitService, not setupAuthListener
+        // This eliminates race conditions between duplicate listeners
+        authInitService.addAuthStateListener(async (user) => {
           console.log('[AUTH_DEBUG] App: Auth state listener called with user:', user ? { uid: user.uid, email: user.email } : 'null');
 
           if (user) {

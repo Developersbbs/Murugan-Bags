@@ -25,7 +25,7 @@ const UserContext = createContext<UserContextType>({
   user: null,
   profile: null,
   isLoading: true,
-  refetch: () => {},
+  refetch: () => { },
 });
 
 export function UserProvider({ children }: { children: React.ReactNode }) {
@@ -70,14 +70,17 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         return { user, profile };
       } catch (error) {
         console.error('UserContext: Failed to fetch user:', error);
-        // Clear invalid token
-        localStorage.removeItem('authToken');
-        document.cookie = "authToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+
+        // Don't clear auth state here - getCurrentUser already does it
+        // Just return null to indicate no user
         return { user: null, profile: null };
       }
     },
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 10 * 60 * 1000, // 10 minutes - increased to reduce refetches
+    gcTime: 15 * 60 * 1000, // 15 minutes - keep in cache longer
     retry: false, // Don't retry on auth failure
+    refetchOnWindowFocus: false, // Don't refetch on window focus to prevent unnecessary API calls
+    refetchOnMount: false, // Don't refetch on mount if data exists
   });
 
   const value = {
