@@ -209,15 +209,57 @@ router.get("/customer/firebase/:firebaseUid", authenticateHybridToken, async (re
             try {
               const Product = require('../models/Product');
               const product = await Product.findById(item.product_id);
+
+              // DEBUG LOG
+              if (item.product_id.toString() === '694e3dcb954bc1a935ff0920' || !product) {
+                console.log(`[Order Debug] Item: ${item.name} (${item.product_id})`);
+                console.log(`[Order Debug] Product found: ${!!product}`);
+                if (product) {
+                  console.log(`[Order Debug] product.image_url:`, product.image_url);
+                  console.log(`[Order Debug] product.images:`, product.images);
+                  console.log(`[Order Debug] product.image:`, product.image);
+                }
+              }
+
+              let imageUrl = '/images/products/placeholder-product.svg';
+
+              if (product) {
+                // Logic to extract image from product model
+                // 1. Try generic "images" property (unlikely for main product but good safety)
+                if (product.images && product.images.length > 0) {
+                  const img = product.images[0];
+                  imageUrl = typeof img === 'string' ? img : (img.url || img.secure_url);
+                }
+                // 2. Try "image_url" (standard for main product)
+                else if (product.image_url) {
+                  if (Array.isArray(product.image_url) && product.image_url.length > 0) {
+                    const img = product.image_url[0];
+                    imageUrl = typeof img === 'string' ? img : (img.url || img.secure_url);
+                  } else if (typeof product.image_url === 'string') {
+                    imageUrl = product.image_url;
+                  }
+                }
+                // 3. Fallback: Check variants if main product has no image
+                if (imageUrl === '/images/products/placeholder-product.svg' && product.product_variants && product.product_variants.length > 0) {
+                  const firstVariant = product.product_variants[0];
+                  if (firstVariant.images && firstVariant.images.length > 0) {
+                    imageUrl = firstVariant.images[0];
+                  }
+                }
+
+                // 4. Legacy "image" property
+                if (imageUrl === '/images/products/placeholder-product.svg' && product.image) {
+                  imageUrl = product.image;
+                }
+              }
+
               return {
                 ...item.toObject(),
                 id: item._id,
                 name: product ? product.name : 'Product Not Found',
-                image: product && product.image_url && product.image_url.length > 0
-                  ? product.image_url[0]
-                  : '/images/products/placeholder-product.svg',
+                image: imageUrl,
                 sku: product ? product.sku : 'N/A',
-                price: item.price || 0 // Use price field from new schema
+                price: item.price || 0
               };
             } catch (error) {
               return {
