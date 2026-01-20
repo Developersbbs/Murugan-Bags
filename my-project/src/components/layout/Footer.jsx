@@ -1,8 +1,38 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { FaFacebook, FaInstagram, FaTwitter, FaLinkedin, FaWhatsapp } from 'react-icons/fa';
+import { API_BASE_URL } from '../../config/api';
 
 const Footer = () => {
+  const [categories, setCategories] = useState([]);
+
+  // Fetch categories from backend
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/categories`);
+        const data = await res.json();
+
+        if (data.success && data.data) {
+          // Limit to 5 categories for footer
+          setCategories(data.data.slice(0, 5));
+        }
+      } catch (error) {
+        console.error('Error fetching categories for footer:', error);
+        // Fallback categories if fetch fails
+        setCategories([
+          { name: 'BackPacks', slug: 'backpacks' },
+          { name: 'Trolley Bags', slug: 'trolley-bags' },
+          { name: 'School Bags', slug: 'school-bags' },
+          { name: 'Laptop Bags', slug: 'laptop-bags' },
+          { name: 'Duffle Bags', slug: 'duffle-bags' }
+        ]);
+      }
+    };
+
+    fetchCategories();
+  }, []);
+
   return (
     <footer className="bg-gray-800 text-white py-8 mt-12">
       <div className="container mx-auto px-4">
@@ -50,15 +80,20 @@ const Footer = () => {
             </ul>
           </div>
 
-          {/* Shop by Category */}
+          {/* Shop by Category - Dynamic from Backend */}
           <div>
             <h3 className="text-lg font-semibold mb-4">Shop by Category</h3>
             <ul className="space-y-2">
-              <li><span className="text-gray-400 hover:text-white transition-colors cursor-pointer">Backpacks</span></li>
-              <li><span className="text-gray-400 hover:text-white transition-colors cursor-pointer">Trolley Bags</span></li>
-              <li><span className="text-gray-400 hover:text-white transition-colors cursor-pointer">School Bags</span></li>
-              <li><span className="text-gray-400 hover:text-white transition-colors cursor-pointer">Laptop Bags</span></li>
-              <li><span className="text-gray-400 hover:text-white transition-colors cursor-pointer">Duffle Bags</span></li>
+              {categories.map((category, index) => (
+                <li key={index}>
+                  <Link
+                    to={`/products?category=${encodeURIComponent(category.slug || category.name)}`}
+                    className="text-gray-400 hover:text-white transition-colors"
+                  >
+                    {category.name}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
 
