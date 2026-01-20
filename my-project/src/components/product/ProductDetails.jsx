@@ -199,6 +199,16 @@ const ProductDetails = ({ product, isLoading, isError, onCartUpdate }) => {
     return ['/images/products/placeholder-product.svg'];
   }, [displayProduct, selectedVariant]);
 
+  // Pre-load images for smoother transitions
+  useEffect(() => {
+    if (allImages?.length > 0) {
+      allImages.forEach(src => {
+        const img = new Image();
+        img.src = src;
+      });
+    }
+  }, [allImages]);
+
   const currentImage = allImages[0] || '/images/products/placeholder-product.svg';
 
   const handleAddToCart = async () => {
@@ -415,10 +425,10 @@ const ProductDetails = ({ product, isLoading, isError, onCartUpdate }) => {
               </span>
             </div>
 
-            {/* Variant Selection */}
+            {/* Variant Selection with Enhanced Color Swatches */}
             {displayProduct.product_structure === 'variant' && displayProduct.product_variants && (
               <div className="mt-6">
-                <div className="space-y-4">
+                <div className="space-y-6">
                   {Array.from(new Set(
                     displayProduct.product_variants.flatMap(v => {
                       if (!v.attributes) return [];
@@ -429,31 +439,115 @@ const ProductDetails = ({ product, isLoading, isError, onCartUpdate }) => {
                       }
                       return [];
                     }).filter(Boolean)
-                  )).map(attributeName => (
-                    <div key={attributeName} className="flex items-center">
-                      <h3 className="text-sm font-medium text-gray-500 w-24">{attributeName}:</h3>
-                      <div className="flex items-center space-x-2">
-                        {getAttributeOptions(attributeName).map(option => (
-                          <label key={option} className="relative cursor-pointer">
-                            <input
-                              type="radio"
-                              name={attributeName}
-                              value={option}
-                              checked={selectedAttributes[attributeName] === option}
-                              onChange={() => handleAttributeChange(attributeName, option)}
-                              className="sr-only"
-                            />
-                            <div className={`rounded-sm border px-3 py-1 text-sm font-medium transition-all ${selectedAttributes[attributeName] === option
-                              ? 'border-blue-600 text-blue-600 bg-blue-50'
-                              : 'border-gray-300 text-gray-900 hover:border-blue-400'
-                              }`}>
-                              {option}
-                            </div>
-                          </label>
-                        ))}
+                  )).map(attributeName => {
+                    const isColorAttribute = attributeName.toLowerCase().includes('color') ||
+                      attributeName.toLowerCase().includes('colour');
+
+                    return (
+                      <div key={attributeName}>
+                        <h3 className="text-sm font-medium text-gray-900 mb-3">
+                          {attributeName}:
+                          <span className="ml-2 text-gray-600 font-normal">
+                            {selectedAttributes[attributeName] || 'Select'}
+                          </span>
+                        </h3>
+
+                        {isColorAttribute ? (
+                          /* Visual Color Swatches */
+                          <div className="flex flex-wrap gap-3">
+                            {getAttributeOptions(attributeName).map(option => {
+                              const isSelected = selectedAttributes[attributeName] === option;
+                              const colorMap = {
+                                'Black': '#000000',
+                                'White': '#FFFFFF',
+                                'Red': '#EF4444',
+                                'Blue': '#3B82F6',
+                                'Green': '#10B981',
+                                'Yellow': '#F59E0B',
+                                'Orange': '#F97316',
+                                'Purple': '#A855F7',
+                                'Pink': '#EC4899',
+                                'Brown': '#92400E',
+                                'Gray': '#6B7280',
+                                'Grey': '#6B7280',
+                                'Navy': '#1E3A8A',
+                                'Beige': '#F5F5DC',
+                                'Maroon': '#7F1D1D',
+                                'Teal': '#14B8A6',
+                                'Gold': '#F59E0B',
+                                'Silver': '#D1D5DB',
+                              };
+
+                              const bgColor = colorMap[option] || colorMap[option?.toLowerCase()] || '#9CA3AF';
+                              const isLightColor = ['White', 'Beige', 'Silver', 'Yellow'].includes(option);
+
+                              return (
+                                <button
+                                  key={option}
+                                  onClick={() => handleAttributeChange(attributeName, option)}
+                                  className={`group relative flex flex-col items-center transition-all duration-200 ${isSelected ? 'scale-110' : 'hover:scale-105'
+                                    }`}
+                                  title={option}
+                                >
+                                  <div
+                                    className={`w-12 h-12 rounded-full border-2 transition-all duration-200 ${isSelected
+                                      ? 'border-blue-600 shadow-lg ring-2 ring-blue-200'
+                                      : isLightColor
+                                        ? 'border-gray-300 hover:border-gray-400'
+                                        : 'border-gray-200 hover:border-gray-300'
+                                      }`}
+                                    style={{ backgroundColor: bgColor }}
+                                  >
+                                    {isSelected && (
+                                      <div className="w-full h-full flex items-center justify-center">
+                                        <svg
+                                          className={`w-6 h-6 ${isLightColor ? 'text-gray-800' : 'text-white'}`}
+                                          fill="currentColor"
+                                          viewBox="0 0 20 20"
+                                        >
+                                          <path
+                                            fillRule="evenodd"
+                                            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                            clipRule="evenodd"
+                                          />
+                                        </svg>
+                                      </div>
+                                    )}
+                                  </div>
+                                  <span className={`mt-2 text-xs font-medium transition-colors ${isSelected ? 'text-blue-600' : 'text-gray-600 group-hover:text-gray-900'
+                                    }`}>
+                                    {option}
+                                  </span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          /* Regular attribute selection (Size, etc.) */
+                          <div className="flex flex-wrap gap-2">
+                            {getAttributeOptions(attributeName).map(option => (
+                              <label key={option} className="relative cursor-pointer">
+                                <input
+                                  type="radio"
+                                  name={attributeName}
+                                  value={option}
+                                  checked={selectedAttributes[attributeName] === option}
+                                  onChange={() => handleAttributeChange(attributeName, option)}
+                                  className="sr-only"
+                                />
+                                <div className={`rounded-md border px-4 py-2 text-sm font-medium transition-all ${selectedAttributes[attributeName] === option
+                                  ? 'border-blue-600 text-blue-600 bg-blue-50 shadow-sm'
+                                  : 'border-gray-300 text-gray-900 hover:border-blue-400 hover:bg-gray-50'
+                                  }`}>
+                                  {option}
+                                </div>
+                              </label>
+                            ))}
+                          </div>
+                        )}
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}

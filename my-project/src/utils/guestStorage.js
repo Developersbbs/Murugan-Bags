@@ -39,15 +39,40 @@ export const addToGuestCart = (product, variant = null, quantity = 1) => {
       // Update quantity
       currentCart[existingItemIndex].quantity += quantity;
     } else {
+      // Helper to extract image URL
+      const getImageUrl = () => {
+        // 1. Try variant image first
+        if (variant && variant.images && variant.images.length > 0) {
+          const img = variant.images[0];
+          return typeof img === 'string' ? img : (img.url || img.secure_url);
+        }
+
+        // 2. Try product image_url (array of strings)
+        if (product.image_url && Array.isArray(product.image_url) && product.image_url.length > 0) {
+          return product.image_url[0];
+        }
+
+        // 3. Try product images (array of objects or strings)
+        if (product.images && Array.isArray(product.images) && product.images.length > 0) {
+          const img = product.images[0];
+          return typeof img === 'string' ? img : (img.url || img.secure_url);
+        }
+
+        // 4. Try single image property
+        if (product.image) return product.image;
+
+        return null;
+      };
+
       // Add new item
       const cartItem = {
         id: productId,
         name: product.name || 'Unknown Product',
-        price: product.selling_price || product.price || 0,
+        price: (variant && (variant.selling_price || variant.price)) || product.selling_price || product.price || 0,
         quantity: quantity,
-        image: (product.image_url && product.image_url[0]) || product.images?.[0]?.url || null,
+        image: getImageUrl(),
         variant: variant || {},
-        stock: product.stock || 999,
+        stock: (variant && variant.stock) || product.stock || 999,
         addedAt: new Date().toISOString()
       };
       currentCart.push(cartItem);
@@ -145,12 +170,31 @@ export const addToGuestWishlist = (product) => {
     });
 
     if (!existingItem) {
+      // Helper to extract image URL (Consistent with Cart)
+      const getImageUrl = () => {
+        // 1. Try product image_url (array of strings)
+        if (product.image_url && Array.isArray(product.image_url) && product.image_url.length > 0) {
+          return product.image_url[0];
+        }
+
+        // 2. Try product images (array of objects or strings)
+        if (product.images && Array.isArray(product.images) && product.images.length > 0) {
+          const img = product.images[0];
+          return typeof img === 'string' ? img : (img.url || img.secure_url);
+        }
+
+        // 3. Try single image property
+        if (product.image) return product.image;
+
+        return null;
+      };
+
       const wishlistItem = {
         _id: productId,
         id: productId,
         name: product.name || 'Unknown Product',
         price: product.selling_price || product.price || 0,
-        image: (product.image_url && product.image_url[0]) || product.image || null,
+        image: getImageUrl(),
         variant_id: variantId,
         addedAt: new Date().toISOString()
       };

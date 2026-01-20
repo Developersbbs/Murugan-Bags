@@ -481,7 +481,7 @@ export const WishlistProvider = ({ children }) => {
         // For now, let's assume guest wishlist works by ID.
         // If guest wishlist uses local storage, we need to update utils/guestStorage.js too.
         console.log('WishlistContext: Removing from guest wishlist for non-authenticated user');
-        const updatedGuestWishlist = removeFromGuestWishlist(productId); // This might remove all variants?
+        const updatedGuestWishlist = removeFromGuestWishlist(productId, variantId);
         dispatch({ type: WISHLIST_ACTIONS.SET_WISHLIST, payload: updatedGuestWishlist });
         console.log('WishlistContext: Item removed from guest wishlist successfully');
       }

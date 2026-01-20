@@ -5,7 +5,6 @@ import { BrowserRouter } from 'react-router-dom';
 import { Provider } from 'react-redux';
 import { store } from './redux/store';
 import { HelmetProvider } from 'react-helmet-async';
-import { Toaster } from 'react-hot-toast';
 import './index.css';
 import App from './App';
 
@@ -17,7 +16,6 @@ root.render(
       <HelmetProvider>
         <BrowserRouter>
           <App />
-          <Toaster position="top-right" />
         </BrowserRouter>
       </HelmetProvider>
     </Provider>

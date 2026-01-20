@@ -386,7 +386,77 @@ const App = () => {
           </WishlistProvider>
         </CartProvider>
       </Suspense>
-      <Toaster position="bottom-right" />
+
+      {/* Customized Toaster - Bottom Center with Enhanced Styling */}
+      <Toaster
+        position="bottom-center"
+        reverseOrder={false}
+        gutter={8}
+        containerClassName=""
+        containerStyle={{}}
+        toastOptions={{
+          // Default options
+          className: '',
+          duration: 3000,
+          style: {
+            background: '#fff',
+            color: '#363636',
+            padding: '16px',
+            borderRadius: '12px',
+            boxShadow: '0 10px 40px rgba(0, 0, 0, 0.15)',
+            fontSize: '14px',
+            fontWeight: '500',
+            maxWidth: '500px',
+          },
+
+          // Success toast styling
+          success: {
+            duration: 3000,
+            style: {
+              background: '#10b981',
+              color: '#fff',
+              padding: '16px 20px',
+              borderRadius: '12px',
+              boxShadow: '0 10px 40px rgba(16, 185, 129, 0.3)',
+            },
+            iconTheme: {
+              primary: '#fff',
+              secondary: '#10b981',
+            },
+          },
+
+          // Error toast styling
+          error: {
+            duration: 4000,
+            style: {
+              background: '#ef4444',
+              color: '#fff',
+              padding: '16px 20px',
+              borderRadius: '12px',
+              boxShadow: '0 10px 40px rgba(239, 68, 68, 0.3)',
+            },
+            iconTheme: {
+              primary: '#fff',
+              secondary: '#ef4444',
+            },
+          },
+
+          // Loading toast styling
+          loading: {
+            style: {
+              background: '#3b82f6',
+              color: '#fff',
+              padding: '16px 20px',
+              borderRadius: '12px',
+              boxShadow: '0 10px 40px rgba(59, 130, 246, 0.3)',
+            },
+            iconTheme: {
+              primary: '#fff',
+              secondary: '#3b82f6',
+            },
+          },
+        }}
+      />
     </>
   );
 };

@@ -173,6 +173,19 @@ const ProductCard = memo(({ product, viewMode = 'grid', className = '' }) => {
       return extractUrl(image_url);
     }
 
+    // Fallback to product.images if image_url is missing
+    if (product.images && Array.isArray(product.images) && product.images.length > 0) {
+      for (const img of product.images) {
+        const url = extractUrl(img);
+        if (url) return url;
+      }
+    }
+
+    // Fallback to single image property
+    if (product.image) {
+      return extractUrl(product.image);
+    }
+
     return getPlaceholderImage();
   };
 

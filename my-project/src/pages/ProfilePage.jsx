@@ -157,14 +157,21 @@ const ProfilePage = () => {
       if (userData && userData.email) {
         console.log('fetchUserData: Using existing cached data due to fetch error');
         setError(null); // Clear error since we have cached data
-        toast.warning('Using cached profile data. Some information may be outdated.');
+        toast('Using cached profile data. Some information may be outdated.', {
+          icon: '⚠️',
+          style: {
+            borderRadius: '10px',
+            background: '#fff',
+            color: '#333',
+          },
+        });
       } else {
         setError('Failed to load profile data. Please try refreshing the page.');
       }
     } finally {
       setIsPageLoading(false);
     }
-  }, [authChecked, authLoading, auth, userData]);
+  }, [authChecked, authLoading, auth]);
 
   const fetchUserOrders = useCallback(async () => {
     try {
