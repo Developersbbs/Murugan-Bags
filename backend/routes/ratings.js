@@ -308,6 +308,82 @@ router.delete("/admin/:id", async (req, res) => {
     }
 });
 
+// Admin: Bulk update review status
+router.patch("/admin/bulk-status", async (req, res) => {
+    try {
+        const { reviewIds, status } = req.body;
+
+        if (!reviewIds || !Array.isArray(reviewIds) || reviewIds.length === 0) {
+            return res.status(400).json({ error: "Review IDs required" });
+        }
+
+        if (!['approved', 'rejected'].includes(status)) {
+            return res.status(400).json({ error: "Invalid status" });
+        }
+
+        // Find all reviews to be updated to trigger product updates later
+        const reviewsToUpdate = await Rating.find({ _id: { $in: reviewIds } });
+
+        // Update all
+        await Rating.updateMany(
+            { _id: { $in: reviewIds } },
+            { status }
+        );
+
+        // Update product ratings for all affected products
+        // We use a Set to get unique product IDs
+        const productIds = [...new Set(reviewsToUpdate.map(r => r.product_id.toString()))];
+
+        // Update stats for each product
+        // Using Promise.all to run in parallel
+        await Promise.all(productIds.map(id => updateProductRating(id)));
+
+        res.json({
+            success: true,
+            message: `Updated ${reviewIds.length} reviews to ${status}`
+        });
+
+    } catch (err) {
+        console.error("Bulk update error:", err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Admin: Bulk delete reviews
+router.delete("/admin/bulk-delete", async (req, res) => {
+    try {
+        const { reviewIds } = req.body;
+
+        if (!reviewIds || !Array.isArray(reviewIds) || reviewIds.length === 0) {
+            return res.status(400).json({ error: "Review IDs required" });
+        }
+
+        // Find reviews before deleting to know which products to update
+        const reviewsToDelete = await Rating.find({ _id: { $in: reviewIds } });
+
+        // Delete all
+        await Rating.deleteMany({ _id: { $in: reviewIds } });
+
+        // Update product ratings for all affected products
+        // Only need to update if the deleted review was approved
+        const productIds = [...new Set(reviewsToDelete
+            .filter(r => r.status === 'approved')
+            .map(r => r.product_id.toString())
+        )];
+
+        await Promise.all(productIds.map(id => updateProductRating(id)));
+
+        res.json({
+            success: true,
+            message: `Deleted ${reviewIds.length} reviews`
+        });
+
+    } catch (err) {
+        console.error("Bulk delete error:", err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // Helper: Calculate and update product average rating
 async function updateProductRating(productId) {
     try {

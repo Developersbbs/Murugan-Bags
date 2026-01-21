@@ -45,7 +45,7 @@ const OrderItem = ({ item, showQuantity = true, showPrice = true }) => {
     <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
       {/* Product Image */}
       <div className="flex-shrink-0">
-        <Link to={`/product/${item.id}`} className="block">
+        <Link to={`/product/${item.product_id}`} className="block">
           <img
             src={imageUrl}
             alt={item.name}
@@ -61,7 +61,7 @@ const OrderItem = ({ item, showQuantity = true, showPrice = true }) => {
       {/* Product Details */}
       <div className="flex-1 min-w-0">
         <Link
-          to={`/product/${item.id}`}
+          to={`/product/${item.product_id}`}
           className="block group"
         >
           <h4 className="text-sm font-medium text-gray-900 group-hover:text-blue-600 transition-colors line-clamp-2">

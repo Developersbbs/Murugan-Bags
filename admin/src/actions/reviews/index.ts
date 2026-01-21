@@ -40,6 +40,7 @@ export async function updateReviewStatus(id: string, status: string) {
     }
 }
 
+
 export async function deleteReview(id: string) {
     try {
         const { data } = await serverAxiosInstance.delete(`/api/ratings/admin/${id}`);
@@ -50,6 +51,36 @@ export async function deleteReview(id: string) {
     } catch (error: any) {
         return {
             error: error.response?.data?.error || "Failed to delete review"
+        };
+    }
+}
+
+export async function bulkUpdateReviewStatus(reviewIds: string[], status: string) {
+    try {
+        const { data } = await serverAxiosInstance.patch(`/api/ratings/admin/bulk-status`, { reviewIds, status });
+        if (data.success) {
+            return { success: true, message: data.message };
+        }
+        return { error: "Failed to update reviews" };
+    } catch (error: any) {
+        return {
+            error: error.response?.data?.error || "Failed to update reviews"
+        };
+    }
+}
+
+export async function bulkDeleteReviews(reviewIds: string[]) {
+    try {
+        const { data } = await serverAxiosInstance.delete(`/api/ratings/admin/bulk-delete`, {
+            data: { reviewIds }
+        });
+        if (data.success) {
+            return { success: true, message: data.message };
+        }
+        return { error: "Failed to delete reviews" };
+    } catch (error: any) {
+        return {
+            error: error.response?.data?.error || "Failed to delete reviews"
         };
     }
 }

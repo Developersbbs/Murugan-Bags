@@ -32,7 +32,7 @@ async function syncProductWithStock(stockEntry) {
     // Update variant stock
     if (stockEntry.variantId) {
       console.log('Updating variant stock for variantId:', stockEntry.variantId);
-      
+
       // Find the variant in the product
       const variantIndex = product.product_variants.findIndex(
         v => v._id.toString() === stockEntry.variantId.toString()
@@ -82,7 +82,7 @@ async function syncProductWithStock(stockEntry) {
     } else {
       // Update base product stock (for simple products)
       console.log('Updating base product stock');
-      
+
       updateData.baseStock = stockEntry.quantity;
       updateData.minStock = stockEntry.minStock;
 
@@ -132,13 +132,13 @@ async function updateProductStatusBasedOnVariants(product) {
     console.log('=== UPDATING PRODUCT STATUS BASED ON VARIANTS ===');
 
     // Count variants by status
-    const availableVariants = product.product_variants.filter(v => 
+    const availableVariants = product.product_variants.filter(v =>
       v.published && v.status === 'selling'
     );
-    const lowStockVariants = product.product_variants.filter(v => 
+    const lowStockVariants = product.product_variants.filter(v =>
       v.published && v.status === 'low_stock'
     );
-    const outOfStockVariants = product.product_variants.filter(v => 
+    const outOfStockVariants = product.product_variants.filter(v =>
       v.status === 'out_of_stock'
     );
 
@@ -232,6 +232,31 @@ router.get("/", async (req, res) => {
       query.$expr = { $lte: ['$quantity', '$minStock'] };
     }
 
+    // Handle search parameter
+    if (req.query.search) {
+      const searchRegex = new RegExp(req.query.search, 'i');
+      // Find products matching name or sku
+      const matchingProducts = await Product.find({
+        $or: [
+          { name: searchRegex },
+          { sku: searchRegex }
+        ]
+      }).select('_id');
+
+      const matchingProductIds = matchingProducts.map(p => p._id);
+
+      // If query.productId is already set, intersect the results
+      if (query.productId) {
+        // If searching a specific product ID that is NOT in the search results, return empty
+        if (!matchingProductIds.some(id => id.toString() === query.productId.toString())) {
+          query.productId = null; // No matches possible
+        }
+        // Otherwise keep original productId constraint
+      } else {
+        query.productId = { $in: matchingProductIds };
+      }
+    }
+
     const skip = (page - 1) * limit;
 
     const stocks = await Stock.find(query)
@@ -261,9 +286,9 @@ router.get("/", async (req, res) => {
     });
   } catch (err) {
     console.error('Get stock entries error:', err);
-    res.status(500).json({ 
-      success: false, 
-      error: err.message 
+    res.status(500).json({
+      success: false,
+      error: err.message
     });
   }
 });
@@ -282,21 +307,21 @@ router.get("/:id", async (req, res) => {
       })
 
     if (!stock) {
-      return res.status(404).json({ 
-        success: false, 
-        error: "Stock entry not found" 
+      return res.status(404).json({
+        success: false,
+        error: "Stock entry not found"
       });
     }
 
-    res.json({ 
-      success: true, 
-      data: stock 
+    res.json({
+      success: true,
+      data: stock
     });
   } catch (err) {
     console.error('Get stock entry error:', err);
-    res.status(500).json({ 
-      success: false, 
-      error: err.message 
+    res.status(500).json({
+      success: false,
+      error: err.message
     });
   }
 });
@@ -307,9 +332,9 @@ router.post("/", async (req, res) => {
     // Check if product exists
     const product = await Product.findById(req.body.productId);
     if (!product) {
-      return res.status(404).json({ 
-        success: false, 
-        error: "Product not found" 
+      return res.status(404).json({
+        success: false,
+        error: "Product not found"
       });
     }
 
@@ -320,9 +345,9 @@ router.post("/", async (req, res) => {
     });
 
     if (existingStock) {
-      return res.status(400).json({ 
-        success: false, 
-        error: "Stock entry already exists for this product/variant" 
+      return res.status(400).json({
+        success: false,
+        error: "Stock entry already exists for this product/variant"
       });
     }
 
@@ -342,16 +367,16 @@ router.post("/", async (req, res) => {
       }
     });
 
-    res.status(201).json({ 
-      success: true, 
+    res.status(201).json({
+      success: true,
       data: stock,
       message: 'Stock entry created and product synced successfully'
     });
   } catch (err) {
     console.error('Create stock entry error:', err);
-    res.status(500).json({ 
-      success: false, 
-      error: err.message 
+    res.status(500).json({
+      success: false,
+      error: err.message
     });
   }
 });
@@ -374,25 +399,25 @@ router.put("/:id", async (req, res) => {
       })
 
     if (!stock) {
-      return res.status(404).json({ 
-        success: false, 
-        error: "Stock entry not found" 
+      return res.status(404).json({
+        success: false,
+        error: "Stock entry not found"
       });
     }
 
     // Sync product with updated stock entry
     const syncResult = await syncProductWithStock(stock);
 
-    res.json({ 
-      success: true, 
+    res.json({
+      success: true,
       data: stock,
       syncResult: syncResult
     });
   } catch (err) {
     console.error('Update stock entry error:', err);
-    res.status(500).json({ 
-      success: false, 
-      error: err.message 
+    res.status(500).json({
+      success: false,
+      error: err.message
     });
   }
 });
@@ -403,18 +428,18 @@ router.patch("/:id/quantity", async (req, res) => {
     const { quantity, notes } = req.body;
 
     if (quantity === undefined) {
-      return res.status(400).json({ 
-        success: false, 
-        error: "Quantity is required" 
+      return res.status(400).json({
+        success: false,
+        error: "Quantity is required"
       });
     }
 
     const stock = await Stock.findByIdAndUpdate(
       req.params.id,
-      { 
+      {
         quantity: quantity,
         ...(notes && { notes }),
-        updated_at: new Date() 
+        updated_at: new Date()
       },
       { new: true, runValidators: true }
     )
@@ -428,25 +453,25 @@ router.patch("/:id/quantity", async (req, res) => {
       })
 
     if (!stock) {
-      return res.status(404).json({ 
-        success: false, 
-        error: "Stock entry not found" 
+      return res.status(404).json({
+        success: false,
+        error: "Stock entry not found"
       });
     }
 
     // Sync product with updated stock entry
     const syncResult = await syncProductWithStock(stock);
 
-    res.json({ 
-      success: true, 
+    res.json({
+      success: true,
       data: stock,
       syncResult: syncResult
     });
   } catch (err) {
     console.error('Update stock quantity error:', err);
-    res.status(500).json({ 
-      success: false, 
-      error: err.message 
+    res.status(500).json({
+      success: false,
+      error: err.message
     });
   }
 });
@@ -456,9 +481,9 @@ router.delete("/:id", async (req, res) => {
   try {
     const stock = await Stock.findById(req.params.id);
     if (!stock) {
-      return res.status(404).json({ 
-        success: false, 
-        error: "Stock entry not found" 
+      return res.status(404).json({
+        success: false,
+        error: "Stock entry not found"
       });
     }
 
@@ -502,15 +527,15 @@ router.delete("/:id", async (req, res) => {
       }
     }
 
-    res.json({ 
-      success: true, 
-      message: "Stock entry deleted and product updated successfully" 
+    res.json({
+      success: true,
+      message: "Stock entry deleted and product updated successfully"
     });
   } catch (err) {
     console.error('Delete stock entry error:', err);
-    res.status(500).json({ 
-      success: false, 
-      error: err.message 
+    res.status(500).json({
+      success: false,
+      error: err.message
     });
   }
 });
@@ -521,9 +546,9 @@ router.post("/bulk-update", async (req, res) => {
     const updates = req.body.updates; // Array of { id, quantity, minStock, notes }
 
     if (!Array.isArray(updates) || updates.length === 0) {
-      return res.status(400).json({ 
-        success: false, 
-        error: "Updates array is required" 
+      return res.status(400).json({
+        success: false,
+        error: "Updates array is required"
       });
     }
 
@@ -547,7 +572,7 @@ router.post("/bulk-update", async (req, res) => {
 
         if (stock) {
           results.push(stock);
-          
+
           // Sync product with updated stock
           const syncResult = await syncProductWithStock(stock);
           syncResults.push({
@@ -567,18 +592,18 @@ router.post("/bulk-update", async (req, res) => {
       }
     }
 
-    res.json({ 
+    res.json({
       success: true,
-      message: "Bulk update completed", 
+      message: "Bulk update completed",
       updated: results.length,
       results: results,
       syncResults: syncResults
     });
   } catch (err) {
     console.error('Bulk update error:', err);
-    res.status(500).json({ 
-      success: false, 
-      error: err.message 
+    res.status(500).json({
+      success: false,
+      error: err.message
     });
   }
 });
@@ -612,9 +637,9 @@ router.post("/bulk-sync", async (req, res) => {
     });
   } catch (err) {
     console.error('Bulk sync error:', err);
-    res.status(500).json({ 
-      success: false, 
-      error: err.message 
+    res.status(500).json({
+      success: false,
+      error: err.message
     });
   }
 });
@@ -655,12 +680,12 @@ router.get("/export/csv", async (req, res) => {
       'Notes',
       'Last Updated',
     ];
-    
+
     const csvRows = stocks.map(stock => {
       const variant = stock.productId?.product_variants?.find(
         v => v._id.toString() === stock.variantId?.toString()
       );
-      
+
       // Determine status
       let status = 'In Stock';
       if (stock.quantity <= 0) {
@@ -692,9 +717,9 @@ router.get("/export/csv", async (req, res) => {
     res.send(csvContent);
   } catch (err) {
     console.error('Export CSV error:', err);
-    res.status(500).json({ 
-      success: false, 
-      error: err.message 
+    res.status(500).json({
+      success: false,
+      error: err.message
     });
   }
 });
@@ -733,9 +758,9 @@ router.get("/export/json", async (req, res) => {
     });
   } catch (err) {
     console.error('Export JSON error:', err);
-    res.status(500).json({ 
-      success: false, 
-      error: err.message 
+    res.status(500).json({
+      success: false,
+      error: err.message
     });
   }
 });
@@ -777,8 +802,8 @@ router.get("/alerts/low-stock", async (req, res) => {
         quantity: stock.quantity,
         minStock: stock.minStock,
         shortfall: stock.minStock - stock.quantity,
-        severity: stock.quantity <= 0 ? 'critical' : 
-                  stock.quantity <= (stock.minStock * 0.5) ? 'high' : 'medium',
+        severity: stock.quantity <= 0 ? 'critical' :
+          stock.quantity <= (stock.minStock * 0.5) ? 'high' : 'medium',
         isPublished: variant ? variant.published : stock.productId?.published,
         status: variant ? variant.status : stock.productId?.status,
         notes: stock.notes
@@ -795,9 +820,9 @@ router.get("/alerts/low-stock", async (req, res) => {
     });
   } catch (err) {
     console.error('Low stock alerts error:', err);
-    res.status(500).json({ 
-      success: false, 
-      error: err.message 
+    res.status(500).json({
+      success: false,
+      error: err.message
     });
   }
 });

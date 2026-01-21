@@ -21,8 +21,11 @@ router.post('/', upload.single('file'), async (req, res) => {
             });
         }
 
+        const folder = req.body.folder || 'uploads';
         const bucket = admin.storage().bucket();
-        const filename = `combo-offers/${Date.now()}_${req.file.originalname}`;
+        // Clean filename to remove spaces and special chars
+        const cleanName = req.file.originalname.replace(/[^a-zA-Z0-9.]/g, '_');
+        const filename = `${folder}/${Date.now()}_${cleanName}`;
         const file = bucket.file(filename);
 
         const stream = file.createWriteStream({
@@ -48,9 +51,7 @@ router.post('/', upload.single('file'), async (req, res) => {
 
             res.json({
                 success: true,
-                data: {
-                    url: publicUrl
-                }
+                url: publicUrl // Return flat URL for easier frontend usage
             });
         });
 

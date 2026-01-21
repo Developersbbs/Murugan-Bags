@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { getReviews, updateReviewStatus, deleteReview } from '@/actions/reviews';
+import { getReviews, updateReviewStatus, deleteReview, bulkUpdateReviewStatus, bulkDeleteReviews } from '@/actions/reviews';
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { Loader2, Check, X, Trash2, Star } from "lucide-react";
 import {
@@ -29,6 +30,7 @@ import { Input } from "@/components/ui/input";
 export default function ReviewsPage() {
     const [page, setPage] = useState(1);
     const [statusFilter, setStatusFilter] = useState("all");
+    const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [isPending, startTransition] = useTransition();
     const queryClient = useQueryClient();
 
@@ -55,6 +57,26 @@ export default function ReviewsPage() {
         onError: (err: any) => toast.error(err.message || "Delete failed")
     });
 
+    const bulkUpdateMutation = useMutation({
+        mutationFn: ({ ids, status }: { ids: string[], status: string }) => bulkUpdateReviewStatus(ids, status),
+        onSuccess: (data) => {
+            toast.success(data.message || "Bulk update successful");
+            queryClient.invalidateQueries({ queryKey: ['reviews'] });
+            setSelectedIds([]); // Clear selection
+        },
+        onError: (err: any) => toast.error(err.message || "Bulk update failed")
+    });
+
+    const bulkDeleteMutation = useMutation({
+        mutationFn: (ids: string[]) => bulkDeleteReviews(ids),
+        onSuccess: (data) => {
+            toast.success(data.message || "Bulk delete successful");
+            queryClient.invalidateQueries({ queryKey: ['reviews'] });
+            setSelectedIds([]); // Clear selection
+        },
+        onError: (err: any) => toast.error(err.message || "Bulk delete failed")
+    });
+
     const handleStatusUpdate = (id: string, newStatus: string) => {
         updateMutation.mutate({ id, status: newStatus });
     };
@@ -62,6 +84,36 @@ export default function ReviewsPage() {
     const handleDelete = (id: string) => {
         if (confirm("Are you sure you want to delete this review?")) {
             deleteMutation.mutate(id);
+        }
+    };
+
+    const handleSelectAll = (checked: boolean) => {
+        if (checked && data?.data) {
+            setSelectedIds(data.data.map((r: any) => r._id));
+        } else {
+            setSelectedIds([]);
+        }
+    };
+
+    const handleSelectOne = (id: string, checked: boolean) => {
+        if (checked) {
+            setSelectedIds(prev => [...prev, id]);
+        } else {
+            setSelectedIds(prev => prev.filter(itemId => itemId !== id));
+        }
+    };
+
+    const handleBulkAction = (action: 'approve' | 'reject' | 'delete') => {
+        if (selectedIds.length === 0) return;
+
+        if (action === 'approve') {
+            bulkUpdateMutation.mutate({ ids: selectedIds, status: 'approved' });
+        } else if (action === 'reject') {
+            bulkUpdateMutation.mutate({ ids: selectedIds, status: 'rejected' });
+        } else if (action === 'delete') {
+            if (confirm(`Are you sure you want to delete ${selectedIds.length} reviews?`)) {
+                bulkDeleteMutation.mutate(selectedIds);
+            }
         }
     };
 
@@ -86,8 +138,38 @@ export default function ReviewsPage() {
             </div>
 
             <Card>
-                <CardHeader>
+                <CardHeader className="flex flex-row items-center justify-between">
                     <CardTitle>Customer Reviews</CardTitle>
+                    {selectedIds.length > 0 && (
+                        <div className="flex gap-2">
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                className="text-green-600 border-green-200 hover:bg-green-50"
+                                onClick={() => handleBulkAction('approve')}
+                                disabled={bulkUpdateMutation.isPending}
+                            >
+                                <Check className="mr-2 h-4 w-4" /> Approve ({selectedIds.length})
+                            </Button>
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                className="text-red-600 border-red-200 hover:bg-red-50"
+                                onClick={() => handleBulkAction('reject')}
+                                disabled={bulkUpdateMutation.isPending}
+                            >
+                                <X className="mr-2 h-4 w-4" /> Reject ({selectedIds.length})
+                            </Button>
+                            <Button
+                                size="sm"
+                                variant="destructive"
+                                onClick={() => handleBulkAction('delete')}
+                                disabled={bulkDeleteMutation.isPending}
+                            >
+                                <Trash2 className="mr-2 h-4 w-4" /> Delete ({selectedIds.length})
+                            </Button>
+                        </div>
+                    )}
                 </CardHeader>
                 <CardContent>
                     {isLoading ? (
@@ -102,6 +184,13 @@ export default function ReviewsPage() {
                         <Table>
                             <TableHeader>
                                 <TableRow>
+                                    <TableHead className="w-[50px]">
+                                        <Checkbox
+                                            checked={data.data.length > 0 && selectedIds.length === data.data.length}
+                                            onCheckedChange={handleSelectAll}
+                                            aria-label="Select all"
+                                        />
+                                    </TableHead>
                                     <TableHead>Product</TableHead>
                                     <TableHead>Customer</TableHead>
                                     <TableHead>Rating</TableHead>
@@ -113,6 +202,13 @@ export default function ReviewsPage() {
                             <TableBody>
                                 {data.data.map((review: any) => (
                                     <TableRow key={review._id}>
+                                        <TableCell>
+                                            <Checkbox
+                                                checked={selectedIds.includes(review._id)}
+                                                onCheckedChange={(checked) => handleSelectOne(review._id, checked as boolean)}
+                                                aria-label={`Select review for ${review.product_id?.name}`}
+                                            />
+                                        </TableCell>
                                         <TableCell className="font-medium">
                                             <div className="flex items-center gap-2">
                                                 {review.product_id?.image_url?.[0] && (

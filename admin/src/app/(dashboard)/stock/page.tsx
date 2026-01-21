@@ -13,11 +13,11 @@ import StockFilters from "./_components/StockFilters";
 export default function Stock() {
   const [rowSelection, setRowSelection] = useState({});
   const searchParams = useSearchParams();
-  
+
   const page = searchParams.get('page') ? Number(searchParams.get('page')) : 1;
   const limit = searchParams.get('limit') ? Number(searchParams.get('limit')) : 10;
   const search = searchParams.get('search') || undefined;
-  
+
   // Debug: Log search params
   useEffect(() => {
     console.log('Search params changed:', {
@@ -27,18 +27,18 @@ export default function Stock() {
       allParams: Object.fromEntries(searchParams.entries())
     });
   }, [search, page, limit, searchParams]);
-  
+
   // Add these new params
   const category = searchParams.get('category') || undefined;
   const subcategory = searchParams.get('subcategory') || undefined;
   const productType = searchParams.get('productType') || undefined;
-  
+
   // Add sort params
   const price = searchParams.get('price') || undefined;
   const published = searchParams.get('published') || undefined;
   const status = searchParams.get('status') || undefined;
   const date = searchParams.get('date') || undefined;
-  
+
   const productId = searchParams.get('productId') || undefined;
   const variantId = searchParams.get('variantId') || undefined;
   const lowStock = searchParams.get('lowStock') || undefined;
@@ -74,7 +74,7 @@ export default function Stock() {
 
       // Add search parameter if it exists
       if (search) params.search = search;
-      
+
       // Add other filter parameters
       if (category && category !== 'all') params.category = category;
       if (subcategory && subcategory !== 'all') params.subcategory = subcategory;
@@ -86,7 +86,7 @@ export default function Stock() {
       if (productId) params.productId = productId;
       if (variantId) params.variantId = variantId;
       if (lowStock) params.lowStock = lowStock === 'true';
-      
+
       console.log('Fetching stock with params:', params);
       try {
         const result = await fetchStock(params);
@@ -117,30 +117,18 @@ export default function Stock() {
         setRowSelection={setRowSelection}
         stock={stock?.data || []}
       />
-      <StockFilters/>
+      <StockFilters />
       <AllStock
         rowSelection={rowSelection}
         setRowSelection={setRowSelection}
-        stock={search ? 
-          (stock?.data || []).filter(item => 
-            item.productId.name.toLowerCase().includes(search.toLowerCase()) ||
-            (item.productId.sku && item.productId.sku.toLowerCase().includes(search.toLowerCase())) ||
-            (item.variantId && item.variantId.toString().toLowerCase().includes(search.toLowerCase()))
-          ) : 
-          (stock?.data || [])}
+        stock={stock?.data || []}
         pagination={{
-          pages: search ? 1 : (stock?.totalPages || 0),
-          current: search ? 1 : (stock?.currentPage || 1),
-          prev: search ? null : (stock?.prevPage || null),
-          next: search ? null : (stock?.nextPage || null),
+          pages: stock?.totalPages || 0,
+          current: stock?.currentPage || 1,
+          prev: stock?.prevPage || null,
+          next: stock?.nextPage || null,
           limit: stock?.limit || 10,
-          items: search ? 
-            (stock?.data || []).filter(item => 
-              item.productId.name.toLowerCase().includes(search.toLowerCase()) ||
-              (item.productId.sku && item.productId.sku.toLowerCase().includes(search.toLowerCase())) ||
-              (item.variantId && item.variantId.toString().toLowerCase().includes(search.toLowerCase()))
-            ).length : 
-            (stock?.totalItems || 0),
+          items: stock?.totalItems || 0,
         }}
         isLoading={isLoading}
         isError={isError}
