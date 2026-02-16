@@ -1,0 +1,32 @@
+
+----------------------------------------
+Timestamp: 2026-02-16T06:30:07.460Z
+Error: Order validation failed: payment_method: `razorpay` is not a valid enum value for path `payment_method`., status: `payment_pending` is not a valid enum value for path `status`.
+Stack: ValidationError: Order validation failed: payment_method: `razorpay` is not a valid enum value for path `payment_method`., status: `payment_pending` is not a valid enum value for path `status`.
+    at Document.invalidate (/home/sathish-r/Main-Peojects/Murugan-Bags/backend/node_modules/mongoose/lib/document.js:3362:32)
+    at /home/sathish-r/Main-Peojects/Murugan-Bags/backend/node_modules/mongoose/lib/document.js:3123:17
+    at /home/sathish-r/Main-Peojects/Murugan-Bags/backend/node_modules/mongoose/lib/schemaType.js:1417:9
+    at process.processTicksAndRejections (node:internal/process/task_queues:77:11)
+Request User: {"id":"6933d7ce1b924363f9ff3fe2","email":"developer@sbbs.co.in","name":"Developer SBBS","customerId":"6933d7ce1b924363f9ff3fe2"}
+Request Body: {"payment_method":"razorpay","shipping_address":{"name":"Kladwell Glazing","email":"developer@sbbs.co.in","phone":"06382128610","street":"No, 2-22, 88th St, Sector 10","city":"chennai","state":"Tamil Nadu","zipCode":"600091","country":"USA"},"items":[{"product_id":"6992b5e6a3885da2fe47238b","quantity":1,"unit_price":3000}],"shipping_cost":0,"coupon_id":null}
+Items: [{"product_id":"6992b5e6a3885da2fe47238b","quantity":1,"unit_price":3000}]
+Calculated Amount (Paise): 330000
+----------------------------------------
+
+----------------------------------------
+Timestamp: 2026-02-16T06:35:38.536Z
+Error: Order validation failed: payment_method: `razorpay` is not a valid enum value for path `payment_method`., status: `payment_pending` is not a valid enum value for path `status`.
+Stack: ValidationError: Order validation failed: payment_method: `razorpay` is not a valid enum value for path `payment_method`., status: `payment_pending` is not a valid enum value for path `status`.
+    at Document.invalidate (/home/sathish-r/Main-Peojects/Murugan-Bags/backend/node_modules/mongoose/lib/document.js:3362:32)
+    at /home/sathish-r/Main-Peojects/Murugan-Bags/backend/node_modules/mongoose/lib/document.js:3123:17
+    at /home/sathish-r/Main-Peojects/Murugan-Bags/backend/node_modules/mongoose/lib/schemaType.js:1417:9
+    at process.processTicksAndRejections (node:internal/process/task_queues:77:11)
+Request User: {"id":"6933d7ce1b924363f9ff3fe2","email":"developer@sbbs.co.in","name":"Developer SBBS","customerId":"6933d7ce1b924363f9ff3fe2"}
+Request Body: {"payment_method":"razorpay","shipping_address":{"name":"Kladwell Glazing","email":"developer@sbbs.co.in","phone":"06382128610","street":"No, 2-22, 88th St, Sector 10","city":"chennai","state":"Tamil Nadu","zipCode":"600091","country":"USA"},"items":[{"product_id":"6992b5e6a3885da2fe47238b","quantity":2,"unit_price":3000}],"shipping_cost":0,"coupon_id":null}
+Items: [{"product_id":"6992b5e6a3885da2fe47238b","quantity":2,"unit_price":3000}]
+Calculated Amount (Paise): 660000
+----------------------------------------
+2026-02-16T06:52:12.984Z - VERIFY REQUEST: User=6933d7ce1b924363f9ff3fe2, Order=ORD-1771224628502-202, RZ_Order=order_SGiy50F6yqjJgL
+2026-02-16T06:52:13.011Z - ORDER FOUND: ID=6992be3452ab4cd3f898a244, Customer=6933d7ce1b924363f9ff3fe2, Status=payment_pending
+2026-02-16T06:52:13.012Z - COMPARING: OrderCustomer=6933d7ce1b924363f9ff3fe2 vs ReqUser=6933d7ce1b924363f9ff3fe2
+2026-02-16T06:52:13.049Z - ORDER UPDATED SUCCESSFULLY

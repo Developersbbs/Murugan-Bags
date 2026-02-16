@@ -9,7 +9,7 @@ const JWT_SECRET = process.env.JWT_SECRET || "your_super_secret_jwt_key_here_cha
 const connectDB = async () => {
     try {
         const uri = process.env.MONGODB_URI || 'mongodb://localhost:27017/ims-test';
-        console.log('Testing DB connection...');
+        console.log('Testing DB connection...');Management
         const start = Date.now();
         await mongoose.connect(uri);
         console.log(`DB Connected in ${(Date.now() - start)}ms`);

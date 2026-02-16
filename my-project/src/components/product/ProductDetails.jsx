@@ -425,6 +425,14 @@ const ProductDetails = ({ product, isLoading, isError, onCartUpdate }) => {
               </span>
             </div>
 
+            {/* Social Share */}
+            <div className="mt-4">
+              <SocialShare
+                product={displayProduct}
+                url={window.location.href}
+              />
+            </div>
+
             {/* Variant Selection with Enhanced Color Swatches */}
             {displayProduct.product_structure === 'variant' && displayProduct.product_variants && (
               <div className="mt-6">

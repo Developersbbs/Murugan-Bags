@@ -56,14 +56,14 @@ const authenticateToken = (req, res, next) => {
             });
           }
 
-          console.log(`Authenticated staff ID: ${staff._id}, Email: ${staff.email}, Role: ${staff.role}`);
+          console.log(`Authenticated staff ID: ${staff._id}, Email: ${staff.email}, Role: ${staff.role_id || staff.role}`);
 
           // Attach staff data to request
           req.user = {
             ...decoded,
             id: staff._id,
             email: staff.email,
-            role: staff.role,
+            role: staff.role_id || staff.role,
             type: 'staff'
           };
         } else if (decoded.id) {

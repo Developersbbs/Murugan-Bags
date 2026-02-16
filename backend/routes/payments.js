@@ -173,6 +173,28 @@ router.post("/create-order", authenticateHybridToken, async (req, res) => {
     console.error('❌ PAYMENT DEBUG: Create order error:', error);
     console.error('❌ PAYMENT DEBUG: Error details:', error.message);
     console.error('❌ PAYMENT DEBUG: Error stack:', error.stack);
+
+    // Log to file for debugging
+    try {
+      const fs = require('fs');
+      const path = require('path');
+      const logFile = path.join(__dirname, '../debug_payments.log');
+      const logData = `
+----------------------------------------
+Timestamp: ${new Date().toISOString()}
+Error: ${error.message}
+Stack: ${error.stack}
+Request User: ${JSON.stringify(req.user)}
+Request Body: ${JSON.stringify(req.body)}
+Items: ${JSON.stringify(req.body.items)}
+Calculated Amount (Paise): ${Math.round((req.body.items?.reduce((sum, item) => sum + (item.unit_price * item.quantity), 0) + (req.body.shipping_cost || 0)) * 1.1 * 100)}
+----------------------------------------
+`;
+      fs.appendFileSync(logFile, logData);
+    } catch (fsError) {
+      console.error('Failed to write to log file:', fsError);
+    }
+
     res.status(500).json({
       error: "Failed to create Razorpay order",
       details: error.message
@@ -182,6 +204,16 @@ router.post("/create-order", authenticateHybridToken, async (req, res) => {
 
 // Verify Razorpay payment
 router.post("/verify-payment", authenticateHybridToken, async (req, res) => {
+  const fs = require('fs');
+  const path = require('path');
+  const logFile = path.join(__dirname, '../debug_payments.log');
+
+  const log = (msg) => {
+    try {
+      fs.appendFileSync(logFile, `${new Date().toISOString()} - ${msg}\n`);
+    } catch (e) { console.error(e); }
+  };
+
   try {
     const {
       razorpay_order_id,
@@ -190,8 +222,11 @@ router.post("/verify-payment", authenticateHybridToken, async (req, res) => {
       order_id
     } = req.body;
 
+    log(`VERIFY REQUEST: User=${req.user.id}, Order=${order_id}, RZ_Order=${razorpay_order_id}`);
+
     // Validate required fields
     if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature || !order_id) {
+      log('MISSING FIELDS');
       return res.status(400).json({
         error: "Missing required payment verification fields"
       });
@@ -205,6 +240,7 @@ router.post("/verify-payment", authenticateHybridToken, async (req, res) => {
       .digest("hex");
 
     if (razorpay_signature !== expectedSign) {
+      log('INVALID SIGNATURE');
       return res.status(400).json({
         error: "Payment verification failed - invalid signature"
       });
@@ -214,12 +250,17 @@ router.post("/verify-payment", authenticateHybridToken, async (req, res) => {
     const order = await Order.findOne({ invoice_no: order_id });
 
     if (!order) {
+      log(`ORDER NOT FOUND: ${order_id}`);
       return res.status(404).json({
         error: "Order not found"
       });
     }
 
-    if (order.customer_id !== req.user.id) {
+    log(`ORDER FOUND: ID=${order._id}, Customer=${order.customer_id}, Status=${order.status}`);
+    log(`COMPARING: OrderCustomer=${order.customer_id} vs ReqUser=${req.user.id}`);
+
+    if (order.customer_id.toString() !== req.user.id.toString()) {
+      log('UNAUTHORIZED ACCESS ATTEMPT');
       return res.status(403).json({
         error: "Unauthorized to access this order"
       });
@@ -237,6 +278,7 @@ router.post("/verify-payment", authenticateHybridToken, async (req, res) => {
     order.estimated_delivery = estimatedDelivery;
 
     await order.save();
+    log('ORDER UPDATED SUCCESSFULLY');
 
     // Clear user's cart after successful payment
     await Cart.deleteMany({ customer_id: req.user.id });
@@ -254,6 +296,7 @@ router.post("/verify-payment", authenticateHybridToken, async (req, res) => {
 
   } catch (error) {
     console.error('Payment verification error:', error);
+    log(`VERIFY ERROR: ${error.message}\n${error.stack}`);
     res.status(500).json({
       error: "Payment verification failed",
       details: error.message

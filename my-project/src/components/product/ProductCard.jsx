@@ -4,6 +4,7 @@ import { useCart } from '../../context/CartContext';
 import { useWishlist } from '../../context/WishlistContext';
 import toast from 'react-hot-toast';
 import LazyImage from '../common/LazyImage';
+import { ShareIcon } from '@heroicons/react/24/outline';
 
 const ProductCard = memo(({ product, viewMode = 'grid', className = '' }) => {
   const { addToCart, isInCart } = useCart();
@@ -111,6 +112,21 @@ const ProductCard = memo(({ product, viewMode = 'grid', className = '' }) => {
       } finally {
         setIsAddingToCart(false);
       }
+    }
+  };
+
+  const handleShare = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    // Construct absolute URL
+    const shareUrl = `${window.location.origin}${productLink}`;
+
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      toast.success('Link copied to clipboard!');
+    } catch (err) {
+      toast.error('Failed to copy link');
     }
   };
 
@@ -313,6 +329,14 @@ const ProductCard = memo(({ product, viewMode = 'grid', className = '' }) => {
           </button>
 
           <button
+            onClick={handleShare}
+            className="p-2 rounded-lg border transition-all duration-200 bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100"
+            title="Share product"
+          >
+            <ShareIcon className="w-5 h-5" />
+          </button>
+
+          <button
             onClick={handleAddToCart}
             disabled={isAddingToCart || isOutOfStock}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${productInCart
@@ -370,6 +394,14 @@ const ProductCard = memo(({ product, viewMode = 'grid', className = '' }) => {
           <svg className="h-4 w-4" viewBox="0 0 24 24" fill={productInWishlist ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2">
             <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
           </svg>
+        </button>
+
+        <button
+          onClick={handleShare}
+          className="absolute top-12 right-3 p-2 rounded-full bg-white/90 backdrop-blur-sm border border-gray-100 z-10 shadow-sm transition-all duration-300 text-gray-400 hover:text-blue-500"
+          title="Share product"
+        >
+          <ShareIcon className="h-4 w-4" />
         </button>
       </div>
 

@@ -4,7 +4,7 @@ import { getAuthCookie, removeAuthCookie } from "@/helpers/cookieUtils";
 
 // Server-safe axios instance for API calls
 export const serverAxiosInstance = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000",
+  baseURL: process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:5000",
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
@@ -12,8 +12,11 @@ export const serverAxiosInstance = axios.create({
 });
 
 // Client axios instance with auth interceptors
+console.log("Axios Base URL:", process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:5000");
 const axiosInstance = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000",
+  baseURL: process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:5000",
+
+
   timeout: 30000,
   headers: {
     'Content-Type': 'application/json',

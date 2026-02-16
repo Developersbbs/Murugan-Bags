@@ -805,18 +805,20 @@ const CheckoutPage = () => {
                     value="razorpay"
                     checked={formData.paymentMethod === 'razorpay'}
                     onChange={handleChange}
-                    disabled={true}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 opacity-50 cursor-not-allowed"
+                    disabled={!razorpayAvailable}
+                    className={`h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 ${!razorpayAvailable ? 'opacity-50 cursor-not-allowed' : ''}`}
                   />
-                  <label htmlFor="razorpay" className="ml-3 flex items-center opacity-50">
-                    <span className="text-sm font-medium text-gray-400">Razorpay</span>
-                    <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500">
-                      Coming Soon
-                    </span>
+                  <label htmlFor="razorpay" className={`ml-3 flex items-center ${!razorpayAvailable ? 'opacity-50' : ''}`}>
+                    <span className="text-sm font-medium text-gray-700">Razorpay / UPI / Net Banking</span>
+                    {!razorpayAvailable && (
+                      <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                        Unavailable
+                      </span>
+                    )}
                   </label>
                 </div>
 
-                {formData.paymentMethod === 'razorpay' && razorpayAvailable && (
+                {formData.paymentMethod === 'razorpay' && (
                   <div className="ml-7 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                     <div className="flex items-center">
                       <CreditCardIcon className="h-5 w-5 text-blue-600 mr-2" />

@@ -13,7 +13,10 @@ import InventoryReport from "./_components/InventoryReport";
 import CategoryPerformanceChart from "./_components/CategoryPerformanceChart";
 import PaymentAnalyticsChart from "./_components/PaymentAnalyticsChart";
 import { Loader2 } from "lucide-react";
+import { FaWhatsapp } from "react-icons/fa";
+import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { formatCurrency } from "@/lib/utils";
 import {
     getSalesOverview,
     getRevenueAnalytics,
@@ -65,6 +68,26 @@ export default function AnalyticsPage() {
             startDate: startDate?.toISOString().split('T')[0],
             endDate: endDate?.toISOString().split('T')[0],
         });
+    };
+
+    const handleWhatsAppShare = () => {
+        if (!salesOverview) return;
+
+        const startDate = dateRange.startDate || 'All Time';
+        const endDate = dateRange.endDate || 'Present';
+
+        const message = `📊 *Analytics Report*
+📅 Period: ${startDate} to ${endDate}
+
+💰 *Revenue*: ${formatCurrency(salesOverview.totalRevenue, 'INR', 'en-IN')}
+📦 *Orders*: ${salesOverview.totalOrders}
+👥 *Customers*: ${salesOverview.totalCustomers}
+💎 *Avg Order Value*: ${formatCurrency(salesOverview.avgOrderValue, 'INR', 'en-IN')}
+
+Check full details on the dashboard!`;
+
+        const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
+        window.open(whatsappUrl, '_blank');
     };
 
     const fetchData = async () => {
@@ -131,6 +154,14 @@ export default function AnalyticsPage() {
                     endDate={dateRange.endDate ? new Date(dateRange.endDate) : undefined}
                     onDateChange={handleDateChange}
                 />
+                <Button
+                    onClick={handleWhatsAppShare}
+                    className="bg-green-500 hover:bg-green-600 text-white gap-2"
+                    disabled={!salesOverview}
+                >
+                    <FaWhatsapp className="h-5 w-5" />
+                    Share Report
+                </Button>
             </div>
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">

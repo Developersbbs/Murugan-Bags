@@ -28,12 +28,16 @@ const orderSchema = new mongoose.Schema(
     shipping_cost: { type: Number, default: 0 },
     total_amount: { type: Number, required: true },
 
-    payment_method: { type: String, enum: ["cash", "online"], required: true },
+    payment_method: {
+      type: String,
+      enum: ["cash", "online", "razorpay"],
+      required: true
+    },
     payment_status: { type: String, default: "pending" },
 
     status: {
       type: String,
-      enum: ["processing", "shipped", "delivered", "cancelled"],
+      enum: ["payment_pending", "processing", "shipped", "delivered", "cancelled"],
       default: "processing",
     },
 
@@ -54,5 +58,11 @@ const orderSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+// Indexes for analytics performance
+orderSchema.index({ order_time: 1 });
+orderSchema.index({ status: 1 });
+orderSchema.index({ "items.product_id": 1 });
+orderSchema.index({ customer_id: 1 });
 
 module.exports = mongoose.model("Order", orderSchema);

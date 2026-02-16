@@ -95,9 +95,21 @@ export const navItems = [
     ]
   },
   {
-    title: "Sales & Analytics",
+    title: "Analytics",
     url: "/analytics",
     icon: <TbChartBar />,
+  },
+  {
+    title: "Reports",
+    url: "#",
+    icon: <TbChartBar />,
+    children: [
+      {
+        title: "Wishlist & Cart",
+        url: "/reports/wishlist-cart",
+        icon: <MdOutlineShoppingCart />,
+      }
+    ]
   },
 
   // {

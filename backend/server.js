@@ -5,7 +5,11 @@ const cors = require("cors");
 const cookieParser = require('cookie-parser');
 const { upload } = require('./middleware/upload');
 const path = require('path');
+const compression = require('compression');
 const app = express();
+
+// Enable Gzip compression
+app.use(compression());
 
 // Initialize Firebase Admin SDK
 const firebaseAdmin = require('./lib/firebase');
@@ -202,6 +206,8 @@ console.log('✅ Payments routes mounted at /api/payments');
 app.use("/api/ratings", ratingsRoutes);
 app.use("/api/analytics", analyticsRoutes);
 app.use("/api/new-arrival-banners", newArrivalBannersRoutes);
+const reportsRoutes = require("./routes/reports");
+app.use("/api/reports", reportsRoutes);
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 
@@ -210,10 +216,10 @@ connectDB();
 
 // Start server
 const PORT = process.env.PORT || 5000;
-const server = app.listen(PORT, () => {
+const server = app.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`📁 Upload directory: ${path.join(__dirname, "uploads")}`);
-  console.log(`🌐 API URL: http://localhost:${PORT}`);
+  console.log(`🌐 API URL: http://0.0.0.0:${PORT}`);
 });
 
 // Graceful shutdown

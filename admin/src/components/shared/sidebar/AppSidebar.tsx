@@ -11,7 +11,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Sidebar, SidebarContent } from "@/components/ui/sidebar";
 import { useSidebar } from "@/components/ui/sidebar";
 import { signOut } from "@/services/auth";
-import React, { useState, useTransition } from "react";
+import React, { useState, useTransition, useEffect } from "react";
 import { ChevronDown } from "lucide-react";
 import {
   Collapsible,
@@ -41,18 +41,19 @@ export default function AppSidebar() {
     });
   };
 
-  const handleNavigation = (url: string) => {
+  // Reset navigation state when pathname changes
+  useEffect(() => {
+    setNavigatingTo(null);
     if (isMobile) {
       setOpenMobile(false);
     }
+  }, [pathname, isMobile, setOpenMobile]);
 
-    // Show loading state for the specific navigation item
-    setNavigatingTo(url);
-
-    // Navigate immediately without transition
-    router.push(url);
-    // Reset navigation state after a short delay
-    setTimeout(() => setNavigatingTo(null), 500);
+  const handleNavigationListClick = (url: string) => {
+    // Just set loading state, let Link handle the navigation
+    if (pathname !== url) {
+      setNavigatingTo(url);
+    }
   };
 
   return (
@@ -95,10 +96,7 @@ export default function AppSidebar() {
                             <li key={`child-item-${index}-${childIndex}`}>
                               <Link
                                 href={childItem.url}
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  handleNavigation(childItem.url);
-                                }}
+                                onClick={() => handleNavigationListClick(childItem.url)}
                                 className={cn(
                                   buttonVariants({ variant: "ghost" }),
                                   "relative w-full justify-start px-5 py-3 gap-x-2.5 [&_svg]:size-5 [&_svg]:flex-shrink-0 text-sm focus-visible:bg-accent focus-visible:text-accent-foreground",
@@ -123,10 +121,7 @@ export default function AppSidebar() {
                   ) : (
                     <Link
                       href={navItem.url}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        handleNavigation(navItem.url);
-                      }}
+                      onClick={() => handleNavigationListClick(navItem.url)}
                       className={cn(
                         buttonVariants({ variant: "ghost" }),
                         "relative w-full justify-start px-5 py-4 gap-x-2.5 [&_svg]:size-6 [&_svg]:flex-shrink-0 font-medium text-base focus-visible:bg-accent focus-visible:text-accent-foreground",
