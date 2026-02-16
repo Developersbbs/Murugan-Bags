@@ -160,19 +160,26 @@ export function EditProductSheet({ product, children }: Props) {
     productStructure: (product.product_variants && product.product_variants.length > 0 ? "variant" : "simple") as "variant" | "simple",
     categories: (() => {
       const cats = product.categories ? product.categories.map(cat => {
-        const categoryId = (cat.category as any)?._id || cat.category || '';
-        const categoryName = (cat.category as any)?.name || 'Uncategorized';
-        const categorySlug = (cat.category as any)?.slug || '';
+        // Handle various structures of cat.category (populated object vs string vs null)
+        const categoryObj = cat.category as any;
+        const categoryId = categoryObj?._id || (typeof cat.category === 'string' ? cat.category : '') || '';
+        const categoryName = categoryObj?.name || 'Uncategorized';
+        const categorySlug = categoryObj?.slug || '';
+
+        // Handle subcategories
         const subcategories = Array.isArray(cat.subcategories) ? cat.subcategories : [];
 
         return {
           category: categoryId,
           categoryName,
           categorySlug,
-          subcategoryIds: subcategories.map(sub => (sub as any)?._id || sub || ''),
-          subcategoryNames: subcategories.map(sub => (sub as any)?._id || sub?.name || ''),
+          subcategoryIds: subcategories.map(sub => (sub as any)?._id || sub || '').filter(id => !!id),
+          subcategoryNames: subcategories.map(sub => (sub as any)?.name || '').filter(name => !!name),
         };
-      }) : [];
+      }).filter(cat => cat.category && cat.category !== '') : []; // Filter out invalid categories
+
+      console.log("Mapped categories for initialData:", cats);
+      return cats;
 
       // Backward compatibility for legacy category_id
       if (cats.length === 0 && product.category_id) {

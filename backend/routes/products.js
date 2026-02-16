@@ -1214,11 +1214,16 @@ router.put("/:id", uploadDigitalFile, async (req, res) => {
     let categories = [];
     if (req.body.categories) {
       try {
-        const parsedCategories = JSON.parse(req.body.categories);
-        console.log('=== PUT: PARSING CATEGORIES ===');
+        console.log('=== PUT: RAW CATEGORIES INPUT ===', req.body.categories);
+        const parsedCategories = typeof req.body.categories === 'string'
+          ? JSON.parse(req.body.categories)
+          : req.body.categories;
+
+        console.log('=== PUT: PARSED CATEGORIES ===', JSON.stringify(parsedCategories, null, 2));
 
         if (Array.isArray(parsedCategories)) {
           for (const cat of parsedCategories) {
+            console.log('Processing category item:', cat);
             let categoryId = null;
 
             if (cat.categoryId) {
@@ -1240,6 +1245,7 @@ router.put("/:id", uploadDigitalFile, async (req, res) => {
                   if (foundCategory) {
                     categoryId = foundCategory._id.toString();
                   } else {
+                    console.log('Category lookup failed for:', cat.category);
                     continue;
                   }
                 } catch (categoryError) {
@@ -1253,6 +1259,7 @@ router.put("/:id", uploadDigitalFile, async (req, res) => {
             }
 
             if (categoryId) {
+              console.log('Resolved Category ID:', categoryId);
               let subcategories = [];
 
               if (cat.subcategoryIds && Array.isArray(cat.subcategoryIds)) {
@@ -1283,13 +1290,17 @@ router.put("/:id", uploadDigitalFile, async (req, res) => {
                 }
               }
 
+              console.log('Resolved Subcategories:', subcategories);
               categories.push({
                 category: categoryId,
                 subcategories: subcategories
               });
+            } else {
+              console.log('❌ Could not resolve Category ID for item:', cat);
             }
           }
         }
+        console.log('=== PUT: FINAL CATEGORIES TO SAVE ===', JSON.stringify(categories, null, 2));
       } catch (e) {
         console.error("Error parsing categories JSON:", e);
       }

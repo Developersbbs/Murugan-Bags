@@ -54,10 +54,24 @@ export default function FormMultipleCategorySubcategoryInput<TFormData extends F
   const [editingSubcategoryIds, setEditingSubcategoryIds] = useState<string[]>([]);
 
   // Ensure we handle both category and categoryId for robustness
-  const currentSelections = (watch(name) as any[] || []).map(selection => ({
-    ...selection,
-    category: selection.category || selection.categoryId
-  })) as CategorySubcategorySelection[];
+  const rawSelections = watch(name) as any[] || [];
+
+  // Debug logging
+  if (rawSelections.length > 0) {
+    console.log('FormMultipleCategorySubcategoryInput raw selections:', rawSelections);
+  }
+
+  const currentSelections = rawSelections
+    .map(selection => {
+      const categoryId = selection.category || selection.categoryId;
+      if (!categoryId) return null;
+
+      return {
+        ...selection,
+        category: categoryId
+      };
+    })
+    .filter(Boolean) as CategorySubcategorySelection[];
 
   // Debug: Log the current form value
   console.log('Current form value for categories:', currentSelections);
@@ -405,6 +419,11 @@ export default function FormMultipleCategorySubcategoryInput<TFormData extends F
                     ? `Add Category with ${selectedSubcategoryIds.length} Subcategor${selectedSubcategoryIds.length === 1 ? 'y' : 'ies'}`
                     : "Add Category without subcategories"}
                 </Button>
+                {currentSelections.length === 0 && (
+                  <p className="text-xs text-amber-600 font-medium text-center animate-pulse">
+                    ⚠️ You must click the button above to add this category to the product.
+                  </p>
+                )}
               </div>
             )}
 

@@ -322,16 +322,31 @@ router.post("/", async (req, res) => {
 
 // UPDATE category
 router.put("/:id", async (req, res) => {
+  const fs = require('fs');
+  const path = require('path');
+  const logFile = path.join(__dirname, '../debug_categories.log');
+
+  const log = (msg) => {
+    try {
+      fs.appendFileSync(logFile, `${new Date().toISOString()} - ${msg}\n`);
+    } catch (e) { console.error(e); }
+  };
+
   try {
+    log(`PUT Request for Category ID: ${req.params.id}`);
+
     // Ensure req.body exists and is an object
     if (!req.body || typeof req.body !== 'object') {
+      log('Invalid request body');
       return res.status(400).json({
         success: false,
         error: "Invalid request body"
       });
     }
 
-    console.log('PUT Request body:', req.body);
+    log(`Request Body Keys: ${JSON.stringify(Object.keys(req.body))}`);
+    // Log typical fields to check content (truncated)
+    log(`Name: ${req.body.name}, Slug: ${req.body.slug}`);
 
     const { name, description, slug, published, image } = req.body || {};
     const updateData = {
@@ -343,7 +358,7 @@ router.put("/:id", async (req, res) => {
       ...(image !== undefined && { image_url: image }) // Set image_url from the image field
     };
 
-    console.log('PUT Category update data:', updateData);
+    log(`Update Data: ${JSON.stringify(updateData)}`);
 
     // Update the category
     const category = await Category.findByIdAndUpdate(
@@ -353,6 +368,7 @@ router.put("/:id", async (req, res) => {
     );
 
     if (!category) {
+      log('Category not found');
       return res.status(404).json({ success: false, error: "Category not found" });
     }
 
@@ -361,7 +377,7 @@ router.put("/:id", async (req, res) => {
 
     // Check for subcategories in the request body
     const subcatKeys = Object.keys(req.body).filter(key => key.startsWith('subcategories.'));
-    console.log('PUT Subcategory keys found:', subcatKeys);
+    log(`Subcategory keys found: ${subcatKeys.length}`);
 
     if (subcatKeys.length > 0) {
       // Group by index
@@ -378,7 +394,7 @@ router.put("/:id", async (req, res) => {
         }
       });
 
-      console.log('PUT Grouped subcategories:', groupedSubcats);
+      log(`Grouped subcategories: ${JSON.stringify(groupedSubcats)}`);
 
       Object.values(groupedSubcats).forEach((subcat) => {
         if (subcat.name && subcat.slug) {
@@ -391,7 +407,7 @@ router.put("/:id", async (req, res) => {
       });
     }
 
-    console.log('PUT Final parsed subcategories:', subcategoriesArray);
+    log(`Final parsed subcategories count: ${subcategoriesArray.length}`);
 
     if (subcatKeys.length > 0 || req.body.subcategories !== undefined) {
       // Remove existing subcategories first
@@ -406,6 +422,7 @@ router.put("/:id", async (req, res) => {
         }));
 
         const createdSubcategories = await Subcategory.insertMany(subcategoriesToCreate);
+        log(`Created ${createdSubcategories.length} new subcategories`);
 
         // Update category with new subcategory IDs using a separate update
         await Category.findByIdAndUpdate(req.params.id, {
@@ -416,6 +433,7 @@ router.put("/:id", async (req, res) => {
         await Category.findByIdAndUpdate(req.params.id, {
           $set: { subcategories: [] }
         });
+        log('Cleared subcategories');
       }
     }
 
@@ -431,6 +449,7 @@ router.put("/:id", async (req, res) => {
     });
   } catch (err) {
     console.error('PUT category error:', err);
+    log(`ERROR: ${err.message}\n${err.stack}`);
     res.status(500).json({ success: false, error: err.message });
   }
 });
