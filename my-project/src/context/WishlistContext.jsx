@@ -152,6 +152,26 @@ export const WishlistProvider = ({ children }) => {
 
   // Removed loadWishlist function - we only use MongoDB data now
 
+  // Helper to resolve product image from various possible sources
+  const resolveProductImage = (product, item = null) => {
+    // 1. Try to find an image in the product/item object directly
+    if (product.image_url && product.image_url.length > 0) return product.image_url[0];
+    if (product.images && product.images.length > 0) return product.images[0];
+    if (product.image) return product.image;
+
+    // 2. Check for item-specific image (often from backend response)
+    if (item && item.product_image) return item.product_image;
+
+    // 3. specialized variant handling
+    if (product.product_variants && product.product_variants.length > 0) {
+      // Try to find a variant with images
+      const variantWithImage = product.product_variants.find(v => v.images && v.images.length > 0);
+      if (variantWithImage) return variantWithImage.images[0];
+    }
+
+    return null;
+  };
+
   const handleUserLogin = async (retryCount = 0) => {
     if (!user || !user.uid) {
       console.log('No valid user found, skipping wishlist load');
@@ -172,16 +192,30 @@ export const WishlistProvider = ({ children }) => {
       if (backendWishlistResponse.success && backendWishlistResponse.data && backendWishlistResponse.data.items && backendWishlistResponse.data.items.length > 0) {
         console.log('Wishlist loaded from MongoDB:', backendWishlistResponse.data.items.length, 'items');
 
+        // Debug first item to check variants
+        if (backendWishlistResponse.data.items.length > 0) {
+          const firstItem = backendWishlistResponse.data.items[0];
+          console.log('🔍 [WishlistContext] Raw Backend Item 0:', {
+            id: firstItem._id,
+            product_id: firstItem.product_id?._id,
+            hasVariants: !!firstItem.product_id?.product_variants,
+            variantsCount: firstItem.product_id?.product_variants?.length
+          });
+        }
+
         const backendWishlistItems = backendWishlistResponse.data.items.map(item => {
           const product = item.product_id || {};
+          const resolvedImage = resolveProductImage(product, item);
+
           return {
             _id: product._id || item.product_id,
             id: product._id || item.product_id,
             name: product.name || item.product_name,
             price: product.selling_price || item.discounted_price || item.price,
-            image: (product.image_url && product.image_url[0]) || item.product_image,
+            image: resolvedImage,
             wishlistItemId: item._id,
-            variant_id: item.variant_id
+            variant_id: item.variant_id,
+            product_variants: product.product_variants || []
           };
         });
 
@@ -281,14 +315,17 @@ export const WishlistProvider = ({ children }) => {
           if (backendWishlistResponse.success && backendWishlistResponse.data && backendWishlistResponse.data.items) {
             const backendWishlistItems = backendWishlistResponse.data.items.map(item => {
               const product = item.product_id || {};
+              const resolvedImage = resolveProductImage(product, item);
+
               return {
                 _id: product._id || item.product_id,
                 id: product._id || item.product_id,
                 name: product.name || item.product_name,
                 price: product.selling_price || item.discounted_price || item.price,
-                image: (product.image_url && product.image_url[0]) || item.product_image,
+                image: resolvedImage,
                 wishlistItemId: item._id,
-                variant_id: item.variant_id
+                variant_id: item.variant_id,
+                product_variants: product.product_variants || []
               };
             });
             console.log('Setting wishlist with transformed items:', backendWishlistItems);
@@ -332,10 +369,13 @@ export const WishlistProvider = ({ children }) => {
         const basePrice = product.selling_price || product.price || product.mrp || 1;
         const discountedPrice = product.salePrice || product.selling_price || product.price || product.mrp || basePrice;
 
+        // Use helper to get the best image
+        const img = resolveProductImage(product);
+
         const wishlistItem = {
           product_id: product._id,
           product_name: product.name || 'Unknown Product',
-          product_image: product.images?.[0]?.url || product.image_url?.[0] || null,
+          product_image: img,
           price: basePrice,
           discounted_price: discountedPrice,
           variant_id: product.variant_id || (product.isVariant ? product._id : undefined)
@@ -381,14 +421,17 @@ export const WishlistProvider = ({ children }) => {
           // Update local state with backend response
           const backendWishlistItems = response.data.items.map(item => {
             const product = item.product_id || {};
+            const resolvedImage = resolveProductImage(product, item);
+
             return {
               _id: product._id || item.product_id,
               id: product._id || item.product_id,
               name: product.name || item.product_name,
               price: product.selling_price || item.discounted_price || item.price,
-              image: (product.image_url && product.image_url[0]) || item.product_image,
+              image: resolvedImage,
               wishlistItemId: item._id,
-              variant_id: item.variant_id
+              variant_id: item.variant_id,
+              product_variants: product.product_variants || []
             };
           });
 

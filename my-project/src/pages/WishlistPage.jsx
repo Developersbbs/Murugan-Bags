@@ -1,9 +1,9 @@
 import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useSelector } from 'react-redux';
-import { 
-  HeartIcon, 
-  ShoppingBagIcon, 
+import {
+  HeartIcon,
+  ShoppingBagIcon,
   FunnelIcon,
   Squares2X2Icon,
   ListBulletIcon,
@@ -36,14 +36,14 @@ export default function WishlistPage() {
   // Filter and sort wishlist items
   const filteredAndSortedItems = useMemo(() => {
     let filtered = [...wishlistItems];
-    
+
     // Apply search filter
     if (searchQuery) {
-      filtered = filtered.filter(item => 
+      filtered = filtered.filter(item =>
         item.name.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
-    
+
     // Apply price range filter
     if (priceRange.min || priceRange.max) {
       filtered = filtered.filter(item => {
@@ -53,7 +53,7 @@ export default function WishlistPage() {
         return price >= min && price <= max;
       });
     }
-    
+
     // Apply sorting
     filtered.sort((a, b) => {
       switch (sortBy) {
@@ -70,16 +70,16 @@ export default function WishlistPage() {
           return new Date(b.addedAt || 0) - new Date(a.addedAt || 0);
       }
     });
-    
+
     return filtered;
   }, [wishlistItems, searchQuery, priceRange, sortBy]);
 
   const handleAddAllToCart = async (items = filteredAndSortedItems) => {
     if (items.length === 0) return;
-    
+
     setIsAddingAllToCart(true);
     let successCount = 0;
-    
+
     try {
       for (const item of items) {
         try {
@@ -94,11 +94,11 @@ export default function WishlistPage() {
           console.warn(`Failed to add ${item.name} to cart:`, error);
         }
       }
-      
+
       if (successCount > 0) {
         toast.success(`Added ${successCount} ${successCount === 1 ? 'item' : 'items'} to cart`);
       }
-      
+
       if (successCount < items.length) {
         toast.warning(`${items.length - successCount} items could not be added`);
       }
@@ -110,7 +110,7 @@ export default function WishlistPage() {
   };
 
   const handleAddSelectedToCart = async () => {
-    const selectedItemsArray = filteredAndSortedItems.filter(item => 
+    const selectedItemsArray = filteredAndSortedItems.filter(item =>
       selectedItems.has(item._id || item.id)
     );
     await handleAddAllToCart(selectedItemsArray);
@@ -118,7 +118,7 @@ export default function WishlistPage() {
 
   const handleRemoveSelected = async () => {
     if (selectedItems.size === 0) return;
-    
+
     try {
       for (const itemId of selectedItems) {
         await removeFromWishlist(itemId);
@@ -182,20 +182,20 @@ export default function WishlistPage() {
                 </p>
               </div>
             </div>
-            
+
             {filteredAndSortedItems.length > 0 && (
               <div className="flex items-center space-x-3">
                 {selectedItems.size > 0 && (
                   <>
-                    <button 
+                    <button
                       onClick={handleAddSelectedToCart}
                       className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
                     >
                       <ShoppingBagIcon className="h-4 w-4" />
                       <span>Add Selected to Cart ({selectedItems.size})</span>
                     </button>
-                    
-                    <button 
+
+                    <button
                       onClick={handleRemoveSelected}
                       className="text-red-600 hover:text-red-700 px-4 py-2 border border-red-200 rounded-lg hover:bg-red-50 transition-colors"
                     >
@@ -203,8 +203,8 @@ export default function WishlistPage() {
                     </button>
                   </>
                 )}
-                
-                <button 
+
+                <button
                   onClick={() => handleAddAllToCart()}
                   disabled={isAddingAllToCart}
                   className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors disabled:bg-green-400 flex items-center space-x-2"
@@ -212,12 +212,19 @@ export default function WishlistPage() {
                   <ShoppingBagIcon className="h-4 w-4" />
                   <span>{isAddingAllToCart ? 'Adding...' : 'Add All to Cart'}</span>
                 </button>
-                
-                <button 
+
+                <button
                   onClick={handleClearWishlist}
                   className="text-red-600 hover:text-red-700 px-4 py-2 border border-red-200 rounded-lg hover:bg-red-50 transition-colors"
                 >
                   Clear All
+                </button>
+
+                <button
+                  onClick={() => console.log('🐛 [WishlistPage] Items:', wishlistItems)}
+                  className="text-gray-600 hover:text-gray-800 px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Debug
                 </button>
               </div>
             )}
@@ -226,7 +233,7 @@ export default function WishlistPage() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      
+
         {filteredAndSortedItems.length === 0 && wishlistItems.length === 0 ? (
           // Show different empty states based on authentication status
           !isAuthenticated ? (
@@ -260,7 +267,7 @@ export default function WishlistPage() {
                           className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         />
                       </div>
-                      
+
                       {/* Price Range Filter */}
                       <div className="flex items-center space-x-2">
                         <input
@@ -280,7 +287,7 @@ export default function WishlistPage() {
                         />
                       </div>
                     </div>
-                    
+
                     {/* Sort and View Controls */}
                     <div className="flex items-center space-x-4">
                       {/* Sort Dropdown */}
@@ -298,33 +305,31 @@ export default function WishlistPage() {
                         </select>
                         <ChevronDownIcon className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
                       </div>
-                      
+
                       {/* View Mode Toggle */}
                       <div className="flex bg-gray-100 rounded-lg p-1">
                         <button
                           onClick={() => setViewMode('grid')}
-                          className={`p-2 rounded-md transition-colors ${
-                            viewMode === 'grid'
+                          className={`p-2 rounded-md transition-colors ${viewMode === 'grid'
                               ? 'bg-white text-gray-900 shadow-sm'
                               : 'text-gray-500 hover:text-gray-700'
-                          }`}
+                            }`}
                         >
                           <Squares2X2Icon className="h-4 w-4" />
                         </button>
                         <button
                           onClick={() => setViewMode('list')}
-                          className={`p-2 rounded-md transition-colors ${
-                            viewMode === 'list'
+                          className={`p-2 rounded-md transition-colors ${viewMode === 'list'
                               ? 'bg-white text-gray-900 shadow-sm'
                               : 'text-gray-500 hover:text-gray-700'
-                          }`}
+                            }`}
                         >
                           <ListBulletIcon className="h-4 w-4" />
                         </button>
                       </div>
                     </div>
                   </div>
-                  
+
                   {/* Bulk Selection */}
                   {filteredAndSortedItems.length > 0 && (
                     <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-200">
@@ -340,14 +345,14 @@ export default function WishlistPage() {
                             Select All ({filteredAndSortedItems.length})
                           </span>
                         </label>
-                        
+
                         {selectedItems.size > 0 && (
                           <span className="text-sm text-blue-600 font-medium">
                             {selectedItems.size} selected
                           </span>
                         )}
                       </div>
-                      
+
                       {(searchQuery || priceRange.min || priceRange.max) && (
                         <button
                           onClick={() => {
@@ -365,7 +370,7 @@ export default function WishlistPage() {
                 </div>
               </div>
             )}
-            
+
             {/* Results Info */}
             {filteredAndSortedItems.length === 0 && wishlistItems.length > 0 && (
               <div className="text-center py-12">
@@ -383,14 +388,13 @@ export default function WishlistPage() {
                 </button>
               </div>
             )}
-            
+
             {/* Wishlist Items */}
             {filteredAndSortedItems.length > 0 && (
-              <div className={`${
-                viewMode === 'grid'
+              <div className={`${viewMode === 'grid'
                   ? 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6'
                   : 'space-y-4'
-              }`}>
+                }`}>
                 {filteredAndSortedItems.map((item) => (
                   <WishlistItem
                     key={item.wishlistItemId || item._id || item.id}
@@ -404,15 +408,15 @@ export default function WishlistPage() {
                 ))}
               </div>
             )}
-            
+
             {/* Recommended Products Section */}
             {filteredAndSortedItems.length > 0 && (
               <div className="mt-16 bg-white rounded-lg shadow-sm border border-gray-200 p-8">
                 <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">You might also like</h2>
                 <div className="text-center py-8 text-gray-500">
                   <p className="mb-4">Recommended products based on your wishlist will appear here</p>
-                  <Link 
-                    to="/products" 
+                  <Link
+                    to="/products"
                     className="inline-flex items-center px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
                   >
                     Browse all products

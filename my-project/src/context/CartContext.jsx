@@ -444,7 +444,13 @@ export const CartProvider = ({ children }) => {
           isCombo: product.isCombo || false
         };
 
-        console.log('CartContext: Sending cart item:', cartItem);
+        console.log('🔍 [CartContext] === CART ITEM DEBUG ===');
+        console.log('🔍 [CartContext] Product ID:', cartItem.product_id);
+        console.log('🔍 [CartContext] Variant SKU:', cartItem.variant_sku);
+        console.log('🔍 [CartContext] Variant Attributes:', JSON.stringify(cartItem.variant_attributes));
+        console.log('🔍 [CartContext] Variant Name:', cartItem.variant_name);
+        console.log('🔍 [CartContext] Product Image:', cartItem.product_image);
+        console.log('🔍 [CartContext] Full Cart Item:', JSON.stringify(cartItem, null, 2)); // Enhanced logging
         console.log('CartContext: Original product data:', {
           _id: product._id,
           name: product.name,

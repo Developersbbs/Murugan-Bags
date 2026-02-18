@@ -12,7 +12,7 @@ router.get('/', authenticateHybridToken, async (req, res) => {
     const customerId = req.user.id;
 
     let wishlist = await Wishlist.findOne({ customer_id: customerId })
-      .populate('items.product_id', 'name slug selling_price image_url category')
+      .populate('items.product_id')
       .lean();
 
     if (!wishlist) {
@@ -138,7 +138,7 @@ router.post('/add', authenticateHybridToken, async (req, res) => {
 
     // Return updated wishlist with populated product data
     const updatedWishlist = await Wishlist.findById(wishlist._id)
-      .populate('items.product_id', 'name slug selling_price image_url category')
+      .populate('items.product_id')
       .lean();
 
     res.json({
@@ -184,7 +184,7 @@ router.delete('/remove/:itemId', authenticateHybridToken, async (req, res) => {
 
     // Return updated wishlist with populated product data
     const updatedWishlist = await Wishlist.findById(wishlist._id)
-      .populate('items.product_id', 'name slug selling_price image_url category')
+      .populate('items.product_id')
       .lean();
 
     res.json({
@@ -232,7 +232,7 @@ router.delete('/remove-product/:productId', authenticateHybridToken, async (req,
 
     // Return updated wishlist with populated product data
     const updatedWishlist = await Wishlist.findById(wishlist._id)
-      .populate('items.product_id', 'name slug selling_price image_url category')
+      .populate('items.product_id')
       .lean();
 
     res.json({
@@ -379,7 +379,7 @@ router.post('/sync', authenticateHybridToken, async (req, res) => {
 
     // Return updated wishlist with populated product data
     const updatedWishlist = await Wishlist.findById(wishlist._id)
-      .populate('items.product_id', 'name slug selling_price image_url category')
+      .populate('items.product_id')
       .lean();
 
     res.json({

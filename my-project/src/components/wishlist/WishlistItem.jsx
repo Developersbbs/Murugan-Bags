@@ -41,17 +41,70 @@ const WishlistItem = ({
 
     setIsAddingToCart(true);
     try {
+      console.log('🛒 [WishlistItem] Adding to cart:', item._id);
+      console.log('🔎 [WishlistItem] Item Variants:', item.product_variants?.length);
+      console.log('🆔 [WishlistItem] Target Variant ID:', item.variant_id);
+
+      // Logic to find specific variant
+      let variantToAdd = null;
+      if (item.variant_id && item.product_variants && item.product_variants.length > 0) {
+        // 1. Try exact ID match (converting both to string for safety)
+        variantToAdd = item.product_variants.find(v =>
+          (v._id && v._id.toString() === item.variant_id.toString()) ||
+          (v.id && v.id.toString() === item.variant_id.toString())
+        );
+
+        // 2. Fallback: Try to parse index if variant_id looks like "productId-variant-index"
+        if (!variantToAdd) {
+          console.log('⚠️ Exact ID match failed, trying index fallback...');
+          const match = item.variant_id.toString().match(/-variant-(\d+)$/);
+          if (match && match[1]) {
+            const index = parseInt(match[1]); // Direct index usage (variant-0 is index 0)
+            console.log(`🔢 [WishlistItem] Parsed index from ID: ${index}`);
+
+            // Verify against array bounds
+            if (index >= 0 && index < item.product_variants.length) {
+              variantToAdd = item.product_variants[index];
+              console.log(`✅ Found variant by index ${index}:`, variantToAdd.sku);
+            } else {
+              console.warn(`⚠️ Index ${index} out of bounds for variants length ${item.product_variants.length}`);
+            }
+          }
+        }
+      }
+
+      if (variantToAdd) {
+        console.log('✅ [WishlistItem] Resolved variant:', {
+          sku: variantToAdd.sku,
+          id: variantToAdd._id || variantToAdd.id,
+          price: variantToAdd.selling_price
+        });
+      } else if (item.variant_id) {
+        console.warn('⚠️ [WishlistItem] FAILED to resolve variant. Cart will use generic product.');
+      }
+
+      // Safe ID access - items from WishlistContext are flattened
+      const productId = item._id || item.id;
+      if (!productId) {
+        console.error('❌ [WishlistItem] Product ID missing in item:', item);
+        toast.error('Product data error');
+        return;
+      }
+
       await addToCart({
-        _id: item._id || item.id,
+        _id: productId,
         name: item.name,
         selling_price: item.price,
-        image_url: [item.image]
-      });
+        image_url: [item.image],
+        product_variants: item.product_variants
+      }, variantToAdd);
+
       toast.success('Added to cart');
 
       // Optionally remove from wishlist after adding to cart
       // await handleRemove();
     } catch (error) {
+      console.error('Error adding to cart:', error);
       toast.error('Failed to add to cart');
     } finally {
       setIsAddingToCart(false);
