@@ -1,0 +1,82 @@
+[dotenv@17.2.3] injecting env (11) from .env -- tip: 🗂️ backup and recover secrets: https://dotenvx.com/ops
+[FIREBASE] Loading credentials from firebase-service-account.json
+[FIREBASE] Initializing with project: murugan-bags
+[FIREBASE] Storage bucket: murugan-bags.firebasestorage.app
+✅ [FIREBASE] Firebase Admin SDK initialized successfully
+Starting Image Migration to Firebase...
+Connecting to MongoDB format: URI found
+Connected to MongoDB successfully.
+Firebase Storage Bucket initialized: murugan-bags.firebasestorage.app
+\n--- Processing categories ---
+\n--- Processing subcategories ---
+\n--- Processing Staff ---
+\n--- Processing HeroSection ---
+\n--- Processing OfferPopup ---
+\n--- Processing NewArrivalBanner ---
+\n--- Processing Products ---
+Migrating Product[6999780cf6455e7bff2e46e6] Variant[SAFARI TRUNK TROLLEY BAG-CAB-OCH] image: /uploads/products/1771697101488.jpg
+Migrating Product[6999780cf6455e7bff2e46e6] Variant[SAFARI TRUNK TROLLEY BAG-CAB-CYA] image: /uploads/products/1771697101490.webp
+Migrating Product[6999780cf6455e7bff2e46e6] Variant[SAFARI TRUNK TROLLEY BAG-CAB-CYA] image: /uploads/products/1771697101490.webp
+Migrating Product[6999780cf6455e7bff2e46e6] Variant[SAFARI TRUNK TROLLEY BAG-CAB-CYA] image: /uploads/products/1771697101490.webp
+Migrating Product[6999780cf6455e7bff2e46e6] Variant[SAFARI TRUNK TROLLEY BAG-CAB-CYA] image: /uploads/products/1771697101491.webp
+Migrating Product[6999780cf6455e7bff2e46e6] Variant[SAFARI TRUNK TROLLEY BAG-CAB-CYA] image: /uploads/products/1771697101491.webp
+Migrating Product[6999780cf6455e7bff2e46e6] Variant[SAFARI TRUNK TROLLEY BAG-CAB-CYA] image: /uploads/products/1771697101492.webp
+Migrating Product[6999780cf6455e7bff2e46e6] Variant[SAFARI TRUNK TROLLEY BAG-CAB-CYA] image: /uploads/products/1771697101493.webp
+Migrating Product[6999780cf6455e7bff2e46e6] Variant[SAFARI TRUNK TROLLEY BAG-CAB-SAG] image: /uploads/products/1771697101494.webp
+Migrating Product[6999780cf6455e7bff2e46e6] Variant[SAFARI TRUNK TROLLEY BAG-CAB-SAG] image: /uploads/products/1771697101494.webp
+Migrating Product[6999780cf6455e7bff2e46e6] Variant[SAFARI TRUNK TROLLEY BAG-CAB-SAG] image: /uploads/products/1771697101496.webp
+Migrating Product[6999780cf6455e7bff2e46e6] Variant[SAFARI TRUNK TROLLEY BAG-CAB-SAG] image: /uploads/products/1771697101498.webp
+Migrating Product[6999780cf6455e7bff2e46e6] Variant[SAFARI TRUNK TROLLEY BAG-CAB-SAG] image: /uploads/products/1771697101498.webp
+Migrating Product[6999780cf6455e7bff2e46e6] Variant[SAFARI TRUNK TROLLEY BAG-CAB-SAG] image: /uploads/products/1771697101500.webp
+Migrating Product[6999780cf6455e7bff2e46e6] Variant[SAFARI TRUNK TROLLEY BAG-CAB-SAG] image: /uploads/products/1771697101501.webp
+Migrating Product[6999780cf6455e7bff2e46e6] Variant[SAFARI TRUNK TROLLEY BAG-LAR-OCH] image: /uploads/products/1771697101502.jpg
+Migrating Product[6999780cf6455e7bff2e46e6] Variant[SAFARI TRUNK TROLLEY BAG-LAR-OCH] image: /uploads/products/1771697101504.webp
+Migrating Product[6999780cf6455e7bff2e46e6] Variant[SAFARI TRUNK TROLLEY BAG-LAR-OCH] image: /uploads/products/1771697101505.webp
+Migrating Product[6999780cf6455e7bff2e46e6] Variant[SAFARI TRUNK TROLLEY BAG-LAR-OCH] image: /uploads/products/1771697101507.webp
+Migrating Product[6999780cf6455e7bff2e46e6] Variant[SAFARI TRUNK TROLLEY BAG-LAR-OCH] image: /uploads/products/1771697101508.webp
+Migrating Product[6999780cf6455e7bff2e46e6] Variant[SAFARI TRUNK TROLLEY BAG-LAR-OCH] image: /uploads/products/1771697101509.webp
+Migrating Product[6999780cf6455e7bff2e46e6] Variant[SAFARI TRUNK TROLLEY BAG-LAR-OCH] image: /uploads/products/1771697101510.webp
+Migrating Product[6999780cf6455e7bff2e46e6] Variant[SAFARI TRUNK TROLLEY BAG-LAR-OCH] image: /uploads/products/1771697101512.webp
+Migrating Product[6999ac9a0f9cacb50b6099c0] Variant[BEAMER-MED-BLU] image: /uploads/products/1771697512050.webp
+Migrating Product[6999ac9a0f9cacb50b6099c0] Variant[BEAMER-MED-BLU] image: /uploads/products/1771697512051.webp
+Migrating Product[6999ac9a0f9cacb50b6099c0] Variant[BEAMER-MED-BLU] image: /uploads/products/1771697512051.webp
+Migrating Product[6999ac9a0f9cacb50b6099c0] Variant[BEAMER-MED-BLU] image: /uploads/products/1771697512052.webp
+Migrating Product[6999ac9a0f9cacb50b6099c0] Variant[BEAMER-MED-BLU] image: /uploads/products/1771697512052.webp
+Migrating Product[6999ac9a0f9cacb50b6099c0] Variant[BEAMER-MED-BLU] image: /uploads/products/1771697512053.webp
+Migrating Product[6999ac9a0f9cacb50b6099c0] Variant[BEAMER-MED-BLU] image: /uploads/products/1771697512054.webp
+Migrating Product[6999ac9a0f9cacb50b6099c0] Variant[BEAMER-MED-BLU] image: /uploads/products/1771697512054.webp
+Migrating Product[6999ac9a0f9cacb50b6099c0] Variant[BEAMER-MED-GRA] image: /uploads/products/1771697512055.webp
+Migrating Product[6999ac9a0f9cacb50b6099c0] Variant[BEAMER-MED-GRA] image: /uploads/products/1771697512056.webp
+Migrating Product[6999ac9a0f9cacb50b6099c0] Variant[BEAMER-MED-GRA] image: /uploads/products/1771697512056.webp
+Migrating Product[6999ac9a0f9cacb50b6099c0] Variant[BEAMER-MED-GRA] image: /uploads/products/1771697512057.webp
+Migrating Product[6999ac9a0f9cacb50b6099c0] Variant[BEAMER-MED-GRA] image: /uploads/products/1771697512057.webp
+Migrating Product[6999ac9a0f9cacb50b6099c0] Variant[BEAMER-MED-GRA] image: /uploads/products/1771697512058.webp
+Migrating Product[6999ac9a0f9cacb50b6099c0] Variant[BEAMER-MED-GRA] image: /uploads/products/1771697512059.webp
+Migrating Product[6999ac9a0f9cacb50b6099c0] Variant[BEAMER-MED-GRA] image: /uploads/products/1771697512059.webp
+Migrating Product[6999ac9a0f9cacb50b6099c0] Variant[BEAMER-MED-GRA] image: /uploads/products/1771697512060.webp
+Migrating Product[6999ac9a0f9cacb50b6099c0] Variant[BEAMER-MED-GRA] image: /uploads/products/1771697512063.webp
+Migrating Product[6999ac9a0f9cacb50b6099c0] Variant[BEAMER-LAR-BLU] image: /uploads/products/1771697512064.webp
+Migrating Product[6999ac9a0f9cacb50b6099c0] Variant[BEAMER-LAR-BLU] image: /uploads/products/1771697512065.webp
+Migrating Product[6999ac9a0f9cacb50b6099c0] Variant[BEAMER-LAR-BLU] image: /uploads/products/1771697512066.webp
+Migrating Product[6999ac9a0f9cacb50b6099c0] Variant[BEAMER-LAR-BLU] image: /uploads/products/1771697512066.webp
+Migrating Product[6999ac9a0f9cacb50b6099c0] Variant[BEAMER-LAR-BLU] image: /uploads/products/1771697512067.webp
+Migrating Product[6999ac9a0f9cacb50b6099c0] Variant[BEAMER-LAR-BLU] image: /uploads/products/1771697512068.webp
+Migrating Product[6999ac9a0f9cacb50b6099c0] Variant[BEAMER-LAR-BLU] image: /uploads/products/1771697512069.webp
+Migrating Product[6999ac9a0f9cacb50b6099c0] Variant[BEAMER-LAR-BLU] image: /uploads/products/1771697512071.webp
+Migrating Product[6999ac9a0f9cacb50b6099c0] Variant[BEAMER-LAR-BLU] image: /uploads/products/1771697512074.webp
+Migrating Product[6999ac9a0f9cacb50b6099c0] Variant[BEAMER-LAR-BLU] image: /uploads/products/1771697512074.webp
+Migrating Product[6999ac9a0f9cacb50b6099c0] Variant[BEAMER-LAR-GRA] image: /uploads/products/1771697512075.webp
+Migrating Product[6999ac9a0f9cacb50b6099c0] Variant[BEAMER-LAR-GRA] image: /uploads/products/1771697512080.webp
+Migrating Product[6999ac9a0f9cacb50b6099c0] Variant[BEAMER-LAR-GRA] image: /uploads/products/1771697512080.webp
+Migrating Product[6999ac9a0f9cacb50b6099c0] Variant[BEAMER-LAR-GRA] image: /uploads/products/1771697512081.webp
+Migrating Product[6999ac9a0f9cacb50b6099c0] Variant[BEAMER-LAR-GRA] image: /uploads/products/1771697512081.webp
+Migrating Product[6999ac9a0f9cacb50b6099c0] Variant[BEAMER-LAR-GRA] image: /uploads/products/1771697512081.webp
+Migrating Product[6999ac9a0f9cacb50b6099c0] Variant[BEAMER-LAR-GRA] image: /uploads/products/1771697512081.webp
+Migrating Product[6999ac9a0f9cacb50b6099c0] Variant[BEAMER-LAR-GRA] image: /uploads/products/1771697512083.webp
+Migrating Product[6999ac9a0f9cacb50b6099c0] Variant[BEAMER-LAR-GRA] image: /uploads/products/1771697512084.webp
+Migrating Product[6999ac9a0f9cacb50b6099c0] Variant[BEAMER-LAR-GRA] image: /uploads/products/1771697512086.webp
+Migrating Product[699c57c1351e36d75c1b8498] Variant[DFGHJK-S] image: /uploads/products/1771866393499-730868956-Vogue-03_BP_N_Blue_07_700x-6.webp
+File not found locally: /home/sathish-r/Main-Peojects/Murugan-Bags/backend/uploads/products/1771866393499-730868956-Vogue-03_BP_N_Blue_07_700x-6.webp
+\n=== MIGRATION COMPLETE ===
+Total Successfully Migrated: 61
+Total Failed (Missing Local File or DB Error): 1

@@ -1,0 +1,2310 @@
+[dotenv@17.2.3] injecting env (11) from .env -- tip: ✅ audit secrets and track compliance: https://dotenvx.com/ops
+[FIREBASE_DEBUG] Found individual environment variables
+[FIREBASE_DEBUG] Initializing Firebase Admin SDK...
+✅ [FIREBASE_DEBUG] Firebase Admin SDK initialized successfully
+🔥 Firebase Admin SDK status: Initialized
+✅ Razorpay initialized successfully
+✅ Payments routes loaded: function
+✅ Payments routes mounted at /api/payments
+🔄 Attempting to connect to MongoDB...
+📍 MONGODB_URI: Set
+(node:22762) [MONGOOSE] Warning: Duplicate schema index on {"customer_id":1} found. This is often due to declaring an index using both "index: true" and "schema.index()". Please remove the duplicate index definition.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:22762) [MONGOOSE] Warning: Duplicate schema index on {"customer_id":1} found. This is often due to declaring an index using both "index: true" and "schema.index()". Please remove the duplicate index definition.
+🚀 Server running on port 5000
+📁 Upload directory: /home/sathish-r/Main-Peojects/Murugan-Bags/backend/uploads
+🌐 API URL: http://0.0.0.0:5000
+✅ MongoDB Connected: ac-lc0zxaf-shard-00-02.ai6gu5z.mongodb.net
+🏥 MongoDB ping successful
+GET /products query: [Object: null prototype] { page: '1', limit: '10' }
+GET /products built filter: {}
+AUTH MIDDLEWARE: Request to GET /me
+AUTH MIDDLEWARE: Header present: true
+Authenticated staff ID: 6953ac392f0ee5ad5aa5be67, Email: info@muruganbags.com, Role: admin
+Auth me: User from token: {
+  id: new ObjectId('6953ac392f0ee5ad5aa5be67'),
+  email: 'info@muruganbags.com',
+  role: 'admin',
+  type: 'staff',
+  iat: 1771865056,
+  exp: 1772469856
+}
+Auth me: User found: new ObjectId('6953ac392f0ee5ad5aa5be67') Murugan Bags
+=== PUT PRODUCT DEBUG ===
+Request body keys: [
+  'product_type',   'name',
+  'description',    'sku',
+  'categories',     'cost_price',
+  'selling_price',  'isCodAvailable',
+  'isFreeShipping', 'showRatings',
+  'tags',           'published',
+  'seo_robots',     'product_variants'
+]
+=== PUT: RAW CATEGORIES INPUT === [{"category":"693d0088ad85718b998138cb","categoryName":"School Bags","categorySlug":"school-bags","subcategoryIds":[],"subcategoryNames":[]}]
+=== PUT: PARSED CATEGORIES === [
+  {
+    "category": "693d0088ad85718b998138cb",
+    "categoryName": "School Bags",
+    "categorySlug": "school-bags",
+    "subcategoryIds": [],
+    "subcategoryNames": []
+  }
+]
+Processing category item: {
+  category: '693d0088ad85718b998138cb',
+  categoryName: 'School Bags',
+  categorySlug: 'school-bags',
+  subcategoryIds: [],
+  subcategoryNames: []
+}
+Resolved Category ID: 693d0088ad85718b998138cb
+Resolved Subcategories: []
+=== PUT: FINAL CATEGORIES TO SAVE === [
+  {
+    "category": "693d0088ad85718b998138cb",
+    "subcategories": []
+  }
+]
+Parsed variants data for update: {
+  "attributes": [
+    {
+      "id": "attr-size",
+      "name": "size",
+      "values": [
+        "S"
+      ]
+    },
+    {
+      "id": "attr-color",
+      "name": "color",
+      "values": []
+    },
+    {
+      "id": "attr-material",
+      "name": "material",
+      "values": []
+    }
+  ],
+  "combinations": [
+    {
+      "id": "699c57c1351e36d75c1b849a",
+      "name": "dfghjkl - S",
+      "sku": "DFGHJK-S",
+      "slug": "s",
+      "costPrice": 40,
+      "salesPrice": 50,
+      "stock": 10,
+      "minStock": 5,
+      "images": [],
+      "attributes": {
+        "size": "S"
+      },
+      "published": true
+    }
+  ],
+  "autoGenerateSKU": false
+}
+🚨 BACKEND: === TRANSFORMING VARIANTS ===
+🚨 BACKEND: variantsData: {
+  "attributes": [
+    {
+      "id": "attr-size",
+      "name": "size",
+      "values": [
+        "S"
+      ]
+    },
+    {
+      "id": "attr-color",
+      "name": "color",
+      "values": []
+    },
+    {
+      "id": "attr-material",
+      "name": "material",
+      "values": []
+    }
+  ],
+  "combinations": [
+    {
+      "id": "699c57c1351e36d75c1b849a",
+      "name": "dfghjkl - S",
+      "sku": "DFGHJK-S",
+      "slug": "s",
+      "costPrice": 40,
+      "salesPrice": 50,
+      "stock": 10,
+      "minStock": 5,
+      "images": [],
+      "attributes": {
+        "size": "S"
+      },
+      "published": true
+    }
+  ],
+  "autoGenerateSKU": false
+}
+🚨 BACKEND: baseSKU: DFGHJK
+🚨 BACKEND: costPrice: undefined
+🚨 BACKEND: salesPrice: undefined
+🚨 BACKEND: variantImagesMap: {
+  '0': [
+    '/uploads/products/1771866393499-730868956-Vogue-03_BP_N_Blue_07_700x-6.webp'
+  ]
+}
+🚨 BACKEND: === TRANSFORMATION COMPLETE ===
+🚨 BACKEND: Total transformed variants: 1
+=== BEFORE DATABASE UPDATE ===
+productQuery: {
+  "_id": "699c57c1351e36d75c1b8498"
+}
+updateData keys: [
+  'updated_at',
+  'name',
+  'description',
+  'sku',
+  'categories',
+  'isCodAvailable',
+  'isFreeShipping',
+  'showRatings',
+  'seo',
+  'product_variants',
+  'published'
+]
+updateData: {
+  "updated_at": "2026-02-23T17:06:35.116Z",
+  "name": "dfghjkl",
+  "description": "fghjk",
+  "sku": "DFGHJK",
+  "categories": [
+    {
+      "category": "693d0088ad85718b998138cb",
+      "subcategories": []
+    }
+  ],
+  "isCodAvailable": true,
+  "isFreeShipping": false,
+  "showRatings": true,
+  "seo": {
+    "robots": "index,follow"
+  },
+  "product_variants": [
+    {
+      "name": "dfghjkl - S",
+      "sku": "DFGHJK-S",
+      "slug": "s",
+      "cost_price": 40,
+      "selling_price": 50,
+      "stock": 10,
+      "minStock": 5,
+      "images": [
+        "/uploads/products/1771866393499-730868956-Vogue-03_BP_N_Blue_07_700x-6.webp"
+      ],
+      "attributes": {
+        "size": "S"
+      },
+      "published": true,
+      "status": "selling",
+      "_id": "699c57c1351e36d75c1b849a",
+      "updated_at": "2026-02-23T17:06:35.117Z"
+    }
+  ],
+  "published": true
+}
+=== AFTER UPDATE ===
+Updated product variants count: 1
+=== UPDATING VARIANT STOCK ENTRIES ===
+Current variant IDs: [ '699c57c1351e36d75c1b849a' ]
+Existing stock entries count: 1
+✅ Updated existing stock entry for variant: s
+GET /products query: [Object: null prototype] { page: '1', limit: '10' }
+GET /products built filter: {}
+GET /products query: [Object: null prototype] {
+  page: '1',
+  limit: '1000',
+  sort: '-createdAt'
+}
+GET /products built filter: {}
+Colors endpoint - found colors: [ 'Blue', 'Cyan', 'Gray', 'Ochre', 'Sage green' ]
+Firebase token exchange request: {
+  uid: '1GA9ghvdGaPmrpRnNn9hL2Vtppt2',
+  email: 'developer@sbbs.co.in',
+  phoneNumber: null,
+  displayName: 'Developer SBBS'
+}
+Processing Firebase token exchange for user: 1GA9ghvdGaPmrpRnNn9hL2Vtppt2
+createCustomerFromFirebase: Processing user: {
+  uid: '1GA9ghvdGaPmrpRnNn9hL2Vtppt2',
+  email: 'developer@sbbs.co.in',
+  displayName: 'Developer SBBS',
+  name: undefined,
+  phoneNumber: null
+}
+Updated existing customer: Developer SBBS (developer@sbbs.co.in)
+Generated JWT for customer ID: 6933d7ce1b924363f9ff3fe2, Firebase UID: 1GA9ghvdGaPmrpRnNn9hL2Vtppt2, Email: developer@sbbs.co.in
+Firebase token exchange successful for user: 1GA9ghvdGaPmrpRnNn9hL2Vtppt2 Customer ID: new ObjectId('6933d7ce1b924363f9ff3fe2')
+Firebase sync: Received data: {
+  firebaseUid: '1GA9ghvdGaPmrpRnNn9hL2Vtppt2',
+  email: 'developer@sbbs.co.in',
+  displayName: 'Developer SBBS',
+  phoneNumber: null,
+  name: undefined,
+  firstName: undefined,
+  lastName: undefined
+}
+Firebase sync: Existing customer found: YES
+Firebase sync: Updated existing customer: Developer SBBS
+GET /products query: [Object: null prototype] {
+  page: '1',
+  limit: '1000',
+  sort: '-createdAt'
+}
+GET /products built filter: {}
+Colors endpoint - found colors: [ 'Blue', 'Cyan', 'Gray', 'Ochre', 'Sage green' ]
+Firebase token exchange request: {
+  uid: '1GA9ghvdGaPmrpRnNn9hL2Vtppt2',
+  email: 'developer@sbbs.co.in',
+  phoneNumber: null,
+  displayName: 'Developer SBBS'
+}
+Processing Firebase token exchange for user: 1GA9ghvdGaPmrpRnNn9hL2Vtppt2
+createCustomerFromFirebase: Processing user: {
+  uid: '1GA9ghvdGaPmrpRnNn9hL2Vtppt2',
+  email: 'developer@sbbs.co.in',
+  displayName: 'Developer SBBS',
+  name: undefined,
+  phoneNumber: null
+}
+Updated existing customer: Developer SBBS (developer@sbbs.co.in)
+Generated JWT for customer ID: 6933d7ce1b924363f9ff3fe2, Firebase UID: 1GA9ghvdGaPmrpRnNn9hL2Vtppt2, Email: developer@sbbs.co.in
+Firebase token exchange successful for user: 1GA9ghvdGaPmrpRnNn9hL2Vtppt2 Customer ID: new ObjectId('6933d7ce1b924363f9ff3fe2')
+Firebase sync: Received data: {
+  firebaseUid: '1GA9ghvdGaPmrpRnNn9hL2Vtppt2',
+  email: 'developer@sbbs.co.in',
+  displayName: 'Developer SBBS',
+  phoneNumber: null,
+  name: undefined,
+  firstName: undefined,
+  lastName: undefined
+}
+Firebase sync: Existing customer found: YES
+Firebase sync: Updated existing customer: Developer SBBS
+GET /products query: [Object: null prototype] {
+  page: '1',
+  limit: '1000',
+  sort: '-createdAt'
+}
+GET /products built filter: {}
+Colors endpoint - found colors: [ 'Blue', 'Cyan', 'Gray', 'Ochre', 'Sage green' ]
+Firebase token exchange request: {
+  uid: '1GA9ghvdGaPmrpRnNn9hL2Vtppt2',
+  email: 'developer@sbbs.co.in',
+  phoneNumber: null,
+  displayName: 'Developer SBBS'
+}
+Processing Firebase token exchange for user: 1GA9ghvdGaPmrpRnNn9hL2Vtppt2
+createCustomerFromFirebase: Processing user: {
+  uid: '1GA9ghvdGaPmrpRnNn9hL2Vtppt2',
+  email: 'developer@sbbs.co.in',
+  displayName: 'Developer SBBS',
+  name: undefined,
+  phoneNumber: null
+}
+Updated existing customer: Developer SBBS (developer@sbbs.co.in)
+Generated JWT for customer ID: 6933d7ce1b924363f9ff3fe2, Firebase UID: 1GA9ghvdGaPmrpRnNn9hL2Vtppt2, Email: developer@sbbs.co.in
+Firebase token exchange successful for user: 1GA9ghvdGaPmrpRnNn9hL2Vtppt2 Customer ID: new ObjectId('6933d7ce1b924363f9ff3fe2')
+Firebase sync: Received data: {
+  firebaseUid: '1GA9ghvdGaPmrpRnNn9hL2Vtppt2',
+  email: 'developer@sbbs.co.in',
+  displayName: 'Developer SBBS',
+  phoneNumber: null,
+  name: undefined,
+  firstName: undefined,
+  lastName: undefined
+}
+Firebase sync: Existing customer found: YES
+Firebase sync: Updated existing customer: Developer SBBS
+GET /products query: [Object: null prototype] {
+  page: '1',
+  limit: '1000',
+  sort: '-createdAt'
+}
+GET /products built filter: {}
+Colors endpoint - found colors: [ 'Blue', 'Cyan', 'Gray', 'Ochre', 'Sage green' ]
+Firebase token exchange request: {
+  uid: '1GA9ghvdGaPmrpRnNn9hL2Vtppt2',
+  email: 'developer@sbbs.co.in',
+  phoneNumber: null,
+  displayName: 'Developer SBBS'
+}
+Processing Firebase token exchange for user: 1GA9ghvdGaPmrpRnNn9hL2Vtppt2
+createCustomerFromFirebase: Processing user: {
+  uid: '1GA9ghvdGaPmrpRnNn9hL2Vtppt2',
+  email: 'developer@sbbs.co.in',
+  displayName: 'Developer SBBS',
+  name: undefined,
+  phoneNumber: null
+}
+Updated existing customer: Developer SBBS (developer@sbbs.co.in)
+Generated JWT for customer ID: 6933d7ce1b924363f9ff3fe2, Firebase UID: 1GA9ghvdGaPmrpRnNn9hL2Vtppt2, Email: developer@sbbs.co.in
+Firebase token exchange successful for user: 1GA9ghvdGaPmrpRnNn9hL2Vtppt2 Customer ID: new ObjectId('6933d7ce1b924363f9ff3fe2')
+Firebase sync: Received data: {
+  firebaseUid: '1GA9ghvdGaPmrpRnNn9hL2Vtppt2',
+  email: 'developer@sbbs.co.in',
+  displayName: 'Developer SBBS',
+  phoneNumber: null,
+  name: undefined,
+  firstName: undefined,
+  lastName: undefined
+}
+Firebase sync: Existing customer found: YES
+Firebase sync: Updated existing customer: Developer SBBS
+GET /products query: [Object: null prototype] {
+  page: '1',
+  limit: '1000',
+  sort: '-createdAt'
+}
+GET /products built filter: {}
+Colors endpoint - found colors: [ 'Blue', 'Cyan', 'Gray', 'Ochre', 'Sage green' ]
+Firebase token exchange request: {
+  uid: '1GA9ghvdGaPmrpRnNn9hL2Vtppt2',
+  email: 'developer@sbbs.co.in',
+  phoneNumber: null,
+  displayName: 'Developer SBBS'
+}
+Processing Firebase token exchange for user: 1GA9ghvdGaPmrpRnNn9hL2Vtppt2
+createCustomerFromFirebase: Processing user: {
+  uid: '1GA9ghvdGaPmrpRnNn9hL2Vtppt2',
+  email: 'developer@sbbs.co.in',
+  displayName: 'Developer SBBS',
+  name: undefined,
+  phoneNumber: null
+}
+Updated existing customer: Developer SBBS (developer@sbbs.co.in)
+Generated JWT for customer ID: 6933d7ce1b924363f9ff3fe2, Firebase UID: 1GA9ghvdGaPmrpRnNn9hL2Vtppt2, Email: developer@sbbs.co.in
+Firebase token exchange successful for user: 1GA9ghvdGaPmrpRnNn9hL2Vtppt2 Customer ID: new ObjectId('6933d7ce1b924363f9ff3fe2')
+Firebase sync: Received data: {
+  firebaseUid: '1GA9ghvdGaPmrpRnNn9hL2Vtppt2',
+  email: 'developer@sbbs.co.in',
+  displayName: 'Developer SBBS',
+  phoneNumber: null,
+  name: undefined,
+  firstName: undefined,
+  lastName: undefined
+}
+Firebase sync: Existing customer found: YES
+Firebase sync: Updated existing customer: Developer SBBS
+GET /products query: [Object: null prototype] {
+  page: '1',
+  limit: '1000',
+  sort: '-createdAt'
+}
+GET /products built filter: {}
+Firebase token exchange request: {
+  uid: '1GA9ghvdGaPmrpRnNn9hL2Vtppt2',
+  email: 'developer@sbbs.co.in',
+  phoneNumber: null,
+  displayName: 'Developer SBBS'
+}
+Processing Firebase token exchange for user: 1GA9ghvdGaPmrpRnNn9hL2Vtppt2
+createCustomerFromFirebase: Processing user: {
+  uid: '1GA9ghvdGaPmrpRnNn9hL2Vtppt2',
+  email: 'developer@sbbs.co.in',
+  displayName: 'Developer SBBS',
+  name: undefined,
+  phoneNumber: null
+}
+Updated existing customer: Developer SBBS (developer@sbbs.co.in)
+Generated JWT for customer ID: 6933d7ce1b924363f9ff3fe2, Firebase UID: 1GA9ghvdGaPmrpRnNn9hL2Vtppt2, Email: developer@sbbs.co.in
+Firebase token exchange successful for user: 1GA9ghvdGaPmrpRnNn9hL2Vtppt2 Customer ID: new ObjectId('6933d7ce1b924363f9ff3fe2')
+Firebase sync: Received data: {
+  firebaseUid: '1GA9ghvdGaPmrpRnNn9hL2Vtppt2',
+  email: 'developer@sbbs.co.in',
+  displayName: 'Developer SBBS',
+  phoneNumber: null,
+  name: undefined,
+  firstName: undefined,
+  lastName: undefined
+}
+Firebase sync: Existing customer found: YES
+Colors endpoint - found colors: [ 'Blue', 'Cyan', 'Gray', 'Ochre', 'Sage green' ]
+Firebase sync: Updated existing customer: Developer SBBS
+GET /products query: [Object: null prototype] { page: '1', limit: '10' }
+GET /products built filter: {}
+GET /products query: [Object: null prototype] { page: '1', limit: '10' }
+GET /products built filter: {}
+GET /products query: [Object: null prototype] { page: '1', limit: '10' }
+GET /products built filter: {}
+GET /products query: [Object: null prototype] {
+  page: '1',
+  limit: '1000',
+  sort: '-createdAt'
+}
+GET /products built filter: {}
+Colors endpoint - found colors: [ 'Blue', 'Cyan', 'Gray', 'Ochre', 'Sage green' ]
+Firebase token exchange request: {
+  uid: '1GA9ghvdGaPmrpRnNn9hL2Vtppt2',
+  email: 'developer@sbbs.co.in',
+  phoneNumber: null,
+  displayName: 'Developer SBBS'
+}
+Processing Firebase token exchange for user: 1GA9ghvdGaPmrpRnNn9hL2Vtppt2
+createCustomerFromFirebase: Processing user: {
+  uid: '1GA9ghvdGaPmrpRnNn9hL2Vtppt2',
+  email: 'developer@sbbs.co.in',
+  displayName: 'Developer SBBS',
+  name: undefined,
+  phoneNumber: null
+}
+Updated existing customer: Developer SBBS (developer@sbbs.co.in)
+Generated JWT for customer ID: 6933d7ce1b924363f9ff3fe2, Firebase UID: 1GA9ghvdGaPmrpRnNn9hL2Vtppt2, Email: developer@sbbs.co.in
+Firebase token exchange successful for user: 1GA9ghvdGaPmrpRnNn9hL2Vtppt2 Customer ID: new ObjectId('6933d7ce1b924363f9ff3fe2')
+Firebase sync: Received data: {
+  firebaseUid: '1GA9ghvdGaPmrpRnNn9hL2Vtppt2',
+  email: 'developer@sbbs.co.in',
+  displayName: 'Developer SBBS',
+  phoneNumber: null,
+  name: undefined,
+  firstName: undefined,
+  lastName: undefined
+}
+Firebase sync: Existing customer found: YES
+Firebase sync: Updated existing customer: Developer SBBS
+GET /products query: [Object: null prototype] { page: '1', limit: '10' }
+GET /products built filter: {}
+=== PUT PRODUCT DEBUG ===
+Request body keys: [
+  'product_type',   'name',
+  'description',    'sku',
+  'categories',     'cost_price',
+  'selling_price',  'isCodAvailable',
+  'isFreeShipping', 'showRatings',
+  'tags',           'published',
+  'seo_robots',     'product_variants'
+]
+=== PUT: RAW CATEGORIES INPUT === [{"category":"693d0088ad85718b998138cb","categoryName":"School Bags","categorySlug":"school-bags","subcategoryIds":[],"subcategoryNames":[]}]
+=== PUT: PARSED CATEGORIES === [
+  {
+    "category": "693d0088ad85718b998138cb",
+    "categoryName": "School Bags",
+    "categorySlug": "school-bags",
+    "subcategoryIds": [],
+    "subcategoryNames": []
+  }
+]
+Processing category item: {
+  category: '693d0088ad85718b998138cb',
+  categoryName: 'School Bags',
+  categorySlug: 'school-bags',
+  subcategoryIds: [],
+  subcategoryNames: []
+}
+Resolved Category ID: 693d0088ad85718b998138cb
+Resolved Subcategories: []
+=== PUT: FINAL CATEGORIES TO SAVE === [
+  {
+    "category": "693d0088ad85718b998138cb",
+    "subcategories": []
+  }
+]
+Parsed variants data for update: {
+  "attributes": [
+    {
+      "id": "attr-size",
+      "name": "size",
+      "values": [
+        "S"
+      ]
+    },
+    {
+      "id": "attr-color",
+      "name": "color",
+      "values": []
+    },
+    {
+      "id": "attr-material",
+      "name": "material",
+      "values": []
+    }
+  ],
+  "combinations": [
+    {
+      "id": "699c57c1351e36d75c1b849a",
+      "name": "dfghjkl - S",
+      "sku": "DFGHJK-S",
+      "slug": "s",
+      "costPrice": 40,
+      "salesPrice": 50,
+      "stock": 10,
+      "minStock": 5,
+      "images": [],
+      "attributes": {
+        "size": "S"
+      },
+      "published": true
+    }
+  ],
+  "autoGenerateSKU": false
+}
+🚨 BACKEND: === TRANSFORMING VARIANTS ===
+🚨 BACKEND: variantsData: {
+  "attributes": [
+    {
+      "id": "attr-size",
+      "name": "size",
+      "values": [
+        "S"
+      ]
+    },
+    {
+      "id": "attr-color",
+      "name": "color",
+      "values": []
+    },
+    {
+      "id": "attr-material",
+      "name": "material",
+      "values": []
+    }
+  ],
+  "combinations": [
+    {
+      "id": "699c57c1351e36d75c1b849a",
+      "name": "dfghjkl - S",
+      "sku": "DFGHJK-S",
+      "slug": "s",
+      "costPrice": 40,
+      "salesPrice": 50,
+      "stock": 10,
+      "minStock": 5,
+      "images": [],
+      "attributes": {
+        "size": "S"
+      },
+      "published": true
+    }
+  ],
+  "autoGenerateSKU": false
+}
+🚨 BACKEND: baseSKU: DFGHJK
+🚨 BACKEND: costPrice: undefined
+🚨 BACKEND: salesPrice: undefined
+🚨 BACKEND: variantImagesMap: {
+  '0': [
+    '/uploads/products/1771867565244-349701607-Vogue-03_BP_N_Blue_07_700x-6.webp'
+  ]
+}
+🚨 BACKEND: === TRANSFORMATION COMPLETE ===
+🚨 BACKEND: Total transformed variants: 1
+=== BEFORE DATABASE UPDATE ===
+productQuery: {
+  "_id": "699c57c1351e36d75c1b8498"
+}
+updateData keys: [
+  'updated_at',
+  'name',
+  'description',
+  'sku',
+  'categories',
+  'isCodAvailable',
+  'isFreeShipping',
+  'showRatings',
+  'seo',
+  'product_variants',
+  'published'
+]
+updateData: {
+  "updated_at": "2026-02-23T17:26:06.972Z",
+  "name": "dfghjkl",
+  "description": "fghjk",
+  "sku": "DFGHJK",
+  "categories": [
+    {
+      "category": "693d0088ad85718b998138cb",
+      "subcategories": []
+    }
+  ],
+  "isCodAvailable": true,
+  "isFreeShipping": false,
+  "showRatings": true,
+  "seo": {
+    "robots": "index,follow"
+  },
+  "product_variants": [
+    {
+      "name": "dfghjkl - S",
+      "sku": "DFGHJK-S",
+      "slug": "s",
+      "cost_price": 40,
+      "selling_price": 50,
+      "stock": 10,
+      "minStock": 5,
+      "images": [
+        "/uploads/products/1771867565244-349701607-Vogue-03_BP_N_Blue_07_700x-6.webp"
+      ],
+      "attributes": {
+        "size": "S"
+      },
+      "published": true,
+      "status": "selling",
+      "_id": "699c57c1351e36d75c1b849a",
+      "updated_at": "2026-02-23T17:26:06.973Z"
+    }
+  ],
+  "published": true
+}
+=== AFTER UPDATE ===
+Updated product variants count: 1
+=== UPDATING VARIANT STOCK ENTRIES ===
+Current variant IDs: [ '699c57c1351e36d75c1b849a' ]
+Existing stock entries count: 1
+✅ Updated existing stock entry for variant: s
+GET /products query: [Object: null prototype] { page: '1', limit: '10' }
+GET /products built filter: {}
+GET /products query: [Object: null prototype] {
+  page: '1',
+  limit: '1000',
+  sort: '-createdAt'
+}
+GET /products built filter: {}
+Firebase token exchange request: {
+  uid: '1GA9ghvdGaPmrpRnNn9hL2Vtppt2',
+  email: 'developer@sbbs.co.in',
+  phoneNumber: null,
+  displayName: 'Developer SBBS'
+}
+Processing Firebase token exchange for user: 1GA9ghvdGaPmrpRnNn9hL2Vtppt2
+createCustomerFromFirebase: Processing user: {
+  uid: '1GA9ghvdGaPmrpRnNn9hL2Vtppt2',
+  email: 'developer@sbbs.co.in',
+  displayName: 'Developer SBBS',
+  name: undefined,
+  phoneNumber: null
+}
+Colors endpoint - found colors: [ 'Blue', 'Cyan', 'Gray', 'Ochre', 'Sage green' ]
+Updated existing customer: Developer SBBS (developer@sbbs.co.in)
+Generated JWT for customer ID: 6933d7ce1b924363f9ff3fe2, Firebase UID: 1GA9ghvdGaPmrpRnNn9hL2Vtppt2, Email: developer@sbbs.co.in
+Firebase token exchange successful for user: 1GA9ghvdGaPmrpRnNn9hL2Vtppt2 Customer ID: new ObjectId('6933d7ce1b924363f9ff3fe2')
+Firebase sync: Received data: {
+  firebaseUid: '1GA9ghvdGaPmrpRnNn9hL2Vtppt2',
+  email: 'developer@sbbs.co.in',
+  displayName: 'Developer SBBS',
+  phoneNumber: null,
+  name: undefined,
+  firstName: undefined,
+  lastName: undefined
+}
+Firebase sync: Existing customer found: YES
+Firebase sync: Updated existing customer: Developer SBBS
+GET /products query: [Object: null prototype] {
+  page: '1',
+  limit: '1000',
+  sort: '-createdAt'
+}
+GET /products built filter: {}
+Firebase token exchange request: {
+  uid: '1GA9ghvdGaPmrpRnNn9hL2Vtppt2',
+  email: 'developer@sbbs.co.in',
+  phoneNumber: null,
+  displayName: 'Developer SBBS'
+}
+Processing Firebase token exchange for user: 1GA9ghvdGaPmrpRnNn9hL2Vtppt2
+createCustomerFromFirebase: Processing user: {
+  uid: '1GA9ghvdGaPmrpRnNn9hL2Vtppt2',
+  email: 'developer@sbbs.co.in',
+  displayName: 'Developer SBBS',
+  name: undefined,
+  phoneNumber: null
+}
+Updated existing customer: Developer SBBS (developer@sbbs.co.in)
+Generated JWT for customer ID: 6933d7ce1b924363f9ff3fe2, Firebase UID: 1GA9ghvdGaPmrpRnNn9hL2Vtppt2, Email: developer@sbbs.co.in
+Firebase token exchange successful for user: 1GA9ghvdGaPmrpRnNn9hL2Vtppt2 Customer ID: new ObjectId('6933d7ce1b924363f9ff3fe2')
+Firebase sync: Received data: {
+  firebaseUid: '1GA9ghvdGaPmrpRnNn9hL2Vtppt2',
+  email: 'developer@sbbs.co.in',
+  displayName: 'Developer SBBS',
+  phoneNumber: null,
+  name: undefined,
+  firstName: undefined,
+  lastName: undefined
+}
+Firebase sync: Existing customer found: YES
+Colors endpoint - found colors: [ 'Blue', 'Cyan', 'Gray', 'Ochre', 'Sage green' ]
+Firebase sync: Updated existing customer: Developer SBBS
+GET /products query: [Object: null prototype] {
+  page: '1',
+  limit: '1000',
+  sort: '-createdAt'
+}
+GET /products built filter: {}
+Colors endpoint - found colors: [ 'Blue', 'Cyan', 'Gray', 'Ochre', 'Sage green' ]
+Firebase token exchange request: {
+  uid: '1GA9ghvdGaPmrpRnNn9hL2Vtppt2',
+  email: 'developer@sbbs.co.in',
+  phoneNumber: null,
+  displayName: 'Developer SBBS'
+}
+Processing Firebase token exchange for user: 1GA9ghvdGaPmrpRnNn9hL2Vtppt2
+createCustomerFromFirebase: Processing user: {
+  uid: '1GA9ghvdGaPmrpRnNn9hL2Vtppt2',
+  email: 'developer@sbbs.co.in',
+  displayName: 'Developer SBBS',
+  name: undefined,
+  phoneNumber: null
+}
+Updated existing customer: Developer SBBS (developer@sbbs.co.in)
+Generated JWT for customer ID: 6933d7ce1b924363f9ff3fe2, Firebase UID: 1GA9ghvdGaPmrpRnNn9hL2Vtppt2, Email: developer@sbbs.co.in
+Firebase token exchange successful for user: 1GA9ghvdGaPmrpRnNn9hL2Vtppt2 Customer ID: new ObjectId('6933d7ce1b924363f9ff3fe2')
+Firebase sync: Received data: {
+  firebaseUid: '1GA9ghvdGaPmrpRnNn9hL2Vtppt2',
+  email: 'developer@sbbs.co.in',
+  displayName: 'Developer SBBS',
+  phoneNumber: null,
+  name: undefined,
+  firstName: undefined,
+  lastName: undefined
+}
+Firebase sync: Existing customer found: YES
+Firebase sync: Updated existing customer: Developer SBBS
+GET /products query: [Object: null prototype] {
+  page: '1',
+  limit: '1000',
+  sort: '-createdAt'
+}
+GET /products built filter: {}
+Colors endpoint - found colors: [ 'Blue', 'Cyan', 'Gray', 'Ochre', 'Sage green' ]
+Firebase token exchange request: {
+  uid: '1GA9ghvdGaPmrpRnNn9hL2Vtppt2',
+  email: 'developer@sbbs.co.in',
+  phoneNumber: null,
+  displayName: 'Developer SBBS'
+}
+Processing Firebase token exchange for user: 1GA9ghvdGaPmrpRnNn9hL2Vtppt2
+createCustomerFromFirebase: Processing user: {
+  uid: '1GA9ghvdGaPmrpRnNn9hL2Vtppt2',
+  email: 'developer@sbbs.co.in',
+  displayName: 'Developer SBBS',
+  name: undefined,
+  phoneNumber: null
+}
+Updated existing customer: Developer SBBS (developer@sbbs.co.in)
+Generated JWT for customer ID: 6933d7ce1b924363f9ff3fe2, Firebase UID: 1GA9ghvdGaPmrpRnNn9hL2Vtppt2, Email: developer@sbbs.co.in
+Firebase token exchange successful for user: 1GA9ghvdGaPmrpRnNn9hL2Vtppt2 Customer ID: new ObjectId('6933d7ce1b924363f9ff3fe2')
+Firebase sync: Received data: {
+  firebaseUid: '1GA9ghvdGaPmrpRnNn9hL2Vtppt2',
+  email: 'developer@sbbs.co.in',
+  displayName: 'Developer SBBS',
+  phoneNumber: null,
+  name: undefined,
+  firstName: undefined,
+  lastName: undefined
+}
+Firebase sync: Existing customer found: YES
+Firebase sync: Updated existing customer: Developer SBBS
+GET /products query: [Object: null prototype] { page: '1', limit: '10' }
+GET /products built filter: {}
+GET /products query: [Object: null prototype] {
+  page: '1',
+  limit: '4',
+  isNewArrival: 'true',
+  published: 'true'
+}
+GET /products built filter: {
+  "isNewArrival": true,
+  "published": true
+}
+Colors endpoint - found colors: [ 'Blue', 'Cyan', 'Gray', 'Ochre', 'Sage green' ]
+GET /products query: [Object: null prototype] {
+  page: '1',
+  limit: '4',
+  isNewArrival: 'true',
+  published: 'true'
+}
+GET /products built filter: {
+  "isNewArrival": true,
+  "published": true
+}
+GET /products query: [Object: null prototype] { page: '1', limit: '4', sort: 'date-desc' }
+GET /products built filter: {}
+GET /products query: [Object: null prototype] { page: '1', limit: '4', sort: 'date-desc' }
+GET /products built filter: {}
+Colors endpoint - found colors: [ 'Blue', 'Cyan', 'Gray', 'Ochre', 'Sage green' ]
+GET /products query: [Object: null prototype] {
+  page: '1',
+  limit: '4',
+  isNewArrival: 'true',
+  published: 'true'
+}
+GET /products built filter: {
+  "isNewArrival": true,
+  "published": true
+}
+Firebase token exchange request: {
+  uid: '1GA9ghvdGaPmrpRnNn9hL2Vtppt2',
+  email: 'developer@sbbs.co.in',
+  phoneNumber: null,
+  displayName: 'Developer SBBS'
+}
+Processing Firebase token exchange for user: 1GA9ghvdGaPmrpRnNn9hL2Vtppt2
+createCustomerFromFirebase: Processing user: {
+  uid: '1GA9ghvdGaPmrpRnNn9hL2Vtppt2',
+  email: 'developer@sbbs.co.in',
+  displayName: 'Developer SBBS',
+  name: undefined,
+  phoneNumber: null
+}
+Updated existing customer: Developer SBBS (developer@sbbs.co.in)
+Generated JWT for customer ID: 6933d7ce1b924363f9ff3fe2, Firebase UID: 1GA9ghvdGaPmrpRnNn9hL2Vtppt2, Email: developer@sbbs.co.in
+Firebase token exchange successful for user: 1GA9ghvdGaPmrpRnNn9hL2Vtppt2 Customer ID: new ObjectId('6933d7ce1b924363f9ff3fe2')
+Firebase sync: Received data: {
+  firebaseUid: '1GA9ghvdGaPmrpRnNn9hL2Vtppt2',
+  email: 'developer@sbbs.co.in',
+  displayName: 'Developer SBBS',
+  phoneNumber: null,
+  name: undefined,
+  firstName: undefined,
+  lastName: undefined
+}
+GET /products query: [Object: null prototype] {
+  page: '1',
+  limit: '4',
+  isNewArrival: 'true',
+  published: 'true'
+}
+GET /products built filter: {
+  "isNewArrival": true,
+  "published": true
+}
+GET /products query: [Object: null prototype] { page: '1', limit: '4', sort: 'date-desc' }
+GET /products built filter: {}
+Colors endpoint - found colors: [ 'Blue', 'Cyan', 'Gray', 'Ochre', 'Sage green' ]
+Firebase sync: Existing customer found: YES
+Firebase sync: Updated existing customer: Developer SBBS
+Colors endpoint - found colors: [ 'Blue', 'Cyan', 'Gray', 'Ochre', 'Sage green' ]
+GET /products query: [Object: null prototype] { page: '1', limit: '4', sort: 'date-desc' }
+GET /products built filter: {}
+GET /products query: [Object: null prototype] {
+  page: '1',
+  limit: '1000',
+  sort: '-createdAt'
+}
+GET /products built filter: {}
+Colors endpoint - found colors: [ 'Blue', 'Cyan', 'Gray', 'Ochre', 'Sage green' ]
+GET /products query: [Object: null prototype] {
+  page: '1',
+  limit: '8',
+  category: '693d0088ad85718b998138cb'
+}
+GET /products built filter: {}
+GET /products query: [Object: null prototype] { page: '1', limit: '10' }
+GET /products built filter: {}
+GET /products query: [Object: null prototype] { page: '1', limit: '10' }
+GET /products built filter: {}
+=== PUT PRODUCT DEBUG ===
+Request body keys: [
+  'product_type',   'name',
+  'description',    'sku',
+  'categories',     'cost_price',
+  'selling_price',  'isCodAvailable',
+  'isFreeShipping', 'showRatings',
+  'tags',           'published',
+  'seo_robots',     'product_variants'
+]
+=== PUT: RAW CATEGORIES INPUT === [{"category":"693d0088ad85718b998138cb","categoryName":"School Bags","categorySlug":"school-bags","subcategoryIds":[],"subcategoryNames":[]}]
+=== PUT: PARSED CATEGORIES === [
+  {
+    "category": "693d0088ad85718b998138cb",
+    "categoryName": "School Bags",
+    "categorySlug": "school-bags",
+    "subcategoryIds": [],
+    "subcategoryNames": []
+  }
+]
+Processing category item: {
+  category: '693d0088ad85718b998138cb',
+  categoryName: 'School Bags',
+  categorySlug: 'school-bags',
+  subcategoryIds: [],
+  subcategoryNames: []
+}
+Resolved Category ID: 693d0088ad85718b998138cb
+Resolved Subcategories: []
+=== PUT: FINAL CATEGORIES TO SAVE === [
+  {
+    "category": "693d0088ad85718b998138cb",
+    "subcategories": []
+  }
+]
+Parsed variants data for update: {
+  "attributes": [
+    {
+      "id": "attr-size",
+      "name": "size",
+      "values": [
+        "S"
+      ]
+    },
+    {
+      "id": "attr-color",
+      "name": "color",
+      "values": []
+    },
+    {
+      "id": "attr-material",
+      "name": "material",
+      "values": []
+    }
+  ],
+  "combinations": [
+    {
+      "id": "699c57c1351e36d75c1b849a",
+      "name": "dfghjkl - S",
+      "sku": "DFGHJK-S",
+      "slug": "s",
+      "costPrice": 40,
+      "salesPrice": 50,
+      "stock": 10,
+      "minStock": 5,
+      "images": [
+        "/uploads/products/1771867565244-349701607-Vogue-03_BP_N_Blue_07_700x-6.webp"
+      ],
+      "attributes": {
+        "size": "S"
+      },
+      "published": true
+    }
+  ],
+  "autoGenerateSKU": false
+}
+🚨 BACKEND: === TRANSFORMING VARIANTS ===
+🚨 BACKEND: variantsData: {
+  "attributes": [
+    {
+      "id": "attr-size",
+      "name": "size",
+      "values": [
+        "S"
+      ]
+    },
+    {
+      "id": "attr-color",
+      "name": "color",
+      "values": []
+    },
+    {
+      "id": "attr-material",
+      "name": "material",
+      "values": []
+    }
+  ],
+  "combinations": [
+    {
+      "id": "699c57c1351e36d75c1b849a",
+      "name": "dfghjkl - S",
+      "sku": "DFGHJK-S",
+      "slug": "s",
+      "costPrice": 40,
+      "salesPrice": 50,
+      "stock": 10,
+      "minStock": 5,
+      "images": [
+        "/uploads/products/1771867565244-349701607-Vogue-03_BP_N_Blue_07_700x-6.webp"
+      ],
+      "attributes": {
+        "size": "S"
+      },
+      "published": true
+    }
+  ],
+  "autoGenerateSKU": false
+}
+🚨 BACKEND: baseSKU: DFGHJK
+🚨 BACKEND: costPrice: undefined
+🚨 BACKEND: salesPrice: undefined
+🚨 BACKEND: variantImagesMap: {}
+🚨 BACKEND: === TRANSFORMATION COMPLETE ===
+🚨 BACKEND: Total transformed variants: 1
+=== BEFORE DATABASE UPDATE ===
+productQuery: {
+  "_id": "699c57c1351e36d75c1b8498"
+}
+updateData keys: [
+  'updated_at',
+  'name',
+  'description',
+  'sku',
+  'categories',
+  'isCodAvailable',
+  'isFreeShipping',
+  'showRatings',
+  'seo',
+  'product_variants',
+  'published'
+]
+updateData: {
+  "updated_at": "2026-02-23T17:29:04.472Z",
+  "name": "dfghjkl",
+  "description": "fghjk",
+  "sku": "DFGHJK",
+  "categories": [
+    {
+      "category": "693d0088ad85718b998138cb",
+      "subcategories": []
+    }
+  ],
+  "isCodAvailable": true,
+  "isFreeShipping": false,
+  "showRatings": true,
+  "seo": {
+    "robots": "index,follow"
+  },
+  "product_variants": [
+    {
+      "name": "dfghjkl - S",
+      "sku": "DFGHJK-S",
+      "slug": "s",
+      "cost_price": 40,
+      "selling_price": 50,
+      "stock": 10,
+      "minStock": 5,
+      "images": [
+        "/uploads/products/1771867565244-349701607-Vogue-03_BP_N_Blue_07_700x-6.webp"
+      ],
+      "attributes": {
+        "size": "S"
+      },
+      "published": true,
+      "status": "selling",
+      "_id": "699c57c1351e36d75c1b849a",
+      "updated_at": "2026-02-23T17:29:04.473Z"
+    }
+  ],
+  "published": true
+}
+=== AFTER UPDATE ===
+Updated product variants count: 1
+=== UPDATING VARIANT STOCK ENTRIES ===
+Current variant IDs: [ '699c57c1351e36d75c1b849a' ]
+Existing stock entries count: 1
+✅ Updated existing stock entry for variant: s
+GET /products query: [Object: null prototype] { page: '1', limit: '10' }
+GET /products built filter: {}
+GET /products query: [Object: null prototype] { page: '1', limit: '10' }
+GET /products built filter: {}
+GET /products query: [Object: null prototype] {
+  page: '1',
+  limit: '1000',
+  sort: '-createdAt'
+}
+GET /products built filter: {}
+Colors endpoint - found colors: [ 'Blue', 'Cyan', 'Gray', 'Ochre', 'Sage green' ]
+GET /products query: [Object: null prototype] { page: '1', limit: '10' }
+GET /products built filter: {}
+=== POST PRODUCT DEBUG ===
+Variant 0 images data: {
+  hasImages: true,
+  imagesType: 'object',
+  imagesLength: 1,
+  images: [
+    'https://firebasestorage.googleapis.com/v0/b/murugan-bags.firebasestorage.app/o/product-variants%2Fproduct-variants_1771867874766_4bhv5ss6a5u.webp?alt=media&token=31e8e92b-b082-4ba3-ba44-42457a0caf96'
+  ]
+}
+🚨 BACKEND: Found 1 Firebase URLs for variant 0 - skipping variantImagesMap population
+🚨 BACKEND: Firebase URLs found, keeping variantImagesMap empty to prevent duplication
+Total images: 0
+Digital file: None
+=== BEFORE BUILDING PRODUCT DATA ===
+req.body.productStructure: undefined
+req.body.product_structure: variant
+Determined productStructure: variant
+Generated unique slug: xcfghjk
+=== PRODUCT DATA BEING SAVED ===
+product_structure in productData: variant
+=== PRODUCT INSTANCE CREATED ===
+product.product_structure: variant
+=== SETTING SEO FIELDS ===
+seo_title: undefined
+seo_description: undefined
+seoKeywords: []
+✅ Set seo.robots: index,follow
+✅ Set seo on product instance: { robots: 'index,follow' }
+=== PROCESSING VARIANTS ===
+Raw variantsData: {
+  "attributes": [
+    {
+      "id": "attr-size",
+      "name": "size",
+      "values": [
+        "S"
+      ]
+    },
+    {
+      "id": "attr-color",
+      "name": "color",
+      "values": []
+    },
+    {
+      "id": "attr-material",
+      "name": "material",
+      "values": []
+    }
+  ],
+  "combinations": [
+    {
+      "id": "variant-1771867872581-0-3ivhu8c3i",
+      "name": "serftgyhjkl - S",
+      "sku": "DEFGHJKL-S",
+      "slug": "s",
+      "costPrice": 500,
+      "salesPrice": 1000,
+      "stock": 50,
+      "minStock": 10,
+      "images": [
+        "https://firebasestorage.googleapis.com/v0/b/murugan-bags.firebasestorage.app/o/product-variants%2Fproduct-variants_1771867874766_4bhv5ss6a5u.webp?alt=media&token=31e8e92b-b082-4ba3-ba44-42457a0caf96"
+      ],
+      "attributes": {
+        "size": "S"
+      },
+      "published": true
+    }
+  ],
+  "autoGenerateSKU": true
+}
+🚨 BACKEND: === TRANSFORMING VARIANTS ===
+🚨 BACKEND: variantsData: {
+  "attributes": [
+    {
+      "id": "attr-size",
+      "name": "size",
+      "values": [
+        "S"
+      ]
+    },
+    {
+      "id": "attr-color",
+      "name": "color",
+      "values": []
+    },
+    {
+      "id": "attr-material",
+      "name": "material",
+      "values": []
+    }
+  ],
+  "combinations": [
+    {
+      "id": "variant-1771867872581-0-3ivhu8c3i",
+      "name": "serftgyhjkl - S",
+      "sku": "DEFGHJKL-S",
+      "slug": "s",
+      "costPrice": 500,
+      "salesPrice": 1000,
+      "stock": 50,
+      "minStock": 10,
+      "images": [
+        "https://firebasestorage.googleapis.com/v0/b/murugan-bags.firebasestorage.app/o/product-variants%2Fproduct-variants_1771867874766_4bhv5ss6a5u.webp?alt=media&token=31e8e92b-b082-4ba3-ba44-42457a0caf96"
+      ],
+      "attributes": {
+        "size": "S"
+      },
+      "published": true
+    }
+  ],
+  "autoGenerateSKU": true
+}
+🚨 BACKEND: baseSKU: DEFGHJKL
+🚨 BACKEND: costPrice: undefined
+🚨 BACKEND: salesPrice: undefined
+🚨 BACKEND: variantImagesMap: {}
+🚨 BACKEND: === TRANSFORMATION COMPLETE ===
+🚨 BACKEND: Total transformed variants: 1
+=== TRANSFORMED VARIANTS ===
+Count: 1
+Sample variant before processing: {
+  "name": "serftgyhjkl - S",
+  "sku": "DEFGHJKL-S",
+  "slug": "s",
+  "cost_price": 500,
+  "selling_price": 1000,
+  "stock": 50,
+  "minStock": 10,
+  "images": [
+    "https://firebasestorage.googleapis.com/v0/b/murugan-bags.firebasestorage.app/o/product-variants%2Fproduct-variants_1771867874766_4bhv5ss6a5u.webp?alt=media&token=31e8e92b-b082-4ba3-ba44-42457a0caf96"
+  ],
+  "attributes": {
+    "size": "S"
+  },
+  "published": true,
+  "status": "selling"
+}
+Variant 0 final images: [
+  'https://firebasestorage.googleapis.com/v0/b/murugan-bags.firebasestorage.app/o/product-variants%2Fproduct-variants_1771867874766_4bhv5ss6a5u.webp?alt=media&token=31e8e92b-b082-4ba3-ba44-42457a0caf96'
+]
+=== FINAL VARIANTS BEFORE SAVE ===
+[
+  {
+    "name": "serftgyhjkl - S",
+    "sku": "DEFGHJKL-S",
+    "slug": "s",
+    "cost_price": 500,
+    "selling_price": 1000,
+    "stock": 50,
+    "minStock": 10,
+    "images": [
+      "https://firebasestorage.googleapis.com/v0/b/murugan-bags.firebasestorage.app/o/product-variants%2Fproduct-variants_1771867874766_4bhv5ss6a5u.webp?alt=media&token=31e8e92b-b082-4ba3-ba44-42457a0caf96"
+    ],
+    "attributes": {
+      "size": "S"
+    },
+    "published": true,
+    "status": "selling",
+    "created_at": "2026-02-23T17:31:16.986Z",
+    "updated_at": "2026-02-23T17:31:16.986Z"
+  }
+]
+=== FINAL PRODUCT DATA ===
+Variants count: 1
+=== BEFORE SAVE ===
+Product instance seo object: { robots: 'index,follow' }
+Product variants: 1
+=== AFTER SAVE ===
+Saved product ID: new ObjectId('699c8ee46a90de19b19fb5de')
+Saved product seo: {
+  robots: 'index,follow',
+  canonical: 'https://yourstore.com/products/xcfghjk',
+  ogTitle: 'serftgyhjkl',
+  ogDescription: 'fghjkl',
+  ogImage: 'https://firebasestorage.googleapis.com/v0/b/murugan-bags.firebasestorage.app/o/product-variants%2Fproduct-variants_1771867874766_4bhv5ss6a5u.webp?alt=media&token=31e8e92b-b082-4ba3-ba44-42457a0caf96'
+}
+Saved variants count: 1
+=== CREATING STOCK ENTRIES ===
+✅ Created 1 stock entries for variants of product serftgyhjkl
+✅ Created 1 stock entries for product serftgyhjkl
+GET /products query: [Object: null prototype] { page: '1', limit: '10' }
+GET /products built filter: {}
+GET /products query: [Object: null prototype] {
+  page: '1',
+  limit: '1000',
+  sort: '-createdAt'
+}
+GET /products built filter: {}
+Colors endpoint - found colors: [ 'Blue', 'Cyan', 'Gray', 'Ochre', 'Sage green' ]
+Firebase token exchange request: {
+  uid: '1GA9ghvdGaPmrpRnNn9hL2Vtppt2',
+  email: 'developer@sbbs.co.in',
+  phoneNumber: null,
+  displayName: 'Developer SBBS'
+}
+Processing Firebase token exchange for user: 1GA9ghvdGaPmrpRnNn9hL2Vtppt2
+createCustomerFromFirebase: Processing user: {
+  uid: '1GA9ghvdGaPmrpRnNn9hL2Vtppt2',
+  email: 'developer@sbbs.co.in',
+  displayName: 'Developer SBBS',
+  name: undefined,
+  phoneNumber: null
+}
+Updated existing customer: Developer SBBS (developer@sbbs.co.in)
+Generated JWT for customer ID: 6933d7ce1b924363f9ff3fe2, Firebase UID: 1GA9ghvdGaPmrpRnNn9hL2Vtppt2, Email: developer@sbbs.co.in
+Firebase token exchange successful for user: 1GA9ghvdGaPmrpRnNn9hL2Vtppt2 Customer ID: new ObjectId('6933d7ce1b924363f9ff3fe2')
+Firebase sync: Received data: {
+  firebaseUid: '1GA9ghvdGaPmrpRnNn9hL2Vtppt2',
+  email: 'developer@sbbs.co.in',
+  displayName: 'Developer SBBS',
+  phoneNumber: null,
+  name: undefined,
+  firstName: undefined,
+  lastName: undefined
+}
+Firebase sync: Existing customer found: YES
+Firebase sync: Updated existing customer: Developer SBBS
+GET /products query: [Object: null prototype] { page: '1', limit: '10' }
+GET /products built filter: {}
+GET /products query: [Object: null prototype] { page: '1', limit: '10' }
+GET /products built filter: {}
+=== PUT PRODUCT DEBUG ===
+Request body keys: [
+  'product_type',   'name',
+  'description',    'sku',
+  'categories',     'cost_price',
+  'selling_price',  'isCodAvailable',
+  'isFreeShipping', 'showRatings',
+  'tags',           'published',
+  'seo_robots',     'product_variants'
+]
+=== PUT: RAW CATEGORIES INPUT === [{"category":"6934013b1b924363f9ff4071","categoryName":"BackPacks","categorySlug":"backpacks","subcategoryIds":[],"subcategoryNames":[]}]
+=== PUT: PARSED CATEGORIES === [
+  {
+    "category": "6934013b1b924363f9ff4071",
+    "categoryName": "BackPacks",
+    "categorySlug": "backpacks",
+    "subcategoryIds": [],
+    "subcategoryNames": []
+  }
+]
+Processing category item: {
+  category: '6934013b1b924363f9ff4071',
+  categoryName: 'BackPacks',
+  categorySlug: 'backpacks',
+  subcategoryIds: [],
+  subcategoryNames: []
+}
+Resolved Category ID: 6934013b1b924363f9ff4071
+Resolved Subcategories: []
+=== PUT: FINAL CATEGORIES TO SAVE === [
+  {
+    "category": "6934013b1b924363f9ff4071",
+    "subcategories": []
+  }
+]
+Parsed variants data for update: {
+  "attributes": [
+    {
+      "id": "attr-size",
+      "name": "size",
+      "values": [
+        "S"
+      ]
+    },
+    {
+      "id": "attr-color",
+      "name": "color",
+      "values": []
+    },
+    {
+      "id": "attr-material",
+      "name": "material",
+      "values": []
+    }
+  ],
+  "combinations": [
+    {
+      "id": "699c8ee46a90de19b19fb5e0",
+      "name": "serftgyhjkl - S",
+      "sku": "DEFGHJKL-S",
+      "slug": "s",
+      "costPrice": 500,
+      "salesPrice": 1000,
+      "stock": 50,
+      "minStock": 10,
+      "images": [
+        "https://firebasestorage.googleapis.com/v0/b/murugan-bags.firebasestorage.app/o/product-variants%2Fproduct-variants_1771867874766_4bhv5ss6a5u.webp?alt=media&token=31e8e92b-b082-4ba3-ba44-42457a0caf96"
+      ],
+      "attributes": {
+        "size": "S"
+      },
+      "published": true
+    }
+  ],
+  "autoGenerateSKU": false
+}
+🚨 BACKEND: === TRANSFORMING VARIANTS ===
+🚨 BACKEND: variantsData: {
+  "attributes": [
+    {
+      "id": "attr-size",
+      "name": "size",
+      "values": [
+        "S"
+      ]
+    },
+    {
+      "id": "attr-color",
+      "name": "color",
+      "values": []
+    },
+    {
+      "id": "attr-material",
+      "name": "material",
+      "values": []
+    }
+  ],
+  "combinations": [
+    {
+      "id": "699c8ee46a90de19b19fb5e0",
+      "name": "serftgyhjkl - S",
+      "sku": "DEFGHJKL-S",
+      "slug": "s",
+      "costPrice": 500,
+      "salesPrice": 1000,
+      "stock": 50,
+      "minStock": 10,
+      "images": [
+        "https://firebasestorage.googleapis.com/v0/b/murugan-bags.firebasestorage.app/o/product-variants%2Fproduct-variants_1771867874766_4bhv5ss6a5u.webp?alt=media&token=31e8e92b-b082-4ba3-ba44-42457a0caf96"
+      ],
+      "attributes": {
+        "size": "S"
+      },
+      "published": true
+    }
+  ],
+  "autoGenerateSKU": false
+}
+🚨 BACKEND: baseSKU: DEFGHJKL
+🚨 BACKEND: costPrice: undefined
+🚨 BACKEND: salesPrice: undefined
+🚨 BACKEND: variantImagesMap: {
+  '0': [
+    '/uploads/products/1771867944013-330668296-Vogue-03_BP_N_Blue_02_2500x.webp'
+  ]
+}
+🚨 BACKEND: === TRANSFORMATION COMPLETE ===
+🚨 BACKEND: Total transformed variants: 1
+=== VALIDATING WITH MERGED DATA ===
+Product structure: variant
+Product type: physical
+Variants count: 1
+First variant: {
+  name: 'serftgyhjkl - S',
+  stock: 50,
+  minStock: 10,
+  published: true,
+  status: 'selling'
+}
+Stock validation result: {
+  canPublish: true,
+  status: 'selling',
+  published: true,
+  message: '✅ Product published. Available variants: serftgyhjkl - S: 50/10',
+  stockInfo: 'serftgyhjkl - S: 50/10'
+}
+=== BEFORE DATABASE UPDATE ===
+productQuery: {
+  "_id": "699c8ee46a90de19b19fb5de"
+}
+updateData keys: [
+  'updated_at',
+  'name',
+  'description',
+  'sku',
+  'categories',
+  'isCodAvailable',
+  'isFreeShipping',
+  'showRatings',
+  'seo',
+  'product_variants',
+  'published',
+  'status',
+  '_stockValidation'
+]
+updateData: {
+  "updated_at": "2026-02-23T17:32:28.065Z",
+  "name": "serftgyhjkl",
+  "description": "fghjkl",
+  "sku": "DEFGHJKL",
+  "categories": [
+    {
+      "category": "6934013b1b924363f9ff4071",
+      "subcategories": []
+    }
+  ],
+  "isCodAvailable": true,
+  "isFreeShipping": false,
+  "showRatings": true,
+  "seo": {
+    "robots": "index,follow"
+  },
+  "product_variants": [
+    {
+      "name": "serftgyhjkl - S",
+      "sku": "DEFGHJKL-S",
+      "slug": "s",
+      "cost_price": 500,
+      "selling_price": 1000,
+      "stock": 50,
+      "minStock": 10,
+      "images": [
+        "https://firebasestorage.googleapis.com/v0/b/murugan-bags.firebasestorage.app/o/product-variants%2Fproduct-variants_1771867874766_4bhv5ss6a5u.webp?alt=media&token=31e8e92b-b082-4ba3-ba44-42457a0caf96",
+        "/uploads/products/1771867944013-330668296-Vogue-03_BP_N_Blue_02_2500x.webp"
+      ],
+      "attributes": {
+        "size": "S"
+      },
+      "published": true,
+      "status": "selling",
+      "_id": "699c8ee46a90de19b19fb5e0",
+      "updated_at": "2026-02-23T17:32:28.066Z"
+    }
+  ],
+  "published": true,
+  "status": "selling",
+  "_stockValidation": {
+    "message": "✅ Product published. Available variants: serftgyhjkl - S: 50/10",
+    "stockInfo": "serftgyhjkl - S: 50/10",
+    "requiredAction": "publish"
+  }
+}
+=== AFTER UPDATE ===
+Updated product variants count: 1
+=== UPDATING VARIANT STOCK ENTRIES ===
+Current variant IDs: [ '699c8ee46a90de19b19fb5e0' ]
+Existing stock entries count: 1
+✅ Updated existing stock entry for variant: s
+GET /products query: [Object: null prototype] { page: '1', limit: '10' }
+GET /products built filter: {}
+GET /products query: [Object: null prototype] { page: '1', limit: '10' }
+GET /products built filter: {}
+=== PUT PRODUCT DEBUG ===
+Request body keys: [
+  'product_type',   'name',
+  'description',    'sku',
+  'categories',     'cost_price',
+  'selling_price',  'isCodAvailable',
+  'isFreeShipping', 'showRatings',
+  'tags',           'published',
+  'seo_robots',     'product_variants'
+]
+=== PUT: RAW CATEGORIES INPUT === [{"category":"6934013b1b924363f9ff4071","categoryName":"BackPacks","categorySlug":"backpacks","subcategoryIds":[],"subcategoryNames":[]}]
+=== PUT: PARSED CATEGORIES === [
+  {
+    "category": "6934013b1b924363f9ff4071",
+    "categoryName": "BackPacks",
+    "categorySlug": "backpacks",
+    "subcategoryIds": [],
+    "subcategoryNames": []
+  }
+]
+Processing category item: {
+  category: '6934013b1b924363f9ff4071',
+  categoryName: 'BackPacks',
+  categorySlug: 'backpacks',
+  subcategoryIds: [],
+  subcategoryNames: []
+}
+Resolved Category ID: 6934013b1b924363f9ff4071
+Resolved Subcategories: []
+=== PUT: FINAL CATEGORIES TO SAVE === [
+  {
+    "category": "6934013b1b924363f9ff4071",
+    "subcategories": []
+  }
+]
+Parsed variants data for update: {
+  "attributes": [
+    {
+      "id": "attr-size",
+      "name": "size",
+      "values": [
+        "S"
+      ]
+    },
+    {
+      "id": "attr-color",
+      "name": "color",
+      "values": []
+    },
+    {
+      "id": "attr-material",
+      "name": "material",
+      "values": []
+    }
+  ],
+  "combinations": [
+    {
+      "id": "699c8ee46a90de19b19fb5e0",
+      "name": "serftgyhjkl - S",
+      "sku": "DEFGHJKL-S",
+      "slug": "s",
+      "costPrice": 500,
+      "salesPrice": 1000,
+      "stock": 50,
+      "minStock": 10,
+      "images": [
+        "https://firebasestorage.googleapis.com/v0/b/murugan-bags.firebasestorage.app/o/product-variants%2Fproduct-variants_1771867874766_4bhv5ss6a5u.webp?alt=media&token=31e8e92b-b082-4ba3-ba44-42457a0caf96"
+      ],
+      "attributes": {
+        "size": "S"
+      },
+      "published": true
+    }
+  ],
+  "autoGenerateSKU": false
+}
+🚨 BACKEND: === TRANSFORMING VARIANTS ===
+🚨 BACKEND: variantsData: {
+  "attributes": [
+    {
+      "id": "attr-size",
+      "name": "size",
+      "values": [
+        "S"
+      ]
+    },
+    {
+      "id": "attr-color",
+      "name": "color",
+      "values": []
+    },
+    {
+      "id": "attr-material",
+      "name": "material",
+      "values": []
+    }
+  ],
+  "combinations": [
+    {
+      "id": "699c8ee46a90de19b19fb5e0",
+      "name": "serftgyhjkl - S",
+      "sku": "DEFGHJKL-S",
+      "slug": "s",
+      "costPrice": 500,
+      "salesPrice": 1000,
+      "stock": 50,
+      "minStock": 10,
+      "images": [
+        "https://firebasestorage.googleapis.com/v0/b/murugan-bags.firebasestorage.app/o/product-variants%2Fproduct-variants_1771867874766_4bhv5ss6a5u.webp?alt=media&token=31e8e92b-b082-4ba3-ba44-42457a0caf96"
+      ],
+      "attributes": {
+        "size": "S"
+      },
+      "published": true
+    }
+  ],
+  "autoGenerateSKU": false
+}
+🚨 BACKEND: baseSKU: DEFGHJKL
+🚨 BACKEND: costPrice: undefined
+🚨 BACKEND: salesPrice: undefined
+🚨 BACKEND: variantImagesMap: {
+  '0': [
+    '/uploads/products/1771868234882-848920444-Vogue-03_BP_N_Blue_06_700x-6.webp'
+  ]
+}
+🚨 BACKEND: === TRANSFORMATION COMPLETE ===
+🚨 BACKEND: Total transformed variants: 1
+=== BEFORE DATABASE UPDATE ===
+productQuery: {
+  "_id": "699c8ee46a90de19b19fb5de"
+}
+updateData keys: [
+  'updated_at',
+  'name',
+  'description',
+  'sku',
+  'categories',
+  'isCodAvailable',
+  'isFreeShipping',
+  'showRatings',
+  'seo',
+  'product_variants',
+  'published'
+]
+updateData: {
+  "updated_at": "2026-02-23T17:37:17.250Z",
+  "name": "serftgyhjkl",
+  "description": "fghjkl",
+  "sku": "DEFGHJKL",
+  "categories": [
+    {
+      "category": "6934013b1b924363f9ff4071",
+      "subcategories": []
+    }
+  ],
+  "isCodAvailable": true,
+  "isFreeShipping": false,
+  "showRatings": true,
+  "seo": {
+    "robots": "index,follow"
+  },
+  "product_variants": [
+    {
+      "name": "serftgyhjkl - S",
+      "sku": "DEFGHJKL-S",
+      "slug": "s",
+      "cost_price": 500,
+      "selling_price": 1000,
+      "stock": 50,
+      "minStock": 10,
+      "images": [
+        "https://firebasestorage.googleapis.com/v0/b/murugan-bags.firebasestorage.app/o/product-variants%2Fproduct-variants_1771867874766_4bhv5ss6a5u.webp?alt=media&token=31e8e92b-b082-4ba3-ba44-42457a0caf96",
+        "/uploads/products/1771868234882-848920444-Vogue-03_BP_N_Blue_06_700x-6.webp"
+      ],
+      "attributes": {
+        "size": "S"
+      },
+      "published": true,
+      "status": "selling",
+      "_id": "699c8ee46a90de19b19fb5e0",
+      "updated_at": "2026-02-23T17:37:17.251Z"
+    }
+  ],
+  "published": true
+}
+=== AFTER UPDATE ===
+Updated product variants count: 1
+=== UPDATING VARIANT STOCK ENTRIES ===
+Current variant IDs: [ '699c8ee46a90de19b19fb5e0' ]
+Existing stock entries count: 1
+✅ Updated existing stock entry for variant: s
+GET /products query: [Object: null prototype] { page: '1', limit: '10' }
+GET /products built filter: {}
+GET /products query: [Object: null prototype] {
+  page: '1',
+  limit: '1000',
+  sort: '-createdAt'
+}
+GET /products built filter: {}
+Firebase token exchange request: {
+  uid: '1GA9ghvdGaPmrpRnNn9hL2Vtppt2',
+  email: 'developer@sbbs.co.in',
+  phoneNumber: null,
+  displayName: 'Developer SBBS'
+}
+Processing Firebase token exchange for user: 1GA9ghvdGaPmrpRnNn9hL2Vtppt2
+createCustomerFromFirebase: Processing user: {
+  uid: '1GA9ghvdGaPmrpRnNn9hL2Vtppt2',
+  email: 'developer@sbbs.co.in',
+  displayName: 'Developer SBBS',
+  name: undefined,
+  phoneNumber: null
+}
+Updated existing customer: Developer SBBS (developer@sbbs.co.in)
+Generated JWT for customer ID: 6933d7ce1b924363f9ff3fe2, Firebase UID: 1GA9ghvdGaPmrpRnNn9hL2Vtppt2, Email: developer@sbbs.co.in
+Firebase token exchange successful for user: 1GA9ghvdGaPmrpRnNn9hL2Vtppt2 Customer ID: new ObjectId('6933d7ce1b924363f9ff3fe2')
+Firebase sync: Received data: {
+  firebaseUid: '1GA9ghvdGaPmrpRnNn9hL2Vtppt2',
+  email: 'developer@sbbs.co.in',
+  displayName: 'Developer SBBS',
+  phoneNumber: null,
+  name: undefined,
+  firstName: undefined,
+  lastName: undefined
+}
+Firebase sync: Existing customer found: YES
+Firebase sync: Updated existing customer: Developer SBBS
+Colors endpoint - found colors: [ 'Blue', 'Cyan', 'Gray', 'Ochre', 'Sage green' ]
+GET /products query: [Object: null prototype] {
+  page: '1',
+  limit: '8',
+  category: '6934013b1b924363f9ff4071'
+}
+GET /products built filter: {}
+Firebase token exchange request: {
+  uid: '1GA9ghvdGaPmrpRnNn9hL2Vtppt2',
+  email: 'developer@sbbs.co.in',
+  phoneNumber: null,
+  displayName: 'Developer SBBS'
+}
+Processing Firebase token exchange for user: 1GA9ghvdGaPmrpRnNn9hL2Vtppt2
+createCustomerFromFirebase: Processing user: {
+  uid: '1GA9ghvdGaPmrpRnNn9hL2Vtppt2',
+  email: 'developer@sbbs.co.in',
+  displayName: 'Developer SBBS',
+  name: undefined,
+  phoneNumber: null
+}
+GET /products query: [Object: null prototype] {
+  page: '1',
+  limit: '8',
+  category: '6934013b1b924363f9ff4071'
+}
+GET /products built filter: {}
+Updated existing customer: Developer SBBS (developer@sbbs.co.in)
+Generated JWT for customer ID: 6933d7ce1b924363f9ff3fe2, Firebase UID: 1GA9ghvdGaPmrpRnNn9hL2Vtppt2, Email: developer@sbbs.co.in
+Firebase token exchange successful for user: 1GA9ghvdGaPmrpRnNn9hL2Vtppt2 Customer ID: new ObjectId('6933d7ce1b924363f9ff3fe2')
+Firebase sync: Received data: {
+  firebaseUid: '1GA9ghvdGaPmrpRnNn9hL2Vtppt2',
+  email: 'developer@sbbs.co.in',
+  displayName: 'Developer SBBS',
+  phoneNumber: null,
+  name: undefined,
+  firstName: undefined,
+  lastName: undefined
+}
+Firebase sync: Existing customer found: YES
+Firebase sync: Updated existing customer: Developer SBBS
+GET /products query: [Object: null prototype] { page: '1', limit: '10' }
+GET /products built filter: {}
+=== PUT PRODUCT DEBUG ===
+Request body keys: [
+  'product_type',   'name',
+  'description',    'sku',
+  'categories',     'cost_price',
+  'selling_price',  'isCodAvailable',
+  'isFreeShipping', 'showRatings',
+  'tags',           'published',
+  'seo_robots',     'product_variants'
+]
+=== PUT: RAW CATEGORIES INPUT === [{"category":"6934013b1b924363f9ff4071","categoryName":"BackPacks","categorySlug":"backpacks","subcategoryIds":[],"subcategoryNames":[]}]
+=== PUT: PARSED CATEGORIES === [
+  {
+    "category": "6934013b1b924363f9ff4071",
+    "categoryName": "BackPacks",
+    "categorySlug": "backpacks",
+    "subcategoryIds": [],
+    "subcategoryNames": []
+  }
+]
+Processing category item: {
+  category: '6934013b1b924363f9ff4071',
+  categoryName: 'BackPacks',
+  categorySlug: 'backpacks',
+  subcategoryIds: [],
+  subcategoryNames: []
+}
+Resolved Category ID: 6934013b1b924363f9ff4071
+Resolved Subcategories: []
+=== PUT: FINAL CATEGORIES TO SAVE === [
+  {
+    "category": "6934013b1b924363f9ff4071",
+    "subcategories": []
+  }
+]
+Parsed variants data for update: {
+  "attributes": [
+    {
+      "id": "attr-size",
+      "name": "size",
+      "values": [
+        "S"
+      ]
+    },
+    {
+      "id": "attr-color",
+      "name": "color",
+      "values": []
+    },
+    {
+      "id": "attr-material",
+      "name": "material",
+      "values": []
+    }
+  ],
+  "combinations": [
+    {
+      "id": "699c8ee46a90de19b19fb5e0",
+      "name": "serftgyhjkl - S",
+      "sku": "DEFGHJKL-S",
+      "slug": "s",
+      "costPrice": 500,
+      "salesPrice": 1000,
+      "stock": 50,
+      "minStock": 10,
+      "images": [
+        "https://firebasestorage.googleapis.com/v0/b/murugan-bags.firebasestorage.app/o/product-variants%2Fproduct-variants_1771867874766_4bhv5ss6a5u.webp?alt=media&token=31e8e92b-b082-4ba3-ba44-42457a0caf96"
+      ],
+      "attributes": {
+        "size": "S"
+      },
+      "published": true
+    }
+  ],
+  "autoGenerateSKU": false
+}
+🚨 BACKEND: === TRANSFORMING VARIANTS ===
+🚨 BACKEND: variantsData: {
+  "attributes": [
+    {
+      "id": "attr-size",
+      "name": "size",
+      "values": [
+        "S"
+      ]
+    },
+    {
+      "id": "attr-color",
+      "name": "color",
+      "values": []
+    },
+    {
+      "id": "attr-material",
+      "name": "material",
+      "values": []
+    }
+  ],
+  "combinations": [
+    {
+      "id": "699c8ee46a90de19b19fb5e0",
+      "name": "serftgyhjkl - S",
+      "sku": "DEFGHJKL-S",
+      "slug": "s",
+      "costPrice": 500,
+      "salesPrice": 1000,
+      "stock": 50,
+      "minStock": 10,
+      "images": [
+        "https://firebasestorage.googleapis.com/v0/b/murugan-bags.firebasestorage.app/o/product-variants%2Fproduct-variants_1771867874766_4bhv5ss6a5u.webp?alt=media&token=31e8e92b-b082-4ba3-ba44-42457a0caf96"
+      ],
+      "attributes": {
+        "size": "S"
+      },
+      "published": true
+    }
+  ],
+  "autoGenerateSKU": false
+}
+🚨 BACKEND: baseSKU: DEFGHJKL
+🚨 BACKEND: costPrice: undefined
+🚨 BACKEND: salesPrice: undefined
+🚨 BACKEND: variantImagesMap: {
+  '0': [
+    '/uploads/products/1771869211936-433979113-Vogue-03_BP_N_Blue_06_700x-6.webp'
+  ]
+}
+🚨 BACKEND: === TRANSFORMATION COMPLETE ===
+🚨 BACKEND: Total transformed variants: 1
+=== BEFORE DATABASE UPDATE ===
+productQuery: {
+  "_id": "699c8ee46a90de19b19fb5de"
+}
+updateData keys: [
+  'updated_at',
+  'name',
+  'description',
+  'sku',
+  'categories',
+  'isCodAvailable',
+  'isFreeShipping',
+  'showRatings',
+  'seo',
+  'product_variants',
+  'published'
+]
+updateData: {
+  "updated_at": "2026-02-23T17:53:33.786Z",
+  "name": "serftgyhjkl",
+  "description": "fghjkl",
+  "sku": "DEFGHJKL",
+  "categories": [
+    {
+      "category": "6934013b1b924363f9ff4071",
+      "subcategories": []
+    }
+  ],
+  "isCodAvailable": true,
+  "isFreeShipping": false,
+  "showRatings": true,
+  "seo": {
+    "robots": "index,follow"
+  },
+  "product_variants": [
+    {
+      "name": "serftgyhjkl - S",
+      "sku": "DEFGHJKL-S",
+      "slug": "s",
+      "cost_price": 500,
+      "selling_price": 1000,
+      "stock": 50,
+      "minStock": 10,
+      "images": [
+        "https://firebasestorage.googleapis.com/v0/b/murugan-bags.firebasestorage.app/o/product-variants%2Fproduct-variants_1771867874766_4bhv5ss6a5u.webp?alt=media&token=31e8e92b-b082-4ba3-ba44-42457a0caf96",
+        "/uploads/products/1771869211936-433979113-Vogue-03_BP_N_Blue_06_700x-6.webp"
+      ],
+      "attributes": {
+        "size": "S"
+      },
+      "published": true,
+      "status": "selling",
+      "_id": "699c8ee46a90de19b19fb5e0",
+      "updated_at": "2026-02-23T17:53:33.787Z"
+    }
+  ],
+  "published": true
+}
+=== AFTER UPDATE ===
+Updated product variants count: 1
+=== UPDATING VARIANT STOCK ENTRIES ===
+Current variant IDs: [ '699c8ee46a90de19b19fb5e0' ]
+Existing stock entries count: 1
+✅ Updated existing stock entry for variant: s
+GET /products query: [Object: null prototype] { page: '1', limit: '10' }
+GET /products built filter: {}
+GET /products query: [Object: null prototype] {
+  page: '1',
+  limit: '8',
+  category: '6934013b1b924363f9ff4071'
+}
+GET /products built filter: {}
+Firebase token exchange request: {
+  uid: '1GA9ghvdGaPmrpRnNn9hL2Vtppt2',
+  email: 'developer@sbbs.co.in',
+  phoneNumber: null,
+  displayName: 'Developer SBBS'
+}
+Processing Firebase token exchange for user: 1GA9ghvdGaPmrpRnNn9hL2Vtppt2
+createCustomerFromFirebase: Processing user: {
+  uid: '1GA9ghvdGaPmrpRnNn9hL2Vtppt2',
+  email: 'developer@sbbs.co.in',
+  displayName: 'Developer SBBS',
+  name: undefined,
+  phoneNumber: null
+}
+Updated existing customer: Developer SBBS (developer@sbbs.co.in)
+Generated JWT for customer ID: 6933d7ce1b924363f9ff3fe2, Firebase UID: 1GA9ghvdGaPmrpRnNn9hL2Vtppt2, Email: developer@sbbs.co.in
+Firebase token exchange successful for user: 1GA9ghvdGaPmrpRnNn9hL2Vtppt2 Customer ID: new ObjectId('6933d7ce1b924363f9ff3fe2')
+Firebase sync: Received data: {
+  firebaseUid: '1GA9ghvdGaPmrpRnNn9hL2Vtppt2',
+  email: 'developer@sbbs.co.in',
+  displayName: 'Developer SBBS',
+  phoneNumber: null,
+  name: undefined,
+  firstName: undefined,
+  lastName: undefined
+}
+Firebase sync: Existing customer found: YES
+Firebase sync: Updated existing customer: Developer SBBS
+GET /products query: [Object: null prototype] {
+  page: '1',
+  limit: '8',
+  category: '6934013b1b924363f9ff4071'
+}
+GET /products built filter: {}
+Firebase token exchange request: {
+  uid: '1GA9ghvdGaPmrpRnNn9hL2Vtppt2',
+  email: 'developer@sbbs.co.in',
+  phoneNumber: null,
+  displayName: 'Developer SBBS'
+}
+Processing Firebase token exchange for user: 1GA9ghvdGaPmrpRnNn9hL2Vtppt2
+createCustomerFromFirebase: Processing user: {
+  uid: '1GA9ghvdGaPmrpRnNn9hL2Vtppt2',
+  email: 'developer@sbbs.co.in',
+  displayName: 'Developer SBBS',
+  name: undefined,
+  phoneNumber: null
+}
+Updated existing customer: Developer SBBS (developer@sbbs.co.in)
+Generated JWT for customer ID: 6933d7ce1b924363f9ff3fe2, Firebase UID: 1GA9ghvdGaPmrpRnNn9hL2Vtppt2, Email: developer@sbbs.co.in
+Firebase token exchange successful for user: 1GA9ghvdGaPmrpRnNn9hL2Vtppt2 Customer ID: new ObjectId('6933d7ce1b924363f9ff3fe2')
+Firebase sync: Received data: {
+  firebaseUid: '1GA9ghvdGaPmrpRnNn9hL2Vtppt2',
+  email: 'developer@sbbs.co.in',
+  displayName: 'Developer SBBS',
+  phoneNumber: null,
+  name: undefined,
+  firstName: undefined,
+  lastName: undefined
+}
+Firebase sync: Existing customer found: YES
+Firebase sync: Updated existing customer: Developer SBBS
+GET /products query: [Object: null prototype] { page: '1', limit: '10' }
+GET /products built filter: {}
+Firebase token exchange request: {
+  uid: '1GA9ghvdGaPmrpRnNn9hL2Vtppt2',
+  email: 'developer@sbbs.co.in',
+  phoneNumber: null,
+  displayName: 'Developer SBBS'
+}
+Processing Firebase token exchange for user: 1GA9ghvdGaPmrpRnNn9hL2Vtppt2
+createCustomerFromFirebase: Processing user: {
+  uid: '1GA9ghvdGaPmrpRnNn9hL2Vtppt2',
+  email: 'developer@sbbs.co.in',
+  displayName: 'Developer SBBS',
+  name: undefined,
+  phoneNumber: null
+}
+GET /products query: [Object: null prototype] {
+  page: '1',
+  limit: '8',
+  category: '6934013b1b924363f9ff4071'
+}
+GET /products built filter: {}
+Updated existing customer: Developer SBBS (developer@sbbs.co.in)
+Generated JWT for customer ID: 6933d7ce1b924363f9ff3fe2, Firebase UID: 1GA9ghvdGaPmrpRnNn9hL2Vtppt2, Email: developer@sbbs.co.in
+Firebase token exchange successful for user: 1GA9ghvdGaPmrpRnNn9hL2Vtppt2 Customer ID: new ObjectId('6933d7ce1b924363f9ff3fe2')
+Firebase sync: Received data: {
+  firebaseUid: '1GA9ghvdGaPmrpRnNn9hL2Vtppt2',
+  email: 'developer@sbbs.co.in',
+  displayName: 'Developer SBBS',
+  phoneNumber: null,
+  name: undefined,
+  firstName: undefined,
+  lastName: undefined
+}
+Firebase sync: Existing customer found: YES
+Firebase sync: Updated existing customer: Developer SBBS
+GET /products query: [Object: null prototype] { page: '1', limit: '10' }
+GET /products built filter: {}
+=== PUT PRODUCT DEBUG ===
+Request body keys: [
+  'product_type',   'name',
+  'description',    'sku',
+  'categories',     'cost_price',
+  'selling_price',  'isCodAvailable',
+  'isFreeShipping', 'showRatings',
+  'tags',           'published',
+  'seo_robots',     'product_variants'
+]
+=== PUT: RAW CATEGORIES INPUT === [{"category":"6934013b1b924363f9ff4071","categoryName":"BackPacks","categorySlug":"backpacks","subcategoryIds":[],"subcategoryNames":[]}]
+=== PUT: PARSED CATEGORIES === [
+  {
+    "category": "6934013b1b924363f9ff4071",
+    "categoryName": "BackPacks",
+    "categorySlug": "backpacks",
+    "subcategoryIds": [],
+    "subcategoryNames": []
+  }
+]
+Processing category item: {
+  category: '6934013b1b924363f9ff4071',
+  categoryName: 'BackPacks',
+  categorySlug: 'backpacks',
+  subcategoryIds: [],
+  subcategoryNames: []
+}
+Resolved Category ID: 6934013b1b924363f9ff4071
+Resolved Subcategories: []
+=== PUT: FINAL CATEGORIES TO SAVE === [
+  {
+    "category": "6934013b1b924363f9ff4071",
+    "subcategories": []
+  }
+]
+Parsed variants data for update: {
+  "attributes": [
+    {
+      "id": "attr-size",
+      "name": "size",
+      "values": [
+        "S"
+      ]
+    },
+    {
+      "id": "attr-color",
+      "name": "color",
+      "values": []
+    },
+    {
+      "id": "attr-material",
+      "name": "material",
+      "values": []
+    }
+  ],
+  "combinations": [
+    {
+      "id": "699c8ee46a90de19b19fb5e0",
+      "name": "serftgyhjkl - S",
+      "sku": "DEFGHJKL-S",
+      "slug": "s",
+      "costPrice": 500,
+      "salesPrice": 1000,
+      "stock": 50,
+      "minStock": 10,
+      "images": [
+        "https://firebasestorage.googleapis.com/v0/b/murugan-bags.firebasestorage.app/o/product-variants%2Fproduct-variants_1771867874766_4bhv5ss6a5u.webp?alt=media&token=31e8e92b-b082-4ba3-ba44-42457a0caf96"
+      ],
+      "attributes": {
+        "size": "S"
+      },
+      "published": true
+    }
+  ],
+  "autoGenerateSKU": false
+}
+🚨 BACKEND: === TRANSFORMING VARIANTS ===
+🚨 BACKEND: variantsData: {
+  "attributes": [
+    {
+      "id": "attr-size",
+      "name": "size",
+      "values": [
+        "S"
+      ]
+    },
+    {
+      "id": "attr-color",
+      "name": "color",
+      "values": []
+    },
+    {
+      "id": "attr-material",
+      "name": "material",
+      "values": []
+    }
+  ],
+  "combinations": [
+    {
+      "id": "699c8ee46a90de19b19fb5e0",
+      "name": "serftgyhjkl - S",
+      "sku": "DEFGHJKL-S",
+      "slug": "s",
+      "costPrice": 500,
+      "salesPrice": 1000,
+      "stock": 50,
+      "minStock": 10,
+      "images": [
+        "https://firebasestorage.googleapis.com/v0/b/murugan-bags.firebasestorage.app/o/product-variants%2Fproduct-variants_1771867874766_4bhv5ss6a5u.webp?alt=media&token=31e8e92b-b082-4ba3-ba44-42457a0caf96"
+      ],
+      "attributes": {
+        "size": "S"
+      },
+      "published": true
+    }
+  ],
+  "autoGenerateSKU": false
+}
+🚨 BACKEND: baseSKU: DEFGHJKL
+🚨 BACKEND: costPrice: undefined
+🚨 BACKEND: salesPrice: undefined
+🚨 BACKEND: variantImagesMap: {
+  '0': [
+    '/uploads/products/1771869329737-283115414-Vogue-03_BP_N_Blue_06_700x-6.webp'
+  ]
+}
+🚨 BACKEND: === TRANSFORMATION COMPLETE ===
+🚨 BACKEND: Total transformed variants: 1
+=== BEFORE DATABASE UPDATE ===
+productQuery: {
+  "_id": "699c8ee46a90de19b19fb5de"
+}
+updateData keys: [
+  'updated_at',
+  'name',
+  'description',
+  'sku',
+  'categories',
+  'isCodAvailable',
+  'isFreeShipping',
+  'showRatings',
+  'seo',
+  'product_variants',
+  'published'
+]
+updateData: {
+  "updated_at": "2026-02-23T17:55:32.546Z",
+  "name": "serftgyhjkl",
+  "description": "fghjkl",
+  "sku": "DEFGHJKL",
+  "categories": [
+    {
+      "category": "6934013b1b924363f9ff4071",
+      "subcategories": []
+    }
+  ],
+  "isCodAvailable": true,
+  "isFreeShipping": false,
+  "showRatings": true,
+  "seo": {
+    "robots": "index,follow"
+  },
+  "product_variants": [
+    {
+      "name": "serftgyhjkl - S",
+      "sku": "DEFGHJKL-S",
+      "slug": "s",
+      "cost_price": 500,
+      "selling_price": 1000,
+      "stock": 50,
+      "minStock": 10,
+      "images": [
+        "https://firebasestorage.googleapis.com/v0/b/murugan-bags.firebasestorage.app/o/product-variants%2Fproduct-variants_1771867874766_4bhv5ss6a5u.webp?alt=media&token=31e8e92b-b082-4ba3-ba44-42457a0caf96",
+        "/uploads/products/1771869329737-283115414-Vogue-03_BP_N_Blue_06_700x-6.webp"
+      ],
+      "attributes": {
+        "size": "S"
+      },
+      "published": true,
+      "status": "selling",
+      "_id": "699c8ee46a90de19b19fb5e0",
+      "updated_at": "2026-02-23T17:55:32.547Z"
+    }
+  ],
+  "published": true
+}
+=== AFTER UPDATE ===
+Updated product variants count: 1
+=== UPDATING VARIANT STOCK ENTRIES ===
+Current variant IDs: [ '699c8ee46a90de19b19fb5e0' ]
+Existing stock entries count: 1
+✅ Updated existing stock entry for variant: s
+GET /products query: [Object: null prototype] { page: '1', limit: '10' }
+GET /products built filter: {}

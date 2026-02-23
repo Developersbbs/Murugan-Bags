@@ -771,7 +771,8 @@ router.post("/", uploadDigitalFile, async (req, res) => {
 
             const file = filesByField[key][0];
             if (file) {
-              variantImagesMap[comboIndex].push(`/uploads/products/${file.filename}`);
+              // Use Firebase URL if available (preferred), otherwise fall back to local path
+              variantImagesMap[comboIndex].push(file.firebaseUrl || `/uploads/products/${file.filename}`);
             }
           }
         });
@@ -1346,7 +1347,8 @@ router.put("/:id", uploadDigitalFile, async (req, res) => {
 
       imageFields.forEach(key => {
         filesByField[key].forEach(file => {
-          allImageUrls.push(`/uploads/products/${file.filename}`);
+          // Use Firebase URL if available (preferred), fall back to local path
+          allImageUrls.push(file.firebaseUrl || `/uploads/products/${file.filename}`);
         });
       });
 
@@ -1394,7 +1396,8 @@ router.put("/:id", uploadDigitalFile, async (req, res) => {
 
           const file = filesByField[key][0];
           if (file) {
-            variantImagesMap[comboIndex].push(`/uploads/products/${file.filename}`);
+            // Use Firebase URL if available (preferred), fall back to local path
+            variantImagesMap[comboIndex].push(file.firebaseUrl || `/uploads/products/${file.filename}`);
           }
         }
       });

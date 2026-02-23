@@ -18,7 +18,7 @@ async function testUpload() {
         popupForm.append('description', 'test description ' + Date.now());
         popupForm.append('image', fs.createReadStream(dummyImagePath));
 
-        const popupRes = await axios.post('http://localhost:5000/api/offer-popups', popupForm, {
+        const popupRes = await axios.post('http://127.0.0.1:5000/api/offer-popups', popupForm, {
             headers: { ...popupForm.getHeaders() },
             timeout: 10000 // 10 second timeout
         });

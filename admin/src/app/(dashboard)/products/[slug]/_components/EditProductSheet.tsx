@@ -227,7 +227,7 @@ export function EditProductSheet({ product, children }: Props) {
       actionVerb="updated"
       initialData={initialData}
       action={(formData) => editProduct(product._id, formData)}
-      previewImages={product.image_url}
+      previewImages={Array.isArray(product.image_url) ? product.image_url : (product.image_url ? [product.image_url as unknown as string] : [])}
     >
       <SheetTrigger asChild>{children}</SheetTrigger>
     </ProductFormSheet>

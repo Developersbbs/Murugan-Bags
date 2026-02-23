@@ -93,7 +93,7 @@ router.post('/', upload.single('image'), async (req, res) => {
         }
 
         const popup = new OfferPopup({
-            imageUrl: req.file ? (req.file.firebaseUrl || `/uploads/popups/${req.file.filename}`) : null,
+            image: req.file ? (req.file.firebaseUrl || `/uploads/popups/${req.file.filename}`) : null,
             heading,
             description,
             buttonText: buttonText || 'Shop Now',
@@ -112,8 +112,12 @@ router.post('/', upload.single('image'), async (req, res) => {
         });
     } catch (error) {
         // Delete uploaded file if database save fails
-        if (req.file) {
-            fs.unlinkSync(req.file.path);
+        if (req.file && req.file.path && fs.existsSync(req.file.path)) {
+            try {
+                fs.unlinkSync(req.file.path);
+            } catch (err) {
+                console.error("Failed to delete local file:", err);
+            }
         }
         res.status(500).json({
             success: false,
@@ -149,13 +153,15 @@ router.put('/:id', upload.single('image'), async (req, res) => {
         // Handle image update
         if (req.file) {
             // Delete old image if it was a local file
-            if (popup.imageUrl && !popup.imageUrl.startsWith('http')) { // Check if it's a local path
-                const oldImagePath = path.join(__dirname, '..', popup.imageUrl);
+            if (popup.image && !popup.image.startsWith('http')) { // Check if it's a local path
+                const oldImagePath = path.join(__dirname, '..', popup.image);
                 if (fs.existsSync(oldImagePath)) {
-                    fs.unlinkSync(oldImagePath);
+                    try {
+                        fs.unlinkSync(oldImagePath);
+                    } catch (e) { console.error(e); }
                 }
             }
-            popup.imageUrl = req.file.firebaseUrl || `/uploads/popups/${req.file.filename}`;
+            popup.image = req.file.firebaseUrl || `/uploads/popups/${req.file.filename}`;
         }
 
         await popup.save();

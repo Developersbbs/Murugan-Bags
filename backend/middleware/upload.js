@@ -43,11 +43,12 @@ class FirebaseStorage {
       const stream = bucketFile.createWriteStream({
         metadata: {
           contentType: file.mimetype
-        }
+        },
+        resumable: false // Prevent indefinite hangs on permission errors
       });
 
       stream.on('error', (err) => {
-        console.error('Error uploading to Firebase:', err);
+        console.error('FINAL FIREBASE UPLOAD ERROR:', err);
         cb(err);
       });
 

@@ -1,0 +1,20 @@
+[dotenv@17.2.3] injecting env (11) from .env -- tip: 🛠️  run anywhere with `dotenvx run -- yourcommand`
+[FIREBASE_DEBUG] Found individual environment variables
+[FIREBASE_DEBUG] Initializing Firebase Admin SDK...
+✅ [FIREBASE_DEBUG] Firebase Admin SDK initialized successfully
+🔥 Firebase Admin SDK status: Initialized
+✅ Razorpay initialized successfully
+✅ Payments routes loaded: function
+✅ Payments routes mounted at /api/payments
+🔄 Attempting to connect to MongoDB...
+📍 MONGODB_URI: Set
+(node:21942) [MONGOOSE] Warning: Duplicate schema index on {"customer_id":1} found. This is often due to declaring an index using both "index: true" and "schema.index()". Please remove the duplicate index definition.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:21942) [MONGOOSE] Warning: Duplicate schema index on {"customer_id":1} found. This is often due to declaring an index using both "index: true" and "schema.index()". Please remove the duplicate index definition.
+🚀 Server running on port 5000
+📁 Upload directory: /home/sathish-r/Main-Peojects/Murugan-Bags/backend/uploads
+🌐 API URL: http://0.0.0.0:5000
+✅ MongoDB Connected: ac-lc0zxaf-shard-00-00.ai6gu5z.mongodb.net
+🏥 MongoDB ping successful
+SIGTERM received, shutting down gracefully
+Process terminated

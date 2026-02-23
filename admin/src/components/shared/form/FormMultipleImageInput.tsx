@@ -21,6 +21,7 @@ type FormMultipleImageInputProps<TFormData extends FieldValues> = {
   placeholder?: string;
   previewImages?: string[];
   maxImages?: number;
+  acceptedTypes?: string;
   onRemovePreviewImage?: (index: number) => void;
 };
 
