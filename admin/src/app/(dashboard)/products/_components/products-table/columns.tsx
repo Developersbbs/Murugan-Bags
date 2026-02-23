@@ -27,55 +27,12 @@ import { archiveProduct } from "@/actions/products/archiveProduct";
 import { toggleProductPublishedStatus } from "@/actions/products/toggleProductStatus";
 import { HasPermission } from "@/hooks/use-authorization";
 
-// Type for transformed product data (includes variants as separate rows)
-type TransformedProduct = Product & {
-  _isVariant?: boolean;
-  _variantIndex?: number;
-  _variantData?: any;
-  _originalProductId?: string;
-  _parentProduct?: Product;
-};
+// Type for transformed product data (simplifying, no longer exploding variants)
+type TransformedProduct = Product;
 
-// Transform products data to show variants as separate rows
+// Transform products data (passed through as-is now)
 function transformProductsForTable(products: Product[]): TransformedProduct[] {
-  const transformedProducts: TransformedProduct[] = [];
-
-  products.forEach(product => {
-    if (product.product_variants && product.product_variants.length > 0) {
-      // For variant products, create separate rows for each variant
-      product.product_variants.forEach((variant, index) => {
-        transformedProducts.push({
-          ...product,
-          _isVariant: true,
-          _variantIndex: index,
-          _variantData: variant,
-          _originalProductId: product._id,
-          // Override product fields with variant-specific data
-          name: `${product.name} - ${variant.name || variant.slug}`,
-          slug: variant.slug,
-          sku: variant.sku,
-          cost_price: variant.cost_price,
-          selling_price: variant.selling_price,
-          baseStock: variant.stock,
-          minStock: variant.minStock,
-          status: variant.status,
-          published: variant.published,
-          image_url: variant.images || product.image_url,
-          // Keep reference to parent product for actions
-          _parentProduct: product,
-        } as TransformedProduct);
-      });
-    } else {
-      // For simple products, add as-is
-      transformedProducts.push({
-        ...product,
-        _isVariant: false,
-        _variantIndex: 0,
-      } as TransformedProduct);
-    }
-  });
-
-  return transformedProducts;
+  return products;
 }
 
 export const getColumns = ({
@@ -88,32 +45,22 @@ export const getColumns = ({
       header: "product name",
       cell: ({ row }) => {
         const product = row.original;
-        const isVariant = product._isVariant;
-        const variantData = product._variantData;
-        const parentProduct = product._parentProduct;
+        const hasVariants = product.product_structure === 'variant' && product.product_variants && product.product_variants.length > 0;
 
         return (
           <div className="flex gap-2 items-center">
-
             <div className="flex flex-col">
               <Link
-                href={`/products/${parentProduct?.slug || product.slug}${isVariant && variantData ? `?variant=${variantData.slug}` : ''}`}
+                href={`/products/${product.slug}`}
                 className="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
               >
-                {isVariant ? (
-                  <>
-                    {variantData?.name || variantData?.slug || `Variant ${product._variantIndex !== undefined ? product._variantIndex + 1 : 1}`}
-                    {/* {variantData?.attributes && Object.keys(variantData.attributes).length > 0 && (
-                      <span className="text-xs text-muted-foreground ml-1">
-                        ({Object.entries(variantData.attributes).map(([key, value]) => `${key}: ${value}`).join(', ')})
-                      </span>
-                    )} */}
-                  </>
-                ) : (
-                  product.name
-                )}
+                {product.name}
               </Link>
-
+              {hasVariants && (
+                <span className="text-xs text-muted-foreground mt-0.5">
+                  {product.product_variants?.length} variants
+                </span>
+              )}
             </div>
           </div>
         );
@@ -130,7 +77,7 @@ export const getColumns = ({
     {
       header: "structure",
       cell: ({ row }) => {
-        const isVariant = row.original._isVariant;
+        const isVariant = row.original.product_structure === 'variant';
         return (
           <Badge variant={isVariant ? "outline" : "secondary"}>
             {isVariant ? "Variant" : "Simple"}
@@ -189,13 +136,21 @@ export const getColumns = ({
     {
       header: "cost price",
       cell: ({ row }) => {
-        return formatAmount(row.original.cost_price);
+        const product = row.original;
+        if (product.product_structure === 'variant' && product.product_variants && product.product_variants.length > 0) {
+          return `from ${formatAmount(product.product_variants[0].cost_price)}`;
+        }
+        return formatAmount(product.cost_price);
       },
     },
     {
       header: "sale price",
       cell: ({ row }) => {
-        return formatAmount(row.original.selling_price);
+        const product = row.original;
+        if (product.product_structure === 'variant' && product.product_variants && product.product_variants.length > 0) {
+          return `from ${formatAmount(product.product_variants[0].selling_price)}`;
+        }
+        return formatAmount(product.selling_price);
       },
     },
 
@@ -203,13 +158,9 @@ export const getColumns = ({
       header: "view",
       cell: ({ row }) => {
         const product = row.original;
-        const isVariant = product._isVariant;
-        const variantData = product._variantData;
-        const parentProduct = product._parentProduct;
-
         return (
           <Button size="icon" asChild variant="ghost" className="text-foreground">
-            <Link href={`/products/${parentProduct?.slug || product.slug}${isVariant && variantData ? `?variant=${variantData.slug}` : ''}`}>
+            <Link href={`/products/${product.slug}`}>
               <ZoomIn className="size-5" />
             </Link>
           </Button>
@@ -223,56 +174,32 @@ export const getColumns = ({
       header: "published",
       cell: ({ row }: { row: any }) => {
         const product = row.original;
-        const isVariant = product._isVariant;
-        const variantData = product._variantData;
-        const parentProduct = product._parentProduct;
+        const isPublished = product.published;
 
-        // For variants, check variant's published status
-        // For simple products, check product's published status
-        const isPublished = isVariant ? variantData?.published : product.published;
-
-        // Stock information for the specific variant or product
-        const stockInfo = isVariant
-          ? {
-            baseStock: variantData?.stock || 0,
-            minStock: variantData?.minStock || 0,
-          }
-          : {
-            baseStock: product.baseStock || 0,
-            minStock: product.minStock || 0,
-          };
+        // Stock information
+        const stockInfo = {
+          baseStock: product.baseStock || 0,
+          minStock: product.minStock || 0,
+        };
 
         const handleToggle = async (): Promise<ServerActionResponse> => {
           try {
-            // Get the parent product ID for variants or use the product ID for simple products
-            const targetId = parentProduct?._id || product._id;
-
-            // For variants, include the variant ID in the request
-            const variantId = isVariant && variantData?._id ? variantData._id.toString() : undefined;
-
             // Call the toggle function
             const result = await toggleProductPublishedStatus(
-              targetId,
-              isPublished,
-              variantId // Pass variantId if this is a variant
+              product._id,
+              isPublished
             );
 
             // Check if the response has a success property
             if ('success' in result && result.success) {
               // Show success message
               toast.success(
-                isVariant
-                  ? `✅ Variant ${!isPublished ? 'published' : 'unpublished'} successfully`
-                  : `✅ Product ${!isPublished ? 'published' : 'unpublished'} successfully`,
+                `✅ Product ${!isPublished ? 'published' : 'unpublished'} successfully`,
                 { position: "top-center" }
               );
 
               // Manually update the UI by toggling the published state
-              if (isVariant && variantData) {
-                variantData.published = !isPublished;
-              } else {
-                product.published = !isPublished;
-              }
+              product.published = !isPublished;
 
               // Force a re-render by updating the row data
               row.original = { ...row.original };
@@ -308,9 +235,7 @@ export const getColumns = ({
             <TableSwitch
               checked={isPublished}
               toastSuccessMessage={
-                isVariant
-                  ? `✅ Variant ${isPublished ? 'unpublished' : 'published'}. Stock: ${stockInfo.baseStock} / Min: ${stockInfo.minStock}.`
-                  : `✅ Product ${isPublished ? 'unpublished' : 'published'}. Stock: ${stockInfo.baseStock} / Min: ${stockInfo.minStock}.`
+                `✅ Product ${isPublished ? 'unpublished' : 'published'}. Stock: ${stockInfo.baseStock} / Min: ${stockInfo.minStock}.`
               }
               queryKey="products"
               onCheckedChange={handleToggle}
@@ -351,15 +276,12 @@ export const getColumns = ({
       header: "actions",
       cell: ({ row }) => {
         const product = row.original;
-        const isVariant = product._isVariant;
-        const variantData = product._variantData;
-        const parentProduct = product._parentProduct;
 
         return (
           <div className="flex items-center gap-1">
             {hasPermission("products", "canEdit") && (
-              <EditProductSheet product={parentProduct || product}>
-                <SheetTooltip content={isVariant ? "Edit Parent Product" : "Edit Product"}>
+              <EditProductSheet product={product}>
+                <SheetTooltip content="Edit Product">
                   <PenSquare className="size-5" />
                 </SheetTooltip>
               </EditProductSheet>
@@ -367,17 +289,13 @@ export const getColumns = ({
 
             {hasPermission("products", "canDelete") && (
               <TableActionAlertDialog
-                title={`Archive ${isVariant ? 'variant' : 'product'} "${product.name}"?`}
-                description={
-                  isVariant
-                    ? "This will archive this specific variant. It will be moved to the Archives page."
-                    : "This will archive the product. It will be moved to the Archives page and can be restored later."
-                }
-                tooltipContent={isVariant ? "Archive Variant" : "Archive Product"}
-                actionButtonText={isVariant ? "Archive Variant" : "Archive Product"}
-                toastSuccessMessage={`${isVariant ? 'Variant' : 'Product'} "${product.name}" archived successfully!`}
+                title={`Archive product "${product.name}"?`}
+                description="This will archive the product. It will be moved to the Archives page and can be restored later."
+                tooltipContent="Archive Product"
+                actionButtonText="Archive Product"
+                toastSuccessMessage={`Product "${product.name}" archived successfully!`}
                 queryKey="products"
-                action={() => archiveProduct(parentProduct?._id || product._id, isVariant ? variantData?._id : undefined)}
+                action={() => archiveProduct(product._id)}
               >
                 <div className="text-destructive hover:bg-destructive/10 p-2 rounded-md transition-colors cursor-pointer">
                   <Archive className="size-5" />

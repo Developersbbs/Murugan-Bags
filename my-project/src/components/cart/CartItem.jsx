@@ -4,6 +4,7 @@ import { HeartIcon, TrashIcon, MinusIcon, PlusIcon } from '@heroicons/react/24/o
 import { HeartIcon as HeartSolidIcon } from '@heroicons/react/24/solid';
 import { formatCurrency } from '../../utils/format';
 import { useWishlist } from '../../context/WishlistContext';
+import { getFullImageUrl } from '../../utils/imageUtils';
 import toast from 'react-hot-toast';
 
 const CartItem = ({
@@ -73,17 +74,6 @@ const CartItem = ({
   };
 
   const defaultImage = '/images/products/placeholder-product.svg';
-
-  // Helper to resolve full image URL
-  const getFullImageUrl = (imagePath) => {
-    if (!imagePath) return defaultImage;
-    if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) return imagePath;
-    if (imagePath.startsWith('/images/')) return imagePath; // Local assets
-
-    // Convert relative path to full URL
-    const API_BASE = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
-    return `${API_BASE}${imagePath}`;
-  };
 
   return (
     <div className="group relative bg-white p-4 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300 mb-3 mx-2">

@@ -42,10 +42,45 @@ const WishlistSidebar = () => {
 
     const handleMoveToCart = async (item) => {
         try {
-            // Add to cart
-            await addToCart(item, item.variant_id ? { _id: item.variant_id } : null, 1);
+            // Logic to find specific variant
+            let variantToAdd = null;
+            if (item.variant_id && item.product_variants && item.product_variants.length > 0) {
+                // 1. Try exact ID match
+                variantToAdd = item.product_variants.find(v =>
+                    (v._id && v._id.toString() === item.variant_id.toString()) ||
+                    (v.id && v.id.toString() === item.variant_id.toString())
+                );
+
+                // 2. Fallback: Try to parse index if variant_id looks like "productId-variant-index"
+                if (!variantToAdd) {
+                    const match = item.variant_id.toString().match(/-variant-(\d+)$/);
+                    if (match && match[1]) {
+                        const index = parseInt(match[1]);
+                        if (index >= 0 && index < item.product_variants.length) {
+                            variantToAdd = item.product_variants[index];
+                        }
+                    }
+                }
+            }
+
+            // Fallback object to satisfy CartContext if full variant object is missing
+            if (!variantToAdd && item.variant_id) {
+                variantToAdd = { _id: item.variant_id };
+            }
+
+            const productId = item._id || item.id;
+
+            // Add to cart with properly mapped properties
+            await addToCart({
+                _id: productId,
+                name: item.name,
+                selling_price: item.price,
+                image_url: [item.image],
+                product_variants: item.product_variants
+            }, variantToAdd, 1);
+
             // Remove from wishlist
-            await removeFromWishlist(item._id || item.id, item.variant_id);
+            await removeFromWishlist(productId, item.variant_id);
             toast.success('Moved to cart!');
         } catch (error) {
             console.error('Error moving to cart:', error);

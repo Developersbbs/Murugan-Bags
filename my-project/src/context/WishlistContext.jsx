@@ -155,7 +155,11 @@ export const WishlistProvider = ({ children }) => {
   // Helper to resolve product image from various possible sources
   const resolveProductImage = (product, item = null) => {
     // 1. Try to find an image in the product/item object directly
-    if (product.image_url && product.image_url.length > 0) return product.image_url[0];
+    if (product.image_url) {
+      const img = product.image_url;
+      if (Array.isArray(img) && img.length > 0) return img[0];
+      if (typeof img === 'string') return img;
+    }
     if (product.images && product.images.length > 0) return product.images[0];
     if (product.image) return product.image;
 
@@ -170,6 +174,23 @@ export const WishlistProvider = ({ children }) => {
     }
 
     return null;
+  };
+
+  // Helper to resolve product price from variants if applicable
+  const resolveProductPrice = (product, item = null) => {
+    // 1. If it's a specific variant, return the variant's price
+    if (item && item.variant_id && product.product_variants && product.product_variants.length > 0) {
+      const variant = product.product_variants.find(v =>
+        (v._id && v._id.toString() === item.variant_id.toString()) ||
+        (v.id && v.id.toString() === item.variant_id.toString())
+      );
+      if (variant && (variant.selling_price || variant.price || variant.salePrice || variant.mrp)) {
+        return variant.selling_price || variant.price || variant.salePrice || variant.mrp;
+      }
+    }
+
+    // 2. Fall back to standard price fields
+    return product.selling_price || product.price || (item ? (item.discounted_price || item.price) : 0) || 0;
   };
 
   const handleUserLogin = async (retryCount = 0) => {
@@ -211,7 +232,7 @@ export const WishlistProvider = ({ children }) => {
             _id: product._id || item.product_id,
             id: product._id || item.product_id,
             name: product.name || item.product_name,
-            price: product.selling_price || item.discounted_price || item.price,
+            price: resolveProductPrice(product, item),
             image: resolvedImage,
             wishlistItemId: item._id,
             variant_id: item.variant_id,
@@ -321,7 +342,7 @@ export const WishlistProvider = ({ children }) => {
                 _id: product._id || item.product_id,
                 id: product._id || item.product_id,
                 name: product.name || item.product_name,
-                price: product.selling_price || item.discounted_price || item.price,
+                price: resolveProductPrice(product, item),
                 image: resolvedImage,
                 wishlistItemId: item._id,
                 variant_id: item.variant_id,
@@ -427,7 +448,7 @@ export const WishlistProvider = ({ children }) => {
               _id: product._id || item.product_id,
               id: product._id || item.product_id,
               name: product.name || item.product_name,
-              price: product.selling_price || item.discounted_price || item.price,
+              price: resolveProductPrice(product, item),
               image: resolvedImage,
               wishlistItemId: item._id,
               variant_id: item.variant_id,
@@ -505,8 +526,8 @@ export const WishlistProvider = ({ children }) => {
               _id: item.product_id._id || item.product_id,
               id: item.product_id._id || item.product_id,
               name: item.product_id.name || item.product_name,
-              price: item.product_id.selling_price || item.price,
-              image: (item.product_id.image_url && item.product_id.image_url[0]) || item.product_image,
+              price: resolveProductPrice(item.product_id, item),
+              image: (Array.isArray(item.product_id.image_url) ? item.product_id.image_url[0] : item.product_id.image_url) || item.product_image,
               category: item.product_id.category,
               variant_id: item.variant_id,
               wishlistItemId: item._id

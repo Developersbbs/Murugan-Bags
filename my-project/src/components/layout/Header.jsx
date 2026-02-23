@@ -211,9 +211,9 @@ const Header = () => {
 
 
   const navItems = [
+    { name: 'Products', path: '/products' },
     { name: 'Combos', path: '/combo-offers' },
     { name: 'Bulk Orders', path: '/bulk-orders' },
-    { name: 'Discover More', path: '/products' },
     { name: 'New Arrivals', path: '/new-arrivals' }
   ];
 

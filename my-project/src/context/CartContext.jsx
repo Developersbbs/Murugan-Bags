@@ -226,8 +226,9 @@ export const CartProvider = ({ children }) => {
           // Determine image based on type
           let displayImage = variantImage || item.product_image;
           if (!displayImage) {
-            if (isProduct && item.product_id.image_url && item.product_id.image_url[0]) {
-              displayImage = item.product_id.image_url[0];
+            if (isProduct && item.product_id.image_url) {
+              const imgUrl = item.product_id.image_url;
+              displayImage = Array.isArray(imgUrl) ? imgUrl[0] : imgUrl;
             } else if (isCombo && item.product_id.image) {
               displayImage = item.product_id.image;
             }
@@ -383,7 +384,7 @@ export const CartProvider = ({ children }) => {
                 name: item.product_id.name || item.name || 'Unknown Product',
                 price: resolvedPrice,
                 quantity: item.quantity || 1,
-                image: variantImage || (item.product_id.image_url && item.product_id.image_url[0]) || item.product_image || null,
+                image: variantImage || (Array.isArray(item.product_id.image_url) ? item.product_id.image_url[0] : item.product_id.image_url) || item.product_image || null,
                 variant: item.variant_attributes || {},
                 stock: item.product_id.stock || 999
               };
@@ -437,7 +438,7 @@ export const CartProvider = ({ children }) => {
           product_name: product.name || 'Unknown Product',
           product_image: (variant && variant.images && variant.images.length > 0)
             ? variant.images[0]
-            : ((product.image_url && product.image_url[0]) || product.images?.[0]?.url || null),
+            : ((Array.isArray(product.image_url) ? product.image_url[0] : product.image_url) || product.images?.[0]?.url || null),
           variant_name: variant ? (variant.name || Object.values(variant.attributes || {}).join(', ')) : null,
           variant_sku: variant ? variant.sku : null,
           variant_attributes: variant ? (variant.attributes || {}) : {},
@@ -523,8 +524,9 @@ export const CartProvider = ({ children }) => {
             // Determine image based on type
             let displayImage = variantImage || item.product_image;
             if (!displayImage) {
-              if (isProduct && item.product_id.image_url && item.product_id.image_url[0]) {
-                displayImage = item.product_id.image_url[0];
+              if (isProduct && item.product_id.image_url) {
+                const imgUrl = item.product_id.image_url;
+                displayImage = Array.isArray(imgUrl) ? imgUrl[0] : imgUrl;
               } else if (isCombo && item.product_id.image) {
                 displayImage = item.product_id.image;
               }

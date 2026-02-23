@@ -29,7 +29,7 @@ const ProductDetails = ({ product, isLoading, isError, onCartUpdate }) => {
   const [activeTab, setActiveTab] = useState('description');
   const [showStickyBar, setShowStickyBar] = useState(false);
 
-  const { addToCart: addToCartContext } = useCart();
+  const { addToCart: addToCartContext, openSidebar } = useCart();
   const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
 
   // Use the passed product data
@@ -163,35 +163,48 @@ const ProductDetails = ({ product, isLoading, isError, onCartUpdate }) => {
     console.log('🖼️ DEBUG: Product image_url:', displayProduct?.image_url);
     console.log('🖼️ DEBUG: Selected variant:', selectedVariant);
 
+    const ensureArray = (val) => {
+      if (!val) return [];
+      return (Array.isArray(val) ? val : [val]).filter(Boolean);
+    };
+
     // 1. Try selected variant's images
-    if (displayProduct?.product_structure === 'variant' && selectedVariant?.images?.length > 0) {
-      console.log('🖼️ DEBUG: Using selected variant images:', selectedVariant.images);
-      return selectedVariant.images.map(img => getFullImageUrl(img));
+    if (displayProduct?.product_structure === 'variant' && selectedVariant?.images) {
+      const vImages = ensureArray(selectedVariant.images);
+      if (vImages.length > 0) {
+        console.log('🖼️ DEBUG: Using selected variant images:', vImages);
+        return vImages.map(img => getFullImageUrl(img));
+      }
     }
 
     // 2. If selected variant has no images, try to find another variant with the same color that has images
     if (displayProduct?.product_structure === 'variant' && selectedVariant?.attributes?.color) {
       const colorVariant = displayProduct.product_variants.find(v =>
-        v.attributes?.color === selectedVariant.attributes.color && v.images?.length > 0
+        v.attributes?.color === selectedVariant.attributes.color && ensureArray(v.images).length > 0
       );
       if (colorVariant) {
-        console.log('🖼️ DEBUG: Using color variant images:', colorVariant.images);
-        return colorVariant.images.map(img => getFullImageUrl(img));
+        const cImages = ensureArray(colorVariant.images);
+        console.log('🖼️ DEBUG: Using color variant images:', cImages);
+        return cImages.map(img => getFullImageUrl(img));
       }
     }
 
     // 3. Fallback to main product images
-    if (displayProduct?.image_url && displayProduct.image_url.length > 0) {
-      console.log('🖼️ DEBUG: Using main product images:', displayProduct.image_url);
-      const mappedImages = displayProduct.image_url.map(img => getFullImageUrl(img));
+    const mainImages = ensureArray(displayProduct?.images?.length ? displayProduct.images : displayProduct?.image_url);
+    if (mainImages.length > 0) {
+      console.log('🖼️ DEBUG: Using main product images:', mainImages);
+      const mappedImages = mainImages.map(img => getFullImageUrl(img));
       console.log('🖼️ DEBUG: Mapped image URLs:', mappedImages);
       return mappedImages;
     }
 
     // 4. Last resort: Use the first variant's images if available (better than placeholder)
-    if (displayProduct?.product_structure === 'variant' && displayProduct.product_variants?.[0]?.images?.length > 0) {
-      console.log('🖼️ DEBUG: Using first variant images:', displayProduct.product_variants[0].images);
-      return displayProduct.product_variants[0].images.map(img => getFullImageUrl(img));
+    if (displayProduct?.product_structure === 'variant' && displayProduct.product_variants?.[0]?.images) {
+      const firstVImages = ensureArray(displayProduct.product_variants[0].images);
+      if (firstVImages.length > 0) {
+        console.log('🖼️ DEBUG: Using first variant images:', firstVImages);
+        return firstVImages.map(img => getFullImageUrl(img));
+      }
     }
 
     // 5. Placeholder
@@ -352,9 +365,9 @@ const ProductDetails = ({ product, isLoading, isError, onCartUpdate }) => {
               </button>
 
               <button
-                onClick={() => {
-                  handleAddToCart();
-                  // Ideally redirect to checkout here
+                onClick={async () => {
+                  await handleAddToCart();
+                  openSidebar();
                 }}
                 disabled={displayProduct.product_type === 'physical' && displayStock <= 0}
                 className={`flex-1 flex items-center justify-center rounded-sm border border-transparent px-6 py-4 text-base font-medium text-white shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 ${displayProduct.product_type === 'physical' && displayStock <= 0
@@ -732,9 +745,9 @@ const ProductDetails = ({ product, isLoading, isError, onCartUpdate }) => {
                   : 'Add to Cart'}
               </button>
               <button
-                onClick={() => {
-                  handleAddToCart();
-                  // Redirect
+                onClick={async () => {
+                  await handleAddToCart();
+                  openSidebar();
                 }}
                 disabled={displayProduct.product_type === 'physical' && displayStock <= 0}
                 className={`flex-1 flex items-center justify-center rounded-sm border border-transparent px-4 py-3 text-sm font-medium text-white shadow-sm ${displayProduct.product_type === 'physical' && displayStock <= 0

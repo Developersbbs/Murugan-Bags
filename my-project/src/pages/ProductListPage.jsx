@@ -130,57 +130,10 @@ const ProductListPage = () => {
         console.warn('Unexpected API response structure:', apiResponse);
       }
 
-      // Transform products data to show variants as separate items (like admin)
-      const transformedProducts = [];
-      products.forEach(product => {
-        if (product.product_structure === 'variant' && product.product_variants && product.product_variants.length > 0) {
-          // For variant products, create separate items for each variant
-          product.product_variants.forEach((variant, index) => {
-            transformedProducts.push({
-              ...product,
-              // Override with variant-specific data (similar to admin approach)
-              _id: `${product._id}-variant-${index}`, // Unique ID for each variant
-              // Clean name generation
-              name: variant.name && variant.name.toLowerCase().startsWith(product.name.toLowerCase())
-                ? variant.name
-                : `${product.name} - ${variant.name || variant.slug}`,
-              slug: variant.slug,
-              sku: variant.sku,
-              cost_price: variant.cost_price,
-              selling_price: variant.selling_price || variant.salesPrice,
-              baseStock: variant.stock,
-              minStock: variant.minStock,
-              status: variant.status,
-              published: variant.published,
-              image_url: variant.images && variant.images.length > 0 ? variant.images : product.image_url,
-              // Keep variant data for reference
-              _isVariant: true,
-              _variantIndex: index,
-              _variantData: variant,
-              _originalProductId: product._id,
-              _parentProduct: product,
-              // Keep original product info for navigation
-              originalName: product.name,
-              originalDescription: product.description,
-              originalCategories: product.categories,
-              averageRating: product.averageRating,
-              numReviews: product.numReviews,
-              // Keep attributes for display
-              attributes: variant.attributes
-            });
-          });
-        } else {
-          // For simple products, add as-is
-          transformedProducts.push({
-            ...product,
-            _isVariant: false,
-            _variantIndex: 0,
-            isVariant: false
-          });
-        }
-      });
+      // Each product is kept as-is; variants are shown as colour/size swatches inside ProductCard
+      const transformedProducts = products.map(product => ({ ...product }));
 
-      console.log('Transformed products count:', transformedProducts.length);
+      console.log('Products count:', transformedProducts.length);
       return transformedProducts;
 
     } catch (error) {
@@ -437,281 +390,259 @@ const ProductListPage = () => {
 
   return (
     <div className="bg-white min-h-screen">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="mb-6">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
-            <div>
-              <h1 className="text-2xl md:text-3xl font-bold text-gray-900">All Products</h1>
-              <p className="text-sm text-gray-500 mt-1">
-                {totalItems || 0} {totalItems === 1 ? 'product' : 'products'} found
-                {searchTerm && ` for "${searchTerm}"`}
-              </p>
-            </div>
-
-            {/* View Mode Toggle */}
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setViewMode('grid')}
-                className={`p-2 rounded-lg ${viewMode === 'grid'
-                  ? 'bg-gray-900 text-white'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  } transition-colors`}
-                title="Grid View"
-              >
-                <Grid3X3 className="w-5 h-5" />
-              </button>
-              <button
-                onClick={() => setViewMode('list')}
-                className={`p-2 rounded-lg ${viewMode === 'list'
-                  ? 'bg-gray-900 text-white'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  } transition-colors`}
-                title="List View"
-              >
-                <List className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
-
-          {/* Search and Sort Row */}
-          <div className="flex flex-col sm:flex-row gap-3">
-            {/* Search bar */}
-            <form onSubmit={handleSearch} className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-                <input
-                  type="text"
-                  className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
-                  placeholder="Search products..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
-            </form>
-
-            {/* Sort dropdown */}
-            <div className="sm:w-64">
-              <select
-                value={sortOption}
-                onChange={handleSortChange}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent cursor-pointer bg-white"
-              >
-                <option value="featured">Sort: Featured</option>
-                <option value="price-low">Sort: Price Low to High</option>
-                <option value="price-high">Sort: Price High to Low</option>
-                <option value="newest">Sort: Newest</option>
-              </select>
-            </div>
-          </div>
+      <div className="container mx-auto px-4 py-8">
+        {/* Page Title - Safari Style Centered */}
+        <div className="mb-10 text-center">
+          <h1 className="text-3xl md:text-4xl font-bold text-[#1a2b4c]">All Products</h1>
         </div>
-      </div>
 
-      {/* Mobile filter button */}
-      <div className="lg:hidden mb-6">
-        <button
-          type="button"
-          className="flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
-          onClick={() => setMobileFiltersOpen(true)}
-        >
-          <Filter className="mr-2 h-5 w-5 text-gray-500" aria-hidden="true" />
-          Filters
-          {activeFilters.length > 0 && (
-            <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-              {activeFilters.length}
-            </span>
-          )}
-        </button>
-      </div>
-
-      {/* Active filters */}
-      {activeFilters.length > 0 && (
-        <div className="mb-8 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex flex-wrap items-center gap-3">
-          <span className="text-sm font-bold text-slate-400 uppercase tracking-wider mr-2">Active Filters:</span>
-
-          <div className="flex flex-wrap gap-2">
-            {activeFilters.map((filter, i) => (
-              <span
-                key={i}
-                className="inline-flex items-center px-4 py-1.5 rounded-full text-sm font-medium bg-rose-50 text-rose-700 border border-rose-100 transition-all hover:bg-rose-100 hover:border-rose-200"
-              >
-                <span className="opacity-70 mr-1.5 uppercase text-xs tracking-wider">{filter.type}:</span>
-                {filter.value}
-                <button
-                  onClick={(e) => clearFilter(filter.type, e)}
-                  className="ml-2 inline-flex items-center justify-center w-5 h-5 rounded-full hover:bg-rose-200 text-rose-500 hover:text-rose-700 transition-colors"
-                >
-                  <X className="h-3 w-3" />
-                </button>
+        {/* Mobile filter button */}
+        <div className="lg:hidden mb-6">
+          <button
+            type="button"
+            className="flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+            onClick={() => setMobileFiltersOpen(true)}
+          >
+            <Filter className="mr-2 h-5 w-5 text-gray-500" aria-hidden="true" />
+            Filters
+            {activeFilters.length > 0 && (
+              <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                {activeFilters.length}
               </span>
-            ))}
+            )}
+          </button>
+        </div>
 
-            <button
-              onClick={() => {
-                setFilters({
-                  category: null,
-                  subcategory: null,
-                  priceRange: { min: 0, max: 100000 },
-                  rating: null,
-                  inStock: false,
-                  color: null,
-                });
-                setSearchTerm('');
-                navigate({ search: '' });
-              }}
-              className="px-4 py-1.5 text-sm font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-50 rounded-full transition-colors ml-2"
-            >
-              Clear All
-            </button>
+        {/* Active filters */}
+        {activeFilters.length > 0 && (
+          <div className="mb-8 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex flex-wrap items-center gap-3">
+            <span className="text-sm font-bold text-slate-400 uppercase tracking-wider mr-2">Active Filters:</span>
+
+            <div className="flex flex-wrap gap-2">
+              {activeFilters.map((filter, i) => (
+                <span
+                  key={i}
+                  className="inline-flex items-center px-4 py-1.5 rounded-full text-sm font-medium bg-rose-50 text-rose-700 border border-rose-100 transition-all hover:bg-rose-100 hover:border-rose-200"
+                >
+                  <span className="opacity-70 mr-1.5 uppercase text-xs tracking-wider">{filter.type}:</span>
+                  {filter.value}
+                  <button
+                    onClick={(e) => clearFilter(filter.type, e)}
+                    className="ml-2 inline-flex items-center justify-center w-5 h-5 rounded-full hover:bg-rose-200 text-rose-500 hover:text-rose-700 transition-colors"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </span>
+              ))}
+
+              <button
+                onClick={() => {
+                  setFilters({
+                    category: null,
+                    subcategory: null,
+                    priceRange: { min: 0, max: 100000 },
+                    rating: null,
+                    inStock: false,
+                    color: null,
+                  });
+                  setSearchTerm('');
+                  navigate({ search: '' });
+                }}
+                className="px-4 py-1.5 text-sm font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-50 rounded-full transition-colors ml-2"
+              >
+                Clear All
+              </button>
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      <div className="lg:grid lg:grid-cols-5 lg:gap-6">
-        {/* Filters sidebar - Fixed overlap by increasing top offset */}
-        <div className="hidden lg:block space-y-6 sticky top-28 self-start pl-4">
-          <SidebarFilters
-            filters={filters}
-            onFilterChange={(newFilters) => setFilters(prev => ({ ...prev, ...newFilters }))}
-          />
-        </div>
+        <div className="lg:grid lg:grid-cols-5 lg:gap-6">
+          {/* Filters sidebar - Fixed overlap by increasing top offset */}
+          <div className="hidden lg:block space-y-6 sticky top-28 self-start pl-4">
+            <SidebarFilters
+              filters={filters}
+              onFilterChange={(newFilters) => setFilters(prev => ({ ...prev, ...newFilters }))}
+            />
+          </div>
 
-        {/* Product grid */}
-        <div className="lg:col-span-4 pr-36">
-          {products && products.length > 0 ? (
-            <>
-              <div className={
-                viewMode === 'grid'
-                  ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
-                  : "space-y-4"
-              }>
-                {products.map((product) => (
-                  <div key={product._id} className={
-                    viewMode === 'grid'
-                      ? "h-full flex"
-                      : ""
-                  }>
-                    <ProductCard
-                      product={product}
-                      className={viewMode === 'grid' ? "flex-1 flex flex-col" : ""}
-                      viewMode={viewMode}
-                    />
-                  </div>
-                ))}
+          {/* Product section */}
+          <div className="lg:col-span-4">
+
+            {/* Top Bar: Count & Sort */}
+            <div className="flex flex-col sm:flex-row justify-between items-center mb-6 text-sm text-gray-600">
+              <div className="mr-auto mb-4 sm:mb-0">
+                {totalItems || 0} products {searchTerm && ` for "${searchTerm}"`}
               </div>
 
-              {/* Pagination */}
-              {totalPages > 1 && (
-                <div className="mt-12 flex items-center justify-between border-t border-gray-200 px-4 py-3 sm:px-6">
-                  <div className="flex flex-1 justify-between sm:hidden">
-                    <button
-                      onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
-                      disabled={currentPage === 1}
-                      className="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      Previous
-                    </button>
-                    <button
-                      onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
-                      disabled={currentPage === totalPages}
-                      className="relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      Next
-                    </button>
-                  </div>
-                  <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
-                    <div>
-                      <p className="text-sm text-gray-700">
-                        Showing <span className="font-medium">{(currentPage - 1) * ITEMS_PER_PAGE + 1}</span> to{' '}
-                        <span className="font-medium">
-                          {Math.min(currentPage * ITEMS_PER_PAGE, totalItems)}
-                        </span>{' '}
-                        of <span className="font-medium">{totalItems}</span> results
-                      </p>
-                    </div>
-                    <div>
-                      <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
-                        <button
-                          onClick={() => handlePageChange(currentPage - 1)}
-                          disabled={currentPage === 1}
-                          className="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          <span className="sr-only">Previous</span>
-                          <ChevronLeft className="h-5 w-5" aria-hidden="true" />
-                        </button>
+              <div className="flex items-center gap-4">
+                {/* Optional Search Bar */}
+                <form onSubmit={handleSearch} className="hidden lg:block relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <input
+                    type="text"
+                    className="w-48 pl-9 pr-4 py-1.5 border border-gray-200 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-gray-300"
+                    placeholder="Search products..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                </form>
 
-                        {/* Page numbers */}
-                        {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                          // Show first page, last page, current page, and pages around current page
-                          let pageNum;
-                          if (totalPages <= 5) {
-                            pageNum = i + 1;
-                          } else if (currentPage <= 3) {
-                            pageNum = i + 1;
-                          } else if (currentPage >= totalPages - 2) {
-                            pageNum = totalPages - 4 + i;
-                          } else {
-                            pageNum = currentPage - 2 + i;
-                          }
+                {/* View Mode Toggle Removed */}
 
-                          return (
-                            <button
-                              key={pageNum}
-                              onClick={() => handlePageChange(pageNum)}
-                              className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ${currentPage === pageNum
-                                ? 'z-10 bg-blue-600 text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600'
-                                : 'text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:outline-offset-0'
-                                }`}
-                            >
-                              {pageNum}
-                            </button>
-                          );
-                        })}
-
-                        <button
-                          onClick={() => handlePageChange(currentPage + 1)}
-                          disabled={currentPage === totalPages}
-                          className="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          <span className="sr-only">Next</span>
-                          <ChevronRight className="h-5 w-5" aria-hidden="true" />
-                        </button>
-                      </nav>
-                    </div>
+                {/* Sort Dropdown */}
+                <div className="flex items-center gap-2 relative">
+                  <span className="text-gray-500 whitespace-nowrap">Sort by</span>
+                  <select
+                    value={sortOption}
+                    onChange={handleSortChange}
+                    className="border-none bg-transparent font-medium text-gray-900 focus:ring-0 cursor-pointer text-sm p-0 pr-6 appearance-none relative z-10"
+                  >
+                    <option value="featured">Featured</option>
+                    <option value="price-low">Price Low to High</option>
+                    <option value="price-high">Price High to Low</option>
+                    <option value="newest">Newest</option>
+                  </select>
+                  <div className="absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none text-gray-900 z-0">
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
                   </div>
                 </div>
-              )}
-            </>
-          ) : (
-            <div className="text-center py-16 bg-white rounded-lg border-2 border-dashed border-gray-300">
-              <svg
-                className="mx-auto h-12 w-12 text-gray-400"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                aria-hidden="true"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-              <h3 className="mt-2 text-sm font-medium text-gray-900">No products found</h3>
-              <p className="mt-1 text-sm text-gray-500">
-                We couldn't find any products matching your filters.
-              </p>
-              <div className="mt-6">
-                <Link
-                  to="/products"
-                  className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                >
-                  Clear all filters
-                </Link>
               </div>
             </div>
-          )}
+            {products && products.length > 0 ? (
+              <>
+                <div className={
+                  viewMode === 'grid'
+                    ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
+                    : "space-y-4"
+                }>
+                  {products.map((product) => (
+                    <div key={product._id} className={
+                      viewMode === 'grid'
+                        ? "h-full flex"
+                        : ""
+                    }>
+                      <ProductCard
+                        product={product}
+                        className={viewMode === 'grid' ? "flex-1 flex flex-col" : ""}
+                        viewMode={viewMode}
+                      />
+                    </div>
+                  ))}
+                </div>
+
+                {/* Pagination */}
+                {totalPages > 1 && (
+                  <div className="mt-12 flex items-center justify-between border-t border-gray-200 px-4 py-3 sm:px-6">
+                    <div className="flex flex-1 justify-between sm:hidden">
+                      <button
+                        onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
+                        disabled={currentPage === 1}
+                        className="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Previous
+                      </button>
+                      <button
+                        onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
+                        disabled={currentPage === totalPages}
+                        className="relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Next
+                      </button>
+                    </div>
+                    <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+                      <div>
+                        <p className="text-sm text-gray-700">
+                          Showing <span className="font-medium">{(currentPage - 1) * ITEMS_PER_PAGE + 1}</span> to{' '}
+                          <span className="font-medium">
+                            {Math.min(currentPage * ITEMS_PER_PAGE, totalItems)}
+                          </span>{' '}
+                          of <span className="font-medium">{totalItems}</span> results
+                        </p>
+                      </div>
+                      <div>
+                        <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+                          <button
+                            onClick={() => handlePageChange(currentPage - 1)}
+                            disabled={currentPage === 1}
+                            className="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            <span className="sr-only">Previous</span>
+                            <ChevronLeft className="h-5 w-5" aria-hidden="true" />
+                          </button>
+
+                          {/* Page numbers */}
+                          {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                            // Show first page, last page, current page, and pages around current page
+                            let pageNum;
+                            if (totalPages <= 5) {
+                              pageNum = i + 1;
+                            } else if (currentPage <= 3) {
+                              pageNum = i + 1;
+                            } else if (currentPage >= totalPages - 2) {
+                              pageNum = totalPages - 4 + i;
+                            } else {
+                              pageNum = currentPage - 2 + i;
+                            }
+
+                            return (
+                              <button
+                                key={pageNum}
+                                onClick={() => handlePageChange(pageNum)}
+                                className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ${currentPage === pageNum
+                                  ? 'z-10 bg-blue-600 text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600'
+                                  : 'text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:outline-offset-0'
+                                  }`}
+                              >
+                                {pageNum}
+                              </button>
+                            );
+                          })}
+
+                          <button
+                            onClick={() => handlePageChange(currentPage + 1)}
+                            disabled={currentPage === totalPages}
+                            className="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            <span className="sr-only">Next</span>
+                            <ChevronRight className="h-5 w-5" aria-hidden="true" />
+                          </button>
+                        </nav>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="text-center py-16 bg-white rounded-lg border-2 border-dashed border-gray-300">
+                <svg
+                  className="mx-auto h-12 w-12 text-gray-400"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  aria-hidden="true"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+                <h3 className="mt-2 text-sm font-medium text-gray-900">No products found</h3>
+                <p className="mt-1 text-sm text-gray-500">
+                  We couldn't find any products matching your filters.
+                </p>
+                <div className="mt-6">
+                  <Link
+                    to="/products"
+                    className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  >
+                    Clear all filters
+                  </Link>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
