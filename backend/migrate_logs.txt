@@ -1,0 +1,21 @@
+[dotenv@17.2.3] injecting env (10) from .env -- tip: ✅ audit secrets and track compliance: https://dotenvx.com/ops
+[FIREBASE_DEBUG] Found individual environment variables
+❌ [FIREBASE_DEBUG] Failed to initialize Firebase Admin SDK: Failed to parse private key: Error: Invalid PEM formatted message.
+Please check your Firebase environment variables in .env file
+Starting Image Migration to Firebase...
+Connecting to MongoDB format: URI found
+Connected to MongoDB successfully.
+Firebase Auth Failed: FirebaseAppError: The default Firebase app does not exist. Make sure you call initializeApp() before using any of the Firebase services.
+    at AppStore.getApp (/home/sathish-r/Main-Peojects/Murugan-Bags/backend/node_modules/firebase-admin/lib/app/lifecycle.js:79:19)
+    at FirebaseNamespaceInternals.app (/home/sathish-r/Main-Peojects/Murugan-Bags/backend/node_modules/firebase-admin/lib/app/firebase-namespace.js:54:35)
+    at FirebaseNamespace.app (/home/sathish-r/Main-Peojects/Murugan-Bags/backend/node_modules/firebase-admin/lib/app/firebase-namespace.js:256:30)
+    at FirebaseNamespace.ensureApp (/home/sathish-r/Main-Peojects/Murugan-Bags/backend/node_modules/firebase-admin/lib/app/firebase-namespace.js:266:24)
+    at FirebaseNamespace.fn (/home/sathish-r/Main-Peojects/Murugan-Bags/backend/node_modules/firebase-admin/lib/app/firebase-namespace.js:125:25)
+    at migrateImages (/home/sathish-r/Main-Peojects/Murugan-Bags/backend/migrate_images_to_firebase.js:91:30)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5) {
+  errorInfo: {
+    code: 'app/no-app',
+    message: 'The default Firebase app does not exist. Make sure you call initializeApp() before using any of the Firebase services.'
+  },
+  codePrefix: 'app'
+}
