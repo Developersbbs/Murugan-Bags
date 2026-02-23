@@ -11,13 +11,8 @@ if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir, { recursive: true });
 }
 
-// Multer storage config
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => cb(null, uploadDir),
-    filename: (req, file, cb) => cb(null, Date.now() + path.extname(file.originalname)),
-});
-
-const upload = multer({ storage });
+// Use Firebase upload middleware
+const { upload } = require('../middleware/upload');
 
 // GET all active banners (Public)
 router.get('/', async (req, res) => {
@@ -46,7 +41,7 @@ router.post('/', upload.single('image'), async (req, res) => {
             return res.status(400).json({ success: false, error: 'Image is required' });
         }
 
-        const imageUrl = `/uploads/new-arrivals/${req.file.filename}`;
+        const imageUrl = req.file.firebaseUrl || `/uploads/new-arrivals/${req.file.filename}`;
 
         // Get highest order to append to end
         const lastBanner = await NewArrivalBanner.findOne().sort({ order: -1 });
@@ -71,7 +66,7 @@ router.put('/:id', upload.single('image'), async (req, res) => {
         const updateData = { ...req.body };
 
         if (req.file) {
-            updateData.image = `/uploads/new-arrivals/${req.file.filename}`;
+            updateData.imageUrl = req.file.firebaseUrl || `/uploads/banners/${req.file.filename}`;
         }
 
         const banner = await NewArrivalBanner.findByIdAndUpdate(

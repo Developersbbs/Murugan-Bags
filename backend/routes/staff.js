@@ -74,9 +74,8 @@ router.post("/", upload.single('image'), async (req, res) => {
     // Handle both JSON and form data
     let staffData = req.body;
 
-    // If request is multipart/form-data with file upload
     if (req.file) {
-      staffData.image_url = `/uploads/staff/${req.file.filename}`;
+      staffData.image_url = req.file.firebaseUrl || `/uploads/staff/${req.file.filename}`;
       console.log("File uploaded for new staff:", req.file.filename);
     }
 
@@ -128,9 +127,8 @@ router.put("/", authenticateToken, upload.single('image'), async (req, res) => {
     delete updateData.id;
     delete updateData._id;
 
-    // If request is multipart/form-data with file upload
     if (req.file) {
-      updateData.image_url = `/uploads/staff/${req.file.filename}`;
+      updateData.image_url = req.file.firebaseUrl || `/uploads/staff/${req.file.filename}`;
       console.log("File uploaded:", req.file.filename);
     }
 
@@ -145,11 +143,11 @@ router.put("/", authenticateToken, upload.single('image'), async (req, res) => {
       updateData,
       { new: true }
     );
-    
+
     if (!updatedStaff) {
       return res.status(404).json({ success: false, error: "User profile not found" });
     }
-    
+
     console.log("Profile updated successfully for user:", staffId);
     res.json({ success: true, data: updatedStaff, message: "Profile updated successfully" });
   } catch (err) {
@@ -179,7 +177,7 @@ router.put("/:id", upload.single('image'), async (req, res) => {
     // Check if ID is undefined or invalid
     if (!staffId || staffId === 'undefined') {
       console.log("ID is undefined - redirecting to create logic");
-      
+
       // Handle both JSON and form data
       let staffData = req.body;
 
@@ -212,9 +210,8 @@ router.put("/:id", upload.single('image'), async (req, res) => {
     delete updateData.id;
     delete updateData._id;
 
-    // If request is multipart/form-data with file upload
     if (req.file) {
-      updateData.image_url = `/uploads/staff/${req.file.filename}`;
+      updateData.image_url = req.file.firebaseUrl || `/uploads/staff/${req.file.filename}`;
       console.log("File uploaded:", req.file.filename);
     }
 

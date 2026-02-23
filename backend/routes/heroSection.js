@@ -11,13 +11,8 @@ if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir, { recursive: true });
 }
 
-// Multer storage config
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => cb(null, uploadDir),
-    filename: (req, file, cb) => cb(null, Date.now() + path.extname(file.originalname)),
-});
-
-const upload = multer({ storage });
+// Use Firebase upload middleware
+const { upload } = require('../middleware/upload');
 
 // GET all active slides (Public)
 router.get('/', async (req, res) => {
@@ -45,7 +40,7 @@ router.post('/', upload.single('image'), async (req, res) => {
         let imageUrl = '';
 
         if (req.file) {
-            imageUrl = `/uploads/hero/${req.file.filename}`;
+            imageUrl = req.file.firebaseUrl || `/uploads/hero/${req.file.filename}`;
         } else if (req.body.image) {
             imageUrl = req.body.image;
         } else {
@@ -75,7 +70,7 @@ router.put('/:id', upload.single('image'), async (req, res) => {
         const updateData = { ...req.body };
 
         if (req.file) {
-            updateData.image = `/uploads/hero/${req.file.filename}`;
+            updateData.imageUrl = req.file.firebaseUrl || `/uploads/heros/${req.file.filename}`;
         }
         // If req.body.image is present (from Firebase upload), it's already in updateData
 

@@ -8,13 +8,19 @@ import { ShareIcon } from '@heroicons/react/24/outline';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
+import { getFullImageUrl } from '../../utils/imageUtils';
+
 function extractImageUrl(img) {
   if (!img) return null;
   let url = typeof img === 'string' ? img : (img.url || img.secure_url || img.path || null);
   if (!url) return null;
   if (url.startsWith('http') || url.startsWith('data:')) return url;
-  if (url.startsWith('/uploads/') || url.startsWith('uploads/')) return url.startsWith('/') ? url : `/${url}`;
-  return `/uploads/${url}`;
+  if (url.startsWith('/uploads/') || url.startsWith('uploads/')) {
+    url = url.startsWith('/') ? url : `/${url}`;
+  } else {
+    url = `/uploads/${url}`;
+  }
+  return getFullImageUrl(url);
 }
 
 function firstImage(images) {

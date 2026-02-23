@@ -4,39 +4,8 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 
-// Configure multer for image upload
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        const uploadDir = 'uploads/offer-popups';
-        // Create directory if it doesn't exist
-        if (!fs.existsSync(uploadDir)) {
-            fs.mkdirSync(uploadDir, { recursive: true });
-        }
-        cb(null, uploadDir);
-    },
-    filename: function (req, file, cb) {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, 'popup-' + uniqueSuffix + path.extname(file.originalname));
-    }
-});
-
-const upload = multer({
-    storage: storage,
-    limits: {
-        fileSize: 5 * 1024 * 1024 // 5MB limit
-    },
-    fileFilter: function (req, file, cb) {
-        const allowedTypes = /jpeg|jpg|png|gif|webp/;
-        const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-        const mimetype = allowedTypes.test(file.mimetype);
-
-        if (mimetype && extname) {
-            return cb(null, true);
-        } else {
-            cb(new Error('Only image files are allowed!'));
-        }
-    }
-});
+// Use Firebase upload middleware
+const { upload } = require('../middleware/upload');
 
 // GET active popup for frontend (public route)
 router.get('/', async (req, res) => {
@@ -124,7 +93,7 @@ router.post('/', upload.single('image'), async (req, res) => {
         }
 
         const popup = new OfferPopup({
-            image: `/uploads/offer-popups/${req.file.filename}`,
+            imageUrl: req.file ? (req.file.firebaseUrl || `/uploads/popups/${req.file.filename}`) : null,
             heading,
             description,
             buttonText: buttonText || 'Shop Now',
@@ -179,12 +148,14 @@ router.put('/:id', upload.single('image'), async (req, res) => {
 
         // Handle image update
         if (req.file) {
-            // Delete old image
-            const oldImagePath = path.join(__dirname, '..', popup.image);
-            if (fs.existsSync(oldImagePath)) {
-                fs.unlinkSync(oldImagePath);
+            // Delete old image if it was a local file
+            if (popup.imageUrl && !popup.imageUrl.startsWith('http')) { // Check if it's a local path
+                const oldImagePath = path.join(__dirname, '..', popup.imageUrl);
+                if (fs.existsSync(oldImagePath)) {
+                    fs.unlinkSync(oldImagePath);
+                }
             }
-            popup.image = `/uploads/offer-popups/${req.file.filename}`;
+            popup.imageUrl = req.file.firebaseUrl || `/uploads/popups/${req.file.filename}`;
         }
 
         await popup.save();

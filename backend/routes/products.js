@@ -8,18 +8,8 @@ const fs = require("fs");
 const mongoose = require("mongoose");
 const router = express.Router();
 
-// Ensure uploads folder exists
-const uploadDir = path.join(__dirname, "../uploads/products");
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
-
-// Multer storage config for products
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, uploadDir),
-  filename: (req, file, cb) => cb(null, Date.now() + path.extname(file.originalname)),
-});
-const upload = multer({ storage });
+// Use Firebase upload middleware
+const { upload } = require('../middleware/upload');
 
 // Upload middleware for digital files - using any() to capture all file fields
 const uploadDigitalFile = upload.any();
@@ -760,7 +750,7 @@ router.post("/", uploadDigitalFile, async (req, res) => {
 
       imageFields.forEach(key => {
         filesByField[key].forEach(file => {
-          allImageUrls.push(`/uploads/products/${file.filename}`);
+          allImageUrls.push(file.firebaseUrl || `/uploads/products/${file.filename}`);
         });
       });
 

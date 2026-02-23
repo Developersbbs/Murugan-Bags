@@ -7,23 +7,8 @@ const fs = require("fs");
 const router = express.Router();
 const { ObjectId } = require("mongodb");
 
-// --------------------------
-// Ensure uploads folder exists
-// --------------------------
-const uploadDir = path.join(__dirname, "../uploads/subcategories");
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-  console.log(`Created subcategories upload directory: ${uploadDir}`);
-}
-
-// --------------------------
-// Multer storage config
-// --------------------------
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, uploadDir),
-  filename: (req, file, cb) => cb(null, Date.now() + path.extname(file.originalname)),
-});
-const upload = multer({ storage });
+// Use Firebase upload middleware
+const { upload } = require('../middleware/upload');
 
 // --------------------------
 // STATIC FILE SERVING
@@ -53,7 +38,7 @@ router.get("/category/:categoryId", async (req, res) => {
   try {
     const { categoryId } = req.params;
     const { page = 1, limit = 10, search, published } = req.query;
-    
+
     // Validate category exists
     const category = await Category.findById(categoryId);
     if (!category) {
@@ -62,11 +47,11 @@ router.get("/category/:categoryId", async (req, res) => {
 
     const skip = (parseInt(page) - 1) * parseInt(limit);
     const filter = { category_id: categoryId };
-    
+
     if (search) {
       filter.name = { $regex: search, $options: "i" };
     }
-    
+
     if (published !== undefined) {
       filter.published = published === 'true';
     }
@@ -78,7 +63,7 @@ router.get("/category/:categoryId", async (req, res) => {
       .limit(parseInt(limit));
 
     const total = await Subcategory.countDocuments(filter);
-    
+
     const subcategoriesWithFullImageUrls = subcategories.map(subcat => ({
       ...subcat.toObject(),
       image_url: subcat.image_url ? `${req.protocol}://${req.get("host")}${subcat.image_url}` : null,
@@ -87,10 +72,10 @@ router.get("/category/:categoryId", async (req, res) => {
     res.json({
       success: true,
       data: subcategoriesWithFullImageUrls,
-      meta: { 
-        page: parseInt(page), 
-        limit: parseInt(limit), 
-        total, 
+      meta: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
         totalPages: Math.ceil(total / parseInt(limit)),
         category: category.name
       },
@@ -108,15 +93,15 @@ router.get("/", async (req, res) => {
     const { page = 1, limit = 10, search, category_id, published } = req.query;
     const skip = (parseInt(page) - 1) * parseInt(limit);
     const filter = {};
-    
+
     if (search) {
       filter.name = { $regex: search, $options: "i" };
     }
-    
+
     if (category_id) {
       filter.category_id = category_id;
     }
-    
+
     if (published !== undefined) {
       filter.published = published === 'true';
     }
@@ -128,7 +113,7 @@ router.get("/", async (req, res) => {
       .limit(parseInt(limit));
 
     const total = await Subcategory.countDocuments(filter);
-    
+
     const subcategoriesWithFullImageUrls = subcategories.map(subcat => ({
       ...subcat.toObject(),
       image_url: subcat.image_url ? `${req.protocol}://${req.get("host")}${subcat.image_url}` : null,
@@ -150,7 +135,7 @@ router.get("/", async (req, res) => {
 router.post("/", upload.single("image"), async (req, res) => {
   try {
     const { name, description, slug, category_id, published = true, sort_order = 0 } = req.body;
-    
+
     // Validate category exists
     const category = await Category.findById(category_id);
     if (!category) {
@@ -170,9 +155,9 @@ router.post("/", upload.single("image"), async (req, res) => {
       category_id,
       published,
       sort_order,
-      image_url: req.file ? `/uploads/subcategories/${req.file.filename}` : null,
+      image_url: req.file ? (req.file.firebaseUrl || `/uploads/subcategories/${req.file.filename}`) : null,
     });
-    
+
     await subcategory.save();
 
     // Populate category info for response
@@ -220,7 +205,7 @@ router.get("/:id", async (req, res) => {
 router.put("/:id", upload.single("image"), async (req, res) => {
   try {
     const { name, description, slug, category_id, published, sort_order } = req.body;
-    
+
     // If category_id is being changed, validate new category exists
     if (category_id) {
       const category = await Category.findById(category_id);
@@ -230,7 +215,7 @@ router.put("/:id", upload.single("image"), async (req, res) => {
     }
 
     const updateData = { ...req.body, updated_at: new Date() };
-    if (req.file) updateData.image_url = `/uploads/subcategories/${req.file.filename}`;
+    if (req.file) updateData.image_url = req.file.firebaseUrl || `/uploads/subcategories/${req.file.filename}`;
 
     // If slug or category is being updated, check for duplicates
     if (slug || category_id) {
@@ -241,13 +226,13 @@ router.put("/:id", upload.single("image"), async (req, res) => {
 
       const checkCategoryId = category_id || currentSubcategory.category_id;
       const checkSlug = slug || currentSubcategory.slug;
-      
-      const existingSubcategory = await Subcategory.findOne({ 
-        category_id: checkCategoryId, 
+
+      const existingSubcategory = await Subcategory.findOne({
+        category_id: checkCategoryId,
         slug: checkSlug,
         _id: { $ne: req.params.id }
       });
-      
+
       if (existingSubcategory) {
         return res.status(400).json({ success: false, error: "Subcategory slug already exists in this category" });
       }
@@ -255,7 +240,7 @@ router.put("/:id", upload.single("image"), async (req, res) => {
 
     const subcategory = await Subcategory.findByIdAndUpdate(req.params.id, updateData, { new: true })
       .populate('category_id', 'name slug');
-    
+
     if (!subcategory) return res.status(404).json({ success: false, error: "Subcategory not found" });
 
     res.json({
@@ -342,7 +327,7 @@ router.put("/bulk", async (req, res) => {
 
     const objectIds = ids
       .map(id => {
-        try { return new ObjectId(id); } 
+        try { return new ObjectId(id); }
         catch { return null; }
       })
       .filter(Boolean);
@@ -370,7 +355,7 @@ router.delete("/bulk", async (req, res) => {
 
     const objectIds = ids
       .map(id => {
-        try { return new ObjectId(id); } 
+        try { return new ObjectId(id); }
         catch { return null; }
       })
       .filter(Boolean);
@@ -403,8 +388,8 @@ router.delete("/bulk", async (req, res) => {
 router.get("/dropdown/:categoryId", async (req, res) => {
   try {
     const { categoryId } = req.params;
-    
-    const subcategories = await Subcategory.find({ 
+
+    const subcategories = await Subcategory.find({
       category_id: categoryId
     })
       .select("name slug")
