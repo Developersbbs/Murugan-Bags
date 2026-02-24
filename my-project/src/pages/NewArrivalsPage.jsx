@@ -34,7 +34,7 @@ const NewArrivalsPage = () => {
     const fetchNewArrivals = async () => {
         try {
             // Fetch products with isNewArrival=true
-            const res = await fetch(`${API_BASE_URL}/products?isNewArrival=true&limit=20`);
+            const res = await fetch(`${API_BASE_URL}/products?isNewArrival=true&published=true&limit=20`);
             const data = await res.json();
             if (data.products) {
                 setProducts(data.products);

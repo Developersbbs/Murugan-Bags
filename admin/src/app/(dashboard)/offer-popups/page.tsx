@@ -4,16 +4,40 @@ import { useState, useEffect } from 'react';
 import { FaPlus, FaTrash, FaEdit, FaSave, FaTimes, FaImage, FaToggleOn, FaToggleOff } from 'react-icons/fa';
 import Image from 'next/image';
 
+interface Popup {
+    _id: string;
+    heading: string;
+    description?: string;
+    buttonText?: string;
+    buttonLink?: string;
+    isActive: boolean;
+    priority?: number;
+    startDate?: string;
+    endDate?: string;
+    image?: string;
+}
+
+interface FormState {
+    heading: string;
+    description: string;
+    buttonText: string;
+    buttonLink: string;
+    isActive: boolean;
+    priority: number;
+    startDate: string;
+    endDate: string;
+}
+
 export default function OfferPopupsPage() {
-    const [popups, setPopups] = useState([]);
+    const [popups, setPopups] = useState<Popup[]>([]);
     const [loading, setLoading] = useState(true);
     const [isEditing, setIsEditing] = useState(false);
-    const [currentPopup, setCurrentPopup] = useState(null);
-    const [imagePreview, setImagePreview] = useState(null);
-    const [imageFile, setImageFile] = useState(null);
+    const [currentPopup, setCurrentPopup] = useState<Popup | null>(null);
+    const [imagePreview, setImagePreview] = useState<string | null>(null);
+    const [imageFile, setImageFile] = useState<File | null>(null);
 
     // Form state
-    const [formData, setFormData] = useState({
+    const [formData, setFormData] = useState<FormState>({
         heading: '',
         description: '',
         buttonText: 'Shop Now',
@@ -26,6 +50,14 @@ export default function OfferPopupsPage() {
 
     const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
     const baseUrl = API_URL.endsWith('/api') ? API_URL : `${API_URL}/api`;
+
+    // Helper: build a safe image URL regardless of whether the stored value
+    // is already an absolute https:// URL (Firebase) or a relative backend path.
+    const getImageUrl = (image: string | null | undefined): string | null => {
+        if (!image) return null;
+        if (image.startsWith('http://') || image.startsWith('https://')) return image;
+        return `${API_URL}${image}`;
+    };
 
     useEffect(() => {
         fetchPopups();
@@ -45,21 +77,22 @@ export default function OfferPopupsPage() {
         }
     };
 
-    const handleInputChange = (e) => {
-        const { name, value, type, checked } = e.target;
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        const { name, value, type } = e.target;
+        const checked = (e.target as HTMLInputElement).checked;
         setFormData(prev => ({
             ...prev,
-            [name]: type === 'checkbox' ? checked : value
+            [name]: type === 'checkbox' ? checked : (name === 'priority' ? Number(value) : value)
         }));
     };
 
-    const handleImageChange = (e) => {
-        const file = e.target.files[0];
+    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
         if (file) {
             setImageFile(file);
             const reader = new FileReader();
             reader.onloadend = () => {
-                setImagePreview(reader.result);
+                setImagePreview(reader.result as string);
             };
             reader.readAsDataURL(file);
         }
@@ -82,7 +115,7 @@ export default function OfferPopupsPage() {
         setCurrentPopup(null);
     };
 
-    const handleEdit = (popup) => {
+    const handleEdit = (popup: Popup) => {
         setCurrentPopup(popup);
         setFormData({
             heading: popup.heading,
@@ -94,11 +127,11 @@ export default function OfferPopupsPage() {
             startDate: popup.startDate ? new Date(popup.startDate).toISOString().split('T')[0] : '',
             endDate: popup.endDate ? new Date(popup.endDate).toISOString().split('T')[0] : ''
         });
-        setImagePreview(`${API_URL}${popup.image}`);
+        setImagePreview(getImageUrl(popup.image));
         setIsEditing(true);
     };
 
-    const handleDelete = async (id) => {
+    const handleDelete = async (id: string) => {
         if (!confirm('Are you sure you want to delete this offer popup?')) return;
 
         try {
@@ -117,7 +150,7 @@ export default function OfferPopupsPage() {
         }
     };
 
-    const handleToggle = async (id) => {
+    const handleToggle = async (id: string) => {
         try {
             const res = await fetch(`${baseUrl}/offer-popups/${id}/toggle`, {
                 method: 'PATCH'
@@ -131,7 +164,7 @@ export default function OfferPopupsPage() {
         }
     };
 
-    const handleSubmit = async (e) => {
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
 
         if (!imageFile && !currentPopup) {
@@ -145,8 +178,8 @@ export default function OfferPopupsPage() {
             formDataToSend.append('description', formData.description);
             formDataToSend.append('buttonText', formData.buttonText);
             formDataToSend.append('buttonLink', formData.buttonLink);
-            formDataToSend.append('isActive', formData.isActive);
-            formDataToSend.append('priority', formData.priority);
+            formDataToSend.append('isActive', String(formData.isActive));
+            formDataToSend.append('priority', String(formData.priority));
             if (formData.startDate) formDataToSend.append('startDate', formData.startDate);
             if (formData.endDate) formDataToSend.append('endDate', formData.endDate);
             if (imageFile) formDataToSend.append('image', imageFile);
@@ -173,7 +206,7 @@ export default function OfferPopupsPage() {
             }
         } catch (error) {
             console.error('Error saving popup:', error);
-            alert(`Error saving popup: ${error.message}`);
+            alert(`Error saving popup: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
     };
 
@@ -264,7 +297,7 @@ export default function OfferPopupsPage() {
                                     name="description"
                                     value={formData.description}
                                     onChange={handleInputChange}
-                                    rows="3"
+                                    rows={3}
                                     className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent"
                                     required
                                 />
@@ -352,12 +385,18 @@ export default function OfferPopupsPage() {
                 {popups.map((popup) => (
                     <div key={popup._id} className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden group hover:shadow-md transition-shadow">
                         <div className="relative h-48 bg-slate-100">
-                            <Image
-                                src={`${API_URL}${popup.image}`}
-                                alt={popup.heading}
-                                fill
-                                className="object-cover"
-                            />
+                            {getImageUrl(popup.image) ? (
+                                <Image
+                                    src={getImageUrl(popup.image)!}
+                                    alt={popup.heading}
+                                    fill
+                                    className="object-cover"
+                                />
+                            ) : (
+                                <div className="flex items-center justify-center h-full text-slate-400">
+                                    <FaImage className="w-12 h-12" />
+                                </div>
+                            )}
                         </div>
                         <div className="p-4">
                             <div className="flex justify-between items-start mb-2">

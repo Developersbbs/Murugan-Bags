@@ -478,12 +478,34 @@ router.get("/", async (req, res) => {
 
     if (status) {
       filter.status = status;
-    }
-
-    if (status === 'archived') {
-      filter.published = false;
+      // When filtering by a specific status, don't layer on a published constraint
+      // unless explicitly requested.
+      if (published !== undefined) {
+        filter.published = published === "true";
+      }
     } else if (published !== undefined) {
       filter.published = published === "true";
+    } else {
+      // No status, no published param — distinguish admin vs client via JWT
+      // If the request carries a valid STAFF token, admins see all products (draft, unpublished, etc.)
+      // Otherwise (client, unauthenticated) — only published products are shown.
+      let isStaffRequest = false;
+      try {
+        const authHeader = req.headers.authorization || req.headers.Authorization;
+        if (authHeader && authHeader.startsWith('Bearer ')) {
+          const token = authHeader.split(' ')[1];
+          const decoded = require('jsonwebtoken').decode(token); // decode only, no verify needed here
+          // Staff tokens carry a 'role' field; customer tokens do not
+          if (decoded && decoded.role) {
+            isStaffRequest = true;
+          }
+        }
+      } catch (_) { /* ignore token parse errors — fall through to published:true */ }
+
+      if (!isStaffRequest) {
+        filter.published = true;
+      }
+      // If isStaffRequest, no published filter → admin sees everything
     }
 
     if (color) {
@@ -577,7 +599,7 @@ router.get("/slug/:slug", async (req, res) => {
     if (!slug || typeof slug !== 'string' || slug.trim() === '') {
       return res.status(400).json({ success: false, error: "Product slug is required" });
     }
-    const product = await Product.findOne({ slug: slug })
+    const product = await Product.findOne({ slug: slug, published: true })
       .populate({ path: "categories.category", select: "name slug" })
       .populate({ path: "categories.subcategories", select: "name" });
 

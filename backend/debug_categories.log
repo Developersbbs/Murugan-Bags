@@ -1,0 +1,144 @@
+2026-02-24T09:56:18.442Z - PUT Request for Category ID: 6934013b1b924363f9ff4071
+2026-02-24T09:56:18.442Z - Request Body Keys: ["published"]
+2026-02-24T09:56:18.442Z - Name: undefined, Slug: undefined
+2026-02-24T09:56:18.442Z - Update Data: {"updated_at":"2026-02-24T09:56:18.442Z","published":false}
+2026-02-24T09:56:18.475Z - Subcategory keys found: 0
+2026-02-24T09:56:18.476Z - Final parsed subcategories count: 0
+2026-02-24T09:56:21.675Z - PUT Request for Category ID: 693cfffaad85718b998138c6
+2026-02-24T09:56:21.675Z - Request Body Keys: ["published"]
+2026-02-24T09:56:21.675Z - Name: undefined, Slug: undefined
+2026-02-24T09:56:21.675Z - Update Data: {"updated_at":"2026-02-24T09:56:21.675Z","published":false}
+2026-02-24T09:56:21.706Z - Subcategory keys found: 0
+2026-02-24T09:56:21.706Z - Final parsed subcategories count: 0
+2026-02-24T09:56:23.804Z - PUT Request for Category ID: 693cfffaad85718b998138c6
+2026-02-24T09:56:23.804Z - Request Body Keys: ["published"]
+2026-02-24T09:56:23.804Z - Name: undefined, Slug: undefined
+2026-02-24T09:56:23.804Z - Update Data: {"updated_at":"2026-02-24T09:56:23.804Z","published":false}
+2026-02-24T09:56:23.832Z - Subcategory keys found: 0
+2026-02-24T09:56:23.832Z - Final parsed subcategories count: 0
+2026-02-24T09:56:31.072Z - PUT Request for Category ID: 6934013b1b924363f9ff4071
+2026-02-24T09:56:31.073Z - Request Body Keys: ["published"]
+2026-02-24T09:56:31.073Z - Name: undefined, Slug: undefined
+2026-02-24T09:56:31.073Z - Update Data: {"updated_at":"2026-02-24T09:56:31.073Z","published":false}
+2026-02-24T09:56:31.103Z - Subcategory keys found: 0
+2026-02-24T09:56:31.104Z - Final parsed subcategories count: 0
+2026-02-24T09:56:44.083Z - PUT Request for Category ID: 6934013b1b924363f9ff4071
+2026-02-24T09:56:44.083Z - Request Body Keys: ["published"]
+2026-02-24T09:56:44.083Z - Name: undefined, Slug: undefined
+2026-02-24T09:56:44.083Z - Update Data: {"updated_at":"2026-02-24T09:56:44.083Z","published":false}
+2026-02-24T09:56:44.112Z - Subcategory keys found: 0
+2026-02-24T09:56:44.112Z - Final parsed subcategories count: 0
+2026-02-24T09:56:45.941Z - PUT Request for Category ID: 693cfffaad85718b998138c6
+2026-02-24T09:56:45.941Z - Request Body Keys: ["published"]
+2026-02-24T09:56:45.941Z - Name: undefined, Slug: undefined
+2026-02-24T09:56:45.941Z - Update Data: {"updated_at":"2026-02-24T09:56:45.941Z","published":false}
+2026-02-24T09:56:45.979Z - Subcategory keys found: 0
+2026-02-24T09:56:45.979Z - Final parsed subcategories count: 0
+2026-02-24T09:56:50.254Z - PUT Request for Category ID: 69366fa7d50c05abc7775ae1
+2026-02-24T09:56:50.254Z - Request Body Keys: ["published"]
+2026-02-24T09:56:50.254Z - Name: undefined, Slug: undefined
+2026-02-24T09:56:50.255Z - Update Data: {"updated_at":"2026-02-24T09:56:50.255Z","published":false}
+2026-02-24T09:56:50.285Z - Subcategory keys found: 0
+2026-02-24T09:56:50.285Z - Final parsed subcategories count: 0
+2026-02-24T09:56:53.682Z - PUT Request for Category ID: 69366fa7d50c05abc7775ae1
+2026-02-24T09:56:53.682Z - Request Body Keys: ["published"]
+2026-02-24T09:56:53.683Z - Name: undefined, Slug: undefined
+2026-02-24T09:56:53.683Z - Update Data: {"updated_at":"2026-02-24T09:56:53.683Z","published":false}
+2026-02-24T09:56:53.713Z - Subcategory keys found: 0
+2026-02-24T09:56:53.713Z - Final parsed subcategories count: 0
+2026-02-24T09:56:56.834Z - PUT Request for Category ID: 69366fa7d50c05abc7775ae1
+2026-02-24T09:56:56.834Z - Request Body Keys: ["published"]
+2026-02-24T09:56:56.834Z - Name: undefined, Slug: undefined
+2026-02-24T09:56:56.834Z - Update Data: {"updated_at":"2026-02-24T09:56:56.834Z","published":false}
+2026-02-24T09:56:56.864Z - Subcategory keys found: 0
+2026-02-24T09:56:56.864Z - Final parsed subcategories count: 0
+2026-02-24T09:56:58.869Z - PUT Request for Category ID: 6934013b1b924363f9ff4071
+2026-02-24T09:56:58.870Z - Request Body Keys: ["published"]
+2026-02-24T09:56:58.870Z - Name: undefined, Slug: undefined
+2026-02-24T09:56:58.870Z - Update Data: {"updated_at":"2026-02-24T09:56:58.870Z","published":false}
+2026-02-24T09:56:58.905Z - Subcategory keys found: 0
+2026-02-24T09:56:58.905Z - Final parsed subcategories count: 0
+2026-02-24T09:57:11.082Z - PUT Request for Category ID: 69366fa7d50c05abc7775ae1
+2026-02-24T09:57:11.082Z - Request Body Keys: ["published"]
+2026-02-24T09:57:11.082Z - Name: undefined, Slug: undefined
+2026-02-24T09:57:11.082Z - Update Data: {"updated_at":"2026-02-24T09:57:11.082Z","published":false}
+2026-02-24T09:57:11.112Z - Subcategory keys found: 0
+2026-02-24T09:57:11.113Z - Final parsed subcategories count: 0
+2026-02-24T09:57:13.170Z - PUT Request for Category ID: 6934013b1b924363f9ff4071
+2026-02-24T09:57:13.170Z - Request Body Keys: ["published"]
+2026-02-24T09:57:13.170Z - Name: undefined, Slug: undefined
+2026-02-24T09:57:13.170Z - Update Data: {"updated_at":"2026-02-24T09:57:13.170Z","published":false}
+2026-02-24T09:57:13.198Z - Subcategory keys found: 0
+2026-02-24T09:57:13.199Z - Final parsed subcategories count: 0
+2026-02-24T09:57:14.641Z - PUT Request for Category ID: 693cfffaad85718b998138c6
+2026-02-24T09:57:14.641Z - Request Body Keys: ["published"]
+2026-02-24T09:57:14.641Z - Name: undefined, Slug: undefined
+2026-02-24T09:57:14.641Z - Update Data: {"updated_at":"2026-02-24T09:57:14.641Z","published":false}
+2026-02-24T09:57:14.669Z - Subcategory keys found: 0
+2026-02-24T09:57:14.670Z - Final parsed subcategories count: 0
+2026-02-24T09:57:15.849Z - PUT Request for Category ID: 693d0088ad85718b998138cb
+2026-02-24T09:57:15.849Z - Request Body Keys: ["published"]
+2026-02-24T09:57:15.849Z - Name: undefined, Slug: undefined
+2026-02-24T09:57:15.850Z - Update Data: {"updated_at":"2026-02-24T09:57:15.850Z","published":false}
+2026-02-24T09:57:15.882Z - Subcategory keys found: 0
+2026-02-24T09:57:15.882Z - Final parsed subcategories count: 0
+2026-02-24T09:57:17.800Z - PUT Request for Category ID: 693d00aaad85718b998138d0
+2026-02-24T09:57:17.800Z - Request Body Keys: ["published"]
+2026-02-24T09:57:17.800Z - Name: undefined, Slug: undefined
+2026-02-24T09:57:17.800Z - Update Data: {"updated_at":"2026-02-24T09:57:17.800Z","published":false}
+2026-02-24T09:57:17.827Z - Subcategory keys found: 0
+2026-02-24T09:57:17.828Z - Final parsed subcategories count: 0
+2026-02-24T09:57:34.452Z - PUT Request for Category ID: 693d00aaad85718b998138d0
+2026-02-24T09:57:34.452Z - Request Body Keys: ["published"]
+2026-02-24T09:57:34.452Z - Name: undefined, Slug: undefined
+2026-02-24T09:57:34.452Z - Update Data: {"updated_at":"2026-02-24T09:57:34.452Z","published":false}
+2026-02-24T09:57:34.480Z - Subcategory keys found: 0
+2026-02-24T09:57:34.480Z - Final parsed subcategories count: 0
+2026-02-24T09:57:43.516Z - PUT Request for Category ID: 6934013b1b924363f9ff4071
+2026-02-24T09:57:43.516Z - Request Body Keys: ["published"]
+2026-02-24T09:57:43.516Z - Name: undefined, Slug: undefined
+2026-02-24T09:57:43.516Z - Update Data: {"updated_at":"2026-02-24T09:57:43.516Z","published":false}
+2026-02-24T09:57:43.545Z - Subcategory keys found: 0
+2026-02-24T09:57:43.545Z - Final parsed subcategories count: 0
+2026-02-24T09:57:46.533Z - PUT Request for Category ID: 69366fa7d50c05abc7775ae1
+2026-02-24T09:57:46.533Z - Request Body Keys: ["published"]
+2026-02-24T09:57:46.533Z - Name: undefined, Slug: undefined
+2026-02-24T09:57:46.533Z - Update Data: {"updated_at":"2026-02-24T09:57:46.533Z","published":false}
+2026-02-24T09:57:46.562Z - Subcategory keys found: 0
+2026-02-24T09:57:46.562Z - Final parsed subcategories count: 0
+2026-02-24T09:57:48.552Z - PUT Request for Category ID: 693cfffaad85718b998138c6
+2026-02-24T09:57:48.552Z - Request Body Keys: ["published"]
+2026-02-24T09:57:48.552Z - Name: undefined, Slug: undefined
+2026-02-24T09:57:48.552Z - Update Data: {"updated_at":"2026-02-24T09:57:48.552Z","published":false}
+2026-02-24T09:57:48.581Z - Subcategory keys found: 0
+2026-02-24T09:57:48.581Z - Final parsed subcategories count: 0
+2026-02-24T09:58:14.361Z - PUT Request for Category ID: 6934013b1b924363f9ff4071
+2026-02-24T09:58:14.361Z - Request Body Keys: ["published"]
+2026-02-24T09:58:14.361Z - Name: undefined, Slug: undefined
+2026-02-24T09:58:14.361Z - Update Data: {"updated_at":"2026-02-24T09:58:14.361Z","published":false}
+2026-02-24T09:58:14.398Z - Subcategory keys found: 0
+2026-02-24T09:58:14.398Z - Final parsed subcategories count: 0
+2026-02-24T09:58:15.842Z - PUT Request for Category ID: 69366fa7d50c05abc7775ae1
+2026-02-24T09:58:15.842Z - Request Body Keys: ["published"]
+2026-02-24T09:58:15.842Z - Name: undefined, Slug: undefined
+2026-02-24T09:58:15.842Z - Update Data: {"updated_at":"2026-02-24T09:58:15.842Z","published":false}
+2026-02-24T09:58:15.878Z - Subcategory keys found: 0
+2026-02-24T09:58:15.878Z - Final parsed subcategories count: 0
+2026-02-24T09:58:17.011Z - PUT Request for Category ID: 693cfffaad85718b998138c6
+2026-02-24T09:58:17.012Z - Request Body Keys: ["published"]
+2026-02-24T09:58:17.012Z - Name: undefined, Slug: undefined
+2026-02-24T09:58:17.012Z - Update Data: {"updated_at":"2026-02-24T09:58:17.012Z","published":false}
+2026-02-24T09:58:17.042Z - Subcategory keys found: 0
+2026-02-24T09:58:17.042Z - Final parsed subcategories count: 0
+2026-02-24T09:58:18.362Z - PUT Request for Category ID: 693d0088ad85718b998138cb
+2026-02-24T09:58:18.362Z - Request Body Keys: ["published"]
+2026-02-24T09:58:18.362Z - Name: undefined, Slug: undefined
+2026-02-24T09:58:18.362Z - Update Data: {"updated_at":"2026-02-24T09:58:18.362Z","published":false}
+2026-02-24T09:58:18.391Z - Subcategory keys found: 0
+2026-02-24T09:58:18.391Z - Final parsed subcategories count: 0
+2026-02-24T09:58:19.620Z - PUT Request for Category ID: 693d00aaad85718b998138d0
+2026-02-24T09:58:19.620Z - Request Body Keys: ["published"]
+2026-02-24T09:58:19.620Z - Name: undefined, Slug: undefined
+2026-02-24T09:58:19.620Z - Update Data: {"updated_at":"2026-02-24T09:58:19.620Z","published":false}
+2026-02-24T09:58:19.648Z - Subcategory keys found: 0
+2026-02-24T09:58:19.648Z - Final parsed subcategories count: 0

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ZoomIn, PenSquare, Archive } from "lucide-react";
+import { ZoomIn, PenSquare, Archive, RotateCcw } from "lucide-react";
 import { ColumnDef } from "@tanstack/react-table";
 
 import { cn } from "@/lib/utils";
@@ -24,6 +24,7 @@ import { ServerActionResponse } from "@/types/server-action";
 
 import { editProduct } from "@/actions/products/editProduct";
 import { archiveProduct } from "@/actions/products/archiveProduct";
+import { restoreProduct } from "@/actions/products/restoreProduct";
 import { toggleProductPublishedStatus } from "@/actions/products/toggleProductStatus";
 import { HasPermission } from "@/hooks/use-authorization";
 
@@ -277,6 +278,8 @@ export const getColumns = ({
       cell: ({ row }) => {
         const product = row.original;
 
+        const isArchived = product.status === 'archived';
+
         return (
           <div className="flex items-center gap-1">
             {hasPermission("products", "canEdit") && (
@@ -287,7 +290,25 @@ export const getColumns = ({
               </EditProductSheet>
             )}
 
-            {hasPermission("products", "canDelete") && (
+            {/* Restore button — only shown for archived products */}
+            {hasPermission("products", "canDelete") && isArchived && (
+              <TableActionAlertDialog
+                title={`Restore product "${product.name}"?`}
+                description="This will restore the product to Draft status (unpublished). You can then review and publish it again."
+                tooltipContent="Restore Product"
+                actionButtonText="Restore Product"
+                toastSuccessMessage={`Product "${product.name}" restored to draft successfully!`}
+                queryKey="products"
+                action={() => restoreProduct(product._id)}
+              >
+                <div className="text-green-600 hover:bg-green-50 p-2 rounded-md transition-colors cursor-pointer">
+                  <RotateCcw className="size-5" />
+                </div>
+              </TableActionAlertDialog>
+            )}
+
+            {/* Archive button — only shown for non-archived products */}
+            {hasPermission("products", "canDelete") && !isArchived && (
               <TableActionAlertDialog
                 title={`Archive product "${product.name}"?`}
                 description="This will archive the product. It will be moved to the Archives page and can be restored later."

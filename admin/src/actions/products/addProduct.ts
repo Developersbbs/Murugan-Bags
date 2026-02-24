@@ -164,7 +164,7 @@ export async function addProduct(
     costPrice: formData.get("costPrice"),
     salesPrice: formData.get("salesPrice"),
     stock: formData.get("stock") || 0,
-    minStockThreshold: formData.get("minStockThreshold") || 0,
+    minStockThreshold: formData.get("min_stock_threshold") || 0,
     weight: formData.get("weight") || undefined,
     color: formData.get("color") || undefined,
     size: formData.get("size") || undefined,
