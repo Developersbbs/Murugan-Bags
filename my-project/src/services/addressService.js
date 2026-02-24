@@ -54,7 +54,7 @@ const addressService = {
           city: addressData.city,
           state: addressData.state,
           zipCode: addressData.zipCode,
-          country: addressData.country || 'USA',
+          country: addressData.country || 'India',
           is_default: addressData.is_default || false
         };
         const response = await api.post('/addresses', structuredData);

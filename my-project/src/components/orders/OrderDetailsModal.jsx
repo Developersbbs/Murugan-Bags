@@ -192,7 +192,7 @@ const OrderDetailsModal = ({
                       <>
                         <p className="font-medium">{order.shippingAddress.name}</p>
                         <p>{order.shippingAddress.street}, {order.shippingAddress.city}, {order.shippingAddress.state} {order.shippingAddress.zipCode}</p>
-                        <p>{order.shippingAddress.country || 'USA'}</p>
+                        <p>{order.shippingAddress.country || 'India'}</p>
                         <p className="mt-1">{order.shippingAddress.phone}</p>
                         <p>{order.shippingAddress.email}</p>
                       </>

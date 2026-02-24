@@ -174,6 +174,22 @@ app.get('/api/debug/firebase', (req, res) => {
   }
 });
 
+// Razorpay Debug Route
+app.get('/api/debug/razorpay', (req, res) => {
+  res.json({
+    success: true,
+    envCheck: {
+      RAZORPAY_KEY_ID: !!process.env.RAZORPAY_KEY_ID,
+      RAZORPAY_KEY_ID_LENGTH: process.env.RAZORPAY_KEY_ID ? process.env.RAZORPAY_KEY_ID.length : 0,
+      RAZORPAY_KEY_SECRET: !!process.env.RAZORPAY_KEY_SECRET,
+      RAZORPAY_KEY_SECRET_LENGTH: process.env.RAZORPAY_KEY_SECRET ? process.env.RAZORPAY_KEY_SECRET.length : 0,
+      NODE_ENV: process.env.NODE_ENV
+    },
+    razorpayInitialized: !!require('./routes/payments.js').razorpay,
+    timestamp: new Date().toISOString()
+  });
+});
+
 // Use routes
 app.use("/api/auth", authRoutes);
 app.use("/api/staffRoles", staffRolesRoutes);

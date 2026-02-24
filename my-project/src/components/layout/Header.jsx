@@ -442,7 +442,8 @@ const Header = () => {
                     })()}
                   </div>
                   <span className={`hidden lg:inline font-medium text-sm ml-2 ${!isTransparent ? 'text-slate-700' : 'text-white'}`}>
-                    {user?.displayName?.split(' ')[0] ||
+                    {backendUser?.name?.split(' ')[0] ||
+                      user?.displayName?.split(' ')[0] ||
                       user?.name?.split(' ')[0] ||
                       (user?.email ? user.email.split('@')[0].split('.')[0] :
                         (user?.phoneNumber ? `+${user.phoneNumber.slice(-10)}` : 'Account'))}
@@ -456,7 +457,7 @@ const Header = () => {
                 >
                   <div className="px-4 py-3 border-b border-slate-100">
                     <p className="text-sm font-bold text-slate-800 truncate">
-                      {user?.displayName || user?.name || 'User'}
+                      {backendUser?.name || user?.displayName || user?.name || 'User'}
                     </p>
                     <p className="text-xs text-slate-500 truncate mt-0.5">
                       {user?.email || user?.phoneNumber || 'No contact info'}

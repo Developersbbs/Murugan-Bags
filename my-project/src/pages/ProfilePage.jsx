@@ -48,7 +48,7 @@ const ProfilePage = () => {
     city: '',
     state: '',
     zipCode: '',
-    country: 'USA',
+    country: 'India',
     is_default: false
   });
   const navigate = useNavigate();
@@ -278,7 +278,7 @@ const ProfilePage = () => {
       city: '',
       state: '',
       zipCode: '',
-      country: 'USA',
+      country: 'India',
       is_default: false
     });
     setShowAddressModal(true);
@@ -296,7 +296,7 @@ const ProfilePage = () => {
       city: address.city || '',
       state: address.state || '',
       zipCode: address.zipCode || '',
-      country: address.country || 'USA',
+      country: address.country || 'India',
       is_default: address.is_default || false
     });
     setShowAddressModal(true);
@@ -359,7 +359,7 @@ const ProfilePage = () => {
           city: '',
           state: '',
           zipCode: '',
-          country: 'USA',
+          country: 'India',
           is_default: false
         });
         setEditingAddress(null);
@@ -1009,7 +1009,7 @@ const ProfilePage = () => {
                                   <>
                                     <p className="font-medium">{address.firstName} {address.lastName}</p>
                                     <p>{address.street}, {address.city}, {address.state} {address.zipCode}</p>
-                                    <p>{address.country || 'USA'}</p>
+                                    <p>{address.country || 'India'}</p>
                                     <p className="mt-1">{address.phone}</p>
                                     <p>{address.email}</p>
                                   </>
@@ -1070,7 +1070,7 @@ const ProfilePage = () => {
                                 city: '',
                                 state: '',
                                 zipCode: '',
-                                country: 'USA',
+                                country: 'India',
                                 is_default: false
                               });
                             }}
@@ -1245,7 +1245,7 @@ const ProfilePage = () => {
                                 city: '',
                                 state: '',
                                 zipCode: '',
-                                country: 'USA',
+                                country: 'India',
                                 is_default: false
                               });
                             }}

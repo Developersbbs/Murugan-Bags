@@ -23,7 +23,7 @@ const CheckoutPage = () => {
     city: '',
     state: '',
     zipCode: '',
-    country: 'USA',
+    country: 'India',
     sameAsBilling: true,
     paymentMethod: 'cod',
     saveInfo: false,
@@ -74,7 +74,7 @@ const CheckoutPage = () => {
       city: address.city || '',
       state: address.state || '',
       zipCode: address.zipCode || '',
-      country: address.country || 'USA'
+      country: address.country || 'India'
     }));
     setSelectedAddressId(address._id);
     setShowAddressForm(true); // Keep form visible so user can see the filled data
@@ -99,7 +99,7 @@ const CheckoutPage = () => {
       city: address.city || '',
       state: address.state || '',
       zipCode: address.zipCode || '',
-      country: address.country || 'USA',
+      country: address.country || 'India',
       saveInfo: false // Don't show "save info" checkbox when editing
     }));
 
@@ -122,7 +122,7 @@ const CheckoutPage = () => {
       city: '',
       state: '',
       zipCode: '',
-      country: 'USA'
+      country: 'India'
     }));
   };
 
@@ -142,7 +142,7 @@ const CheckoutPage = () => {
       city: '',
       state: '',
       zipCode: '',
-      country: 'USA'
+      country: 'India'
     }));
   };
 
@@ -517,7 +517,7 @@ const CheckoutPage = () => {
                                 <>
                                   <p className="font-medium">{address.firstName} {address.lastName}</p>
                                   <p>{address.street}, {address.city}, {address.state} {address.zipCode}</p>
-                                  <p>{address.country || 'USA'}</p>
+                                  <p>{address.country || 'India'}</p>
                                   <p className="mt-1">{address.phone}</p>
                                   <p>{address.email}</p>
                                 </>
@@ -575,7 +575,7 @@ const CheckoutPage = () => {
                           city: '',
                           state: '',
                           zipCode: '',
-                          country: 'USA'
+                          country: 'India'
                         }));
                       }}
                       className="text-sm text-blue-600 hover:text-blue-800 font-medium"
@@ -805,14 +805,13 @@ const CheckoutPage = () => {
                     value="razorpay"
                     checked={formData.paymentMethod === 'razorpay'}
                     onChange={handleChange}
-                    disabled={!razorpayAvailable}
-                    className={`h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 ${!razorpayAvailable ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
                   />
-                  <label htmlFor="razorpay" className={`ml-3 flex items-center ${!razorpayAvailable ? 'opacity-50' : ''}`}>
+                  <label htmlFor="razorpay" className="ml-3 flex items-center">
                     <span className="text-sm font-medium text-gray-700">Razorpay / UPI / Net Banking</span>
                     {!razorpayAvailable && (
-                      <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                        Unavailable
+                      <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-yellow-100 text-yellow-800 border border-yellow-200">
+                        Pending Config
                       </span>
                     )}
                   </label>

@@ -208,57 +208,67 @@ router.get("/customer/firebase/:firebaseUid", authenticateHybridToken, async (re
           order.items.map(async (item) => {
             try {
               const Product = require('../models/Product');
-              const product = await Product.findById(item.product_id);
+              const ComboOffer = require('../models/ComboOffer');
+
+              let product = await Product.findById(item.product_id);
+              let isCombo = false;
+
+              if (!product) {
+                product = await ComboOffer.findById(item.product_id);
+                if (product) isCombo = true;
+              }
 
               // DEBUG LOG
               if (item.product_id.toString() === '694e3dcb954bc1a935ff0920' || !product) {
                 console.log(`[Order Debug] Item: ${item.name} (${item.product_id})`);
-                console.log(`[Order Debug] Product found: ${!!product}`);
+                console.log(`[Order Debug] Product found: ${!!product} (isCombo: ${isCombo})`);
                 if (product) {
-                  console.log(`[Order Debug] product.image_url:`, product.image_url);
-                  console.log(`[Order Debug] product.images:`, product.images);
-                  console.log(`[Order Debug] product.image:`, product.image);
+                  console.log(`[Order Debug] product.${isCombo ? 'image' : 'image_url'}:`, isCombo ? product.image : product.image_url);
                 }
               }
 
               let imageUrl = '/images/products/placeholder-product.svg';
 
               if (product) {
-                // Logic to extract image from product model
-                // 1. Try generic "images" property (unlikely for main product but good safety)
-                if (product.images && product.images.length > 0) {
-                  const img = product.images[0];
-                  imageUrl = typeof img === 'string' ? img : (img.url || img.secure_url);
-                }
-                // 2. Try "image_url" (standard for main product)
-                else if (product.image_url) {
-                  if (Array.isArray(product.image_url) && product.image_url.length > 0) {
-                    const img = product.image_url[0];
+                if (isCombo) {
+                  imageUrl = product.image || '/images/products/placeholder-product.svg';
+                } else {
+                  // Logic to extract image from product model
+                  // 1. Try generic "images" property (unlikely for main product but good safety)
+                  if (product.images && product.images.length > 0) {
+                    const img = product.images[0];
                     imageUrl = typeof img === 'string' ? img : (img.url || img.secure_url);
-                  } else if (typeof product.image_url === 'string') {
-                    imageUrl = product.image_url;
                   }
-                }
-                // 3. Fallback: Check variants if main product has no image
-                if (imageUrl === '/images/products/placeholder-product.svg' && product.product_variants && product.product_variants.length > 0) {
-                  const firstVariant = product.product_variants[0];
-                  if (firstVariant.images && firstVariant.images.length > 0) {
-                    imageUrl = firstVariant.images[0];
+                  // 2. Try "image_url" (standard for main product)
+                  else if (product.image_url) {
+                    if (Array.isArray(product.image_url) && product.image_url.length > 0) {
+                      const img = product.image_url[0];
+                      imageUrl = typeof img === 'string' ? img : (img.url || img.secure_url);
+                    } else if (typeof product.image_url === 'string') {
+                      imageUrl = product.image_url;
+                    }
                   }
-                }
+                  // 3. Fallback: Check variants if main product has no image
+                  if (imageUrl === '/images/products/placeholder-product.svg' && product.product_variants && product.product_variants.length > 0) {
+                    const firstVariant = product.product_variants[0];
+                    if (firstVariant.images && firstVariant.images.length > 0) {
+                      imageUrl = firstVariant.images[0];
+                    }
+                  }
 
-                // 4. Legacy "image" property
-                if (imageUrl === '/images/products/placeholder-product.svg' && product.image) {
-                  imageUrl = product.image;
+                  // 4. Legacy "image" property
+                  if (imageUrl === '/images/products/placeholder-product.svg' && product.image) {
+                    imageUrl = product.image;
+                  }
                 }
               }
 
               return {
                 ...item.toObject(),
                 id: item._id,
-                name: product ? product.name : 'Product Not Found',
+                name: product ? (isCombo ? product.title : product.name) : 'Product Not Found',
                 image: imageUrl,
-                sku: product ? product.sku : 'N/A',
+                sku: product ? (isCombo ? 'COMBO' : (product.sku || 'N/A')) : 'N/A',
                 price: item.price || 0
               };
             } catch (error) {
@@ -417,16 +427,32 @@ router.get("/:id", async (req, res) => {
       items.map(async (item) => {
         try {
           const Product = require('../models/Product');
-          const product = await Product.findById(item.product_id);
+          const ComboOffer = require('../models/ComboOffer');
+
+          let product = await Product.findById(item.product_id);
+          let isCombo = false;
+
+          if (!product) {
+            product = await ComboOffer.findById(item.product_id);
+            if (product) isCombo = true;
+          }
+
+          let imageUrl = '/images/products/placeholder-product.svg';
+          if (product && isCombo) {
+            imageUrl = product.image || '/images/products/placeholder-product.svg';
+          } else if (product) {
+            imageUrl = product.images?.[0]?.url || product.image_url?.[0] || product.image || '/images/products/placeholder-product.svg';
+          }
+
           return {
             ...item.toObject(),
             id: item._id,
             unit_price: item.unit_price || item.price || 0,
             quantity: item.quantity || 1,
             products: {
-              name: product ? product.name : 'Product Not Found',
-              image: product ? product.images?.[0]?.url : '/images/products/placeholder-product.svg',
-              sku: product ? product.sku : 'N/A'
+              name: product ? (isCombo ? product.title : product.name) : 'Product Not Found',
+              image: imageUrl,
+              sku: product ? (isCombo ? 'COMBO' : (product.sku || 'N/A')) : 'N/A'
             }
           };
         } catch (error) {
@@ -781,11 +807,21 @@ router.get("/:id/invoice", authenticateHybridToken, async (req, res) => {
     const enhancedItems = await Promise.all(
       order.items.map(async (item) => {
         try {
-          const product = await Product.findById(item.product_id);
+          const Product = require('../models/Product');
+          const ComboOffer = require('../models/ComboOffer');
+
+          let product = await Product.findById(item.product_id);
+          let isCombo = false;
+
+          if (!product) {
+            product = await ComboOffer.findById(item.product_id);
+            if (product) isCombo = true;
+          }
+
           return {
             ...item.toObject(),
-            name: product ? product.name : 'Product Not Found',
-            sku: product ? product.sku : 'N/A',
+            name: product ? (isCombo ? product.title : product.name) : 'Product Not Found',
+            sku: product ? (isCombo ? 'COMBO' : (product.sku || 'N/A')) : 'N/A',
             unit_price: item.price || 0 // Use price field from new schema
           };
         } catch (error) {
