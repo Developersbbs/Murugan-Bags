@@ -106,7 +106,7 @@ interface AddStockSheetProps {
   action?: (formData: FormData) => Promise<StockServerActionResponse>;
 }
 
-export function AddStockSheet({ 
+export function AddStockSheet({
   children,
   title = "Add Stock",
   description = "Add stock for an existing product in your inventory.",
@@ -131,8 +131,8 @@ export function AddStockSheet({
       await createStock(stockData);
       return { success: true, stock: stockData };
     } catch (error) {
-      return { 
-        error: error instanceof Error ? error.message : "Failed to add stock" 
+      return {
+        error: error instanceof Error ? error.message : "Failed to add stock"
       };
     }
   }
@@ -180,10 +180,10 @@ export function AddStockSheet({
   const selectedProductId = form.watch("productId");
   const selectedVariantId = form.watch("variantId");
   const selectedProduct = products.find(p => p._id === selectedProductId);
-  
+
   const isVariantProduct = selectedProduct?.product_structure === "variant";
-  const hasVariants = isVariantProduct && 
-    selectedProduct?.product_variants && 
+  const hasVariants = isVariantProduct &&
+    selectedProduct?.product_variants &&
     selectedProduct.product_variants.length > 0;
 
   const selectedVariant = selectedProduct?.product_variants?.find(
@@ -191,10 +191,10 @@ export function AddStockSheet({
   );
 
   // Filter variants based on search
-  const filteredVariants = selectedProduct?.product_variants?.filter(v => 
+  const filteredVariants = selectedProduct?.product_variants?.filter(v =>
     v.name.toLowerCase().includes(variantSearchQuery.toLowerCase()) ||
     v.sku?.toLowerCase().includes(variantSearchQuery.toLowerCase()) ||
-    Object.values(v.attributes || {}).some(attr => 
+    Object.values(v.attributes || {}).some(attr =>
       attr.toLowerCase().includes(variantSearchQuery.toLowerCase())
     )
   ) || [];
@@ -269,11 +269,11 @@ export function AddStockSheet({
           );
         } else if (result.success || "stock" in result) {
           console.log('Stock added successfully:', result.stock);
-          
-          const productName = isVariantProduct && selectedVariant 
+
+          const productName = isVariantProduct && selectedVariant
             ? `${selectedProduct?.name} - ${selectedVariant.name}`
             : selectedProduct?.name;
-          
+
           toast.success(
             `Stock ${actionVerb} successfully for ${productName}!`,
             { position: "top-center" }
@@ -294,7 +294,7 @@ export function AddStockSheet({
 
           queryClient.invalidateQueries({ queryKey: ["stocks"] });
           queryClient.invalidateQueries({ queryKey: ["products"] });
-          
+
           setIsSheetOpen(false);
         } else if (result.error) {
           console.log('Error:', result.error);
@@ -353,7 +353,7 @@ export function AddStockSheet({
   return (
     <Sheet open={isSheetOpen} onOpenChange={handleOpenChange}>
       {children}
-      
+
       <SheetContent className="w-[90%] max-w-5xl">
         <Form {...form}>
           <form
@@ -395,7 +395,7 @@ export function AddStockSheet({
                               className="w-full"
                             />
                           </FormControl>
-                          
+
                           {/* Product Suggestions Dropdown */}
                           {showProductSuggestions && productSearchQuery.length > 0 && (
                             <div className="absolute z-50 w-full mt-1 bg-white border rounded-md shadow-lg max-h-64 overflow-auto">
@@ -430,8 +430,8 @@ export function AddStockSheet({
                                         <div className="flex-1 min-w-0">
                                           <p className="text-sm font-medium truncate">{product.name}</p>
                                           <p className="text-xs text-muted-foreground">
-                                            {product.product_structure === "variant" 
-                                              ? `${product.product_variants?.length || 0} variants` 
+                                            {product.product_structure === "variant"
+                                              ? `${product.product_variants?.length || 0} variants`
                                               : "Simple product"}
                                           </p>
                                         </div>
@@ -474,7 +474,7 @@ export function AddStockSheet({
                                 className="w-full"
                               />
                             </FormControl>
-                            
+
                             {/* Variant Suggestions Dropdown */}
                             {showVariantSuggestions && (
                               <div className="absolute z-50 w-full mt-1 bg-white border rounded-md shadow-lg max-h-64 overflow-auto">
@@ -611,8 +611,8 @@ export function AddStockSheet({
                       <FormItem>
                         <FormLabel>Notes (Optional)</FormLabel>
                         <FormControl>
-                          <Textarea 
-                            {...field} 
+                          <Textarea
+                            {...field}
                             placeholder="Add any notes about this stock update"
                             rows={4}
                           />
@@ -625,8 +625,8 @@ export function AddStockSheet({
               </FormSheetBody>
 
               <FormSheetFooter>
-                <Button 
-                  type="submit" 
+                <Button
+                  type="submit"
                   disabled={isPending}
                   className="w-full"
                 >

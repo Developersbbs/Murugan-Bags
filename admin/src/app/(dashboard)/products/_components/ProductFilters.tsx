@@ -32,7 +32,6 @@ export default function ProductFilters() {
     sort: getSortFromParams(searchParams) || "",
   });
 
-  // Debounce search input to avoid too many API calls
   const {
     data: categories,
     isLoading,
@@ -47,7 +46,6 @@ export default function ProductFilters() {
     data: subcategories,
     isLoading: subcategoriesLoading,
     isError: subcategoriesError,
-    refetch: refetchSubcategories,
   } = useQuery({
     queryKey: ["subcategories", filters.category],
     queryFn: () => fetchSubcategoriesByCategorySlug(filters.category),
@@ -55,66 +53,80 @@ export default function ProductFilters() {
     staleTime: 5 * 60 * 1000,
   });
 
-  // Function to update URL with current filters
-  const updateURL = useCallback((currentFilters: typeof filters) => {
-    const params = new URLSearchParams();
+  // Build and push a new URL from the given filters.
+  // Always resets page to 1 — but this is called ONLY from direct user
+  // interactions (dropdowns / search form), never from effects, so
+  // pagination-button clicks are never clobbered.
+  const pushFiltersToURL = useCallback(
+    (currentFilters: typeof filters) => {
+      // Start from the live URL so we preserve ?limit etc.
+      const params = new URLSearchParams(window.location.search);
+      params.set("page", "1");
 
-    if (currentFilters.search) params.set("search", currentFilters.search);
-    if (currentFilters.category && currentFilters.category !== "all")
-      params.set("category", currentFilters.category);
-    if (currentFilters.subcategory && currentFilters.subcategory !== "all")
-      params.set("subcategory", currentFilters.subcategory);
-    if (currentFilters.productType && currentFilters.productType !== "all")
-      params.set("productType", currentFilters.productType);
-
-    if (currentFilters.sort && currentFilters.sort !== "none") {
-      const sortConfig = sortToParamsMap[currentFilters.sort];
-      if (sortConfig) {
-        params.set(sortConfig.key, sortConfig.value);
+      if (currentFilters.search) {
+        params.set("search", currentFilters.search);
+      } else {
+        params.delete("search");
       }
-    }
 
-    params.set("page", "1");
-    params.set("limit", searchParams.get("limit") || "10");
+      if (currentFilters.category && currentFilters.category !== "all") {
+        params.set("category", currentFilters.category);
+      } else {
+        params.delete("category");
+      }
 
-    const newURL = `/products?${params.toString()}`;
-    router.push(newURL);
-  }, [router, searchParams]);
+      if (currentFilters.subcategory && currentFilters.subcategory !== "all") {
+        params.set("subcategory", currentFilters.subcategory);
+      } else {
+        params.delete("subcategory");
+      }
 
-  // Update URL immediately when search changes (for real-time search)
-  useEffect(() => {
-    if (filters.search !== (searchParams.get("search") || "")) {
-      updateURL(filters);
-    }
-  }, [filters.search, updateURL, searchParams]);
+      if (currentFilters.productType && currentFilters.productType !== "all") {
+        params.set("productType", currentFilters.productType);
+      } else {
+        params.delete("productType");
+      }
 
-  // Update URL when category, subcategory, productType or sort changes
-  useEffect(() => {
-    const currentCategory = searchParams.get("category") || "";
-    const currentSubcategory = searchParams.get("subcategory") || "";
-    const currentProductType = searchParams.get("productType") || "";
-    const currentSort = getSortFromParams(searchParams) || "";
+      if (currentFilters.sort && currentFilters.sort !== "none") {
+        const sortConfig = sortToParamsMap[currentFilters.sort];
+        if (sortConfig) {
+          params.set(sortConfig.key, sortConfig.value);
+        }
+      } else {
+        ["price", "date"].forEach((k) => params.delete(k));
+      }
 
-    if (filters.category !== currentCategory || filters.subcategory !== currentSubcategory ||
-        filters.productType !== currentProductType || filters.sort !== currentSort) {
-      updateURL(filters);
-    }
-  }, [filters.category, filters.subcategory, filters.productType, filters.sort, updateURL, searchParams]);
+      router.push(`/products?${params.toString()}`);
+    },
+    [router]
+  );
 
-  // Reset subcategory when category changes
+  // Reset subcategory local state when category changes.
+  // No URL push here — the category handler already calls pushFiltersToURL.
   useEffect(() => {
     if (filters.category && filters.category !== "all") {
-      // Reset subcategory selection when category changes
-      setFilters(prev => ({ ...prev, subcategory: "all" }));
+      setFilters((prev) => ({ ...prev, subcategory: "all" }));
     }
   }, [filters.category]);
 
   const handleFilterChange = (key: keyof typeof filters, value: string) => {
-    setFilters(prev => ({ ...prev, [key]: value }));
+    const newFilters = { ...filters, [key]: value };
+    // Also reset subcategory when category changes
+    if (key === "category") {
+      newFilters.subcategory = "all";
+    }
+    setFilters(newFilters);
+    pushFiltersToURL(newFilters);
   };
 
   const handleReset = () => {
-    const resetFilters = { search: "", category: "all", subcategory: "all", productType: "all", sort: "none" };
+    const resetFilters = {
+      search: "",
+      category: "all",
+      subcategory: "all",
+      productType: "all",
+      sort: "none",
+    };
     setFilters(resetFilters);
     router.push("/products");
   };
@@ -124,7 +136,7 @@ export default function ProductFilters() {
       <form
         onSubmit={(e) => {
           e.preventDefault();
-          updateURL(filters);
+          pushFiltersToURL(filters);
         }}
         className="flex flex-col md:flex-row gap-4 lg:gap-6"
       >
@@ -203,7 +215,7 @@ export default function ProductFilters() {
             )}
 
             {/* Show message when no category selected */}
-            {!filters.category || filters.category === "all" && (
+            {(!filters.category || filters.category === "all") && (
               <SelectItem value="no-category" disabled>
                 Select category first
               </SelectItem>

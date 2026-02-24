@@ -74,9 +74,9 @@ export default function StockActions({
               )}
               {hasPermission("products", "canCreate") && (
                 <AddStockSheet
-                  title="Add Product"
+                  title="Add Stock"
                   description="Add necessary product information here"
-                  submitButtonText="Add Product"
+                  submitButtonText="Add Stock"
                   actionVerb="added"
                 >
                   <SheetTrigger asChild>

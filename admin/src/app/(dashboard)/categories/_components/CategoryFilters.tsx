@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { Card } from "@/components/ui/card";
@@ -21,7 +21,7 @@ export default function CategoryFilters() {
     if (search !== debouncedSearch) {
       setIsSearching(true);
     }
-    
+
     const timer = setTimeout(() => {
       setDebouncedSearch(search);
       setIsSearching(false);
@@ -30,31 +30,36 @@ export default function CategoryFilters() {
     return () => clearTimeout(timer);
   }, [search, debouncedSearch]);
 
-  // Update URL when debounced search changes
-  useEffect(() => {
-    // Normalize values - treat null and empty string as the same
-    const currentSearch = searchParams.get("search") || "";
-    
-    if (debouncedSearch !== currentSearch) {
-      const params = new URLSearchParams(searchParams.toString());
-      
-      if (debouncedSearch) {
-        params.set("search", debouncedSearch);
+  const pushFiltersToURL = useCallback(
+    (newSearch: string) => {
+      const params = new URLSearchParams(window.location.search);
+
+      if (newSearch) {
+        params.set("search", newSearch);
       } else {
         params.delete("search");
       }
-      
+
       // Reset to page 1 when search changes
       params.set("page", "1");
-      
+
       router.replace(`/categories?${params.toString()}`);
+    },
+    [router]
+  );
+
+  // Update URL when debounced search changes
+  useEffect(() => {
+    const currentSearch = searchParams.get("search") || "";
+    if (debouncedSearch !== currentSearch) {
+      pushFiltersToURL(debouncedSearch);
     }
-  }, [debouncedSearch, router, searchParams]);
+  }, [debouncedSearch, pushFiltersToURL, searchParams]);
 
   const handleFilter = (e: React.FormEvent) => {
     e.preventDefault();
     const params = new URLSearchParams(searchParams.toString());
-    
+
     if (search) {
       params.set("search", search);
     } else {

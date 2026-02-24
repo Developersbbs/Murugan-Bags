@@ -29,22 +29,29 @@ export default function CustomerFilters() {
   const [search, setSearch] = useState(searchParams.get("search") || "");
   const debouncedSearch = useDebounce(search, 300); // 300ms delay
 
-  // Update URL when debounced search term changes
+  const pushFiltersToURL = useCallback(
+    (newSearch: string) => {
+      const params = new URLSearchParams(window.location.search);
+
+      if (newSearch) {
+        params.set("search", newSearch);
+      } else {
+        params.delete("search");
+      }
+
+      params.set("page", "1");
+      router.push(`/customers?${params.toString()}`);
+    },
+    [router]
+  );
+
+  // Update URL only when debounced search term changes
   useEffect(() => {
-    const params = new URLSearchParams(searchParams.toString());
-    
-    if (debouncedSearch) {
-      params.set("search", debouncedSearch);
-    } else {
-      params.delete("search");
+    const currentSearch = searchParams.get("search") || "";
+    if (debouncedSearch !== currentSearch) {
+      pushFiltersToURL(debouncedSearch);
     }
-    
-    // Always reset to first page when search changes
-    params.set("page", "1");
-    
-    // Update URL
-    router.push(`/customers?${params.toString()}`);
-  }, [debouncedSearch, router, searchParams]);
+  }, [debouncedSearch, pushFiltersToURL, searchParams]);
 
   return (
     <Card className="mb-5">

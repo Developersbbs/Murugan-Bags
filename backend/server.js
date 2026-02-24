@@ -210,6 +210,19 @@ const reportsRoutes = require("./routes/reports");
 app.use("/api/reports", reportsRoutes);
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
+// Fallback for missing /uploads files (e.g. images deleted after Firebase migration)
+// Instead of a 404, return a transparent placeholder image so clients don't get console errors
+app.use("/uploads", (req, res) => {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400">
+    <rect width="400" height="400" fill="#f3f4f6"/>
+    <text x="50%" y="46%" font-size="14" text-anchor="middle" dominant-baseline="middle" fill="#9ca3af" font-family="sans-serif">No Image</text>
+    <text x="50%" y="56%" font-size="11" text-anchor="middle" dominant-baseline="middle" fill="#d1d5db" font-family="sans-serif">Image not available</text>
+  </svg>`;
+  res.setHeader('Content-Type', 'image/svg+xml');
+  res.setHeader('Cache-Control', 'public, max-age=86400'); // cache for 1 day
+  res.status(200).send(svg);
+});
+
 
 // Connect to MongoDB
 connectDB();

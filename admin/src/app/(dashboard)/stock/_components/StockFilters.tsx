@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Search, X } from "lucide-react";
 
@@ -35,46 +35,56 @@ export default function StockFilters() {
   );
   const debouncedSearch = useDebounce(search, 300);
 
-  // Update URL when debounced search term or stock filter changes
+  const pushFiltersToURL = useCallback(
+    (newSearch: string, newStockFilter: "all" | "low") => {
+      const params = new URLSearchParams(window.location.search);
+
+      if (newSearch) {
+        params.set("search", newSearch);
+      } else {
+        params.delete("search");
+      }
+
+      if (newStockFilter === "low") {
+        params.set("lowStock", "true");
+      } else {
+        params.delete("lowStock");
+      }
+
+      params.set("page", "1");
+      router.push(`/stock?${params.toString()}`);
+    },
+    [router]
+  );
+
+  // Update URL only when debounced search term changes
   useEffect(() => {
-    const params = new URLSearchParams(searchParams.toString());
-    
-    if (debouncedSearch) {
-      params.set("search", debouncedSearch);
-    } else {
-      params.delete("search");
+    const currentSearch = searchParams.get("search") || "";
+    if (debouncedSearch !== currentSearch) {
+      pushFiltersToURL(debouncedSearch, stockFilter);
     }
-    
-    // Update stock filter
-    if (stockFilter === "low") {
-      params.set("lowStock", "true");
-    } else {
-      params.delete("lowStock");
-    }
-    
-    // Reset to first page when filters change
-    params.set("page", "1");
-    
-    // Update URL
-    router.push(`/stock?${params.toString()}`);
-  }, [debouncedSearch, stockFilter, router, searchParams]);
+  }, [debouncedSearch, pushFiltersToURL, stockFilter, searchParams]);
+
+  // Handle stock filter change
+  const handleStockFilterChange = (value: string) => {
+    const newVal = (value as "all" | "low") || "all";
+    setStockFilter(newVal);
+    pushFiltersToURL(search, newVal);
+  };
 
   // Clear search
   const handleClearSearch = () => {
     setSearch("");
+    pushFiltersToURL("", stockFilter);
   };
 
   // Check if any filters are active
-  const hasActiveFilters = searchParams.get("search") || 
-    searchParams.get("category") || 
-    searchParams.get("subcategory") || 
+  const hasActiveFilters = searchParams.get("search") ||
+    searchParams.get("category") ||
+    searchParams.get("subcategory") ||
     searchParams.get("productType") ||
     searchParams.get("lowStock") === "true";
 
-  // Handle stock filter change
-  const handleStockFilterChange = (value: string) => {
-    setStockFilter(value as "all" | "low");
-  };
 
   // Clear all filters
   const handleClearAllFilters = () => {
@@ -97,7 +107,7 @@ export default function StockFilters() {
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
-          
+
           <div className="flex items-center space-x-2">
             <ToggleGroup
               type="single"
@@ -105,20 +115,20 @@ export default function StockFilters() {
               onValueChange={handleStockFilterChange}
               className="bg-muted p-1 rounded-md"
             >
-              <ToggleGroupItem 
-                value="all" 
+              <ToggleGroupItem
+                value="all"
                 className={`px-4 py-2 rounded-md ${stockFilter === 'all' ? 'bg-white shadow-sm' : 'hover:bg-transparent'}`}
               >
                 All Stock
               </ToggleGroupItem>
-              <ToggleGroupItem 
-                value="low" 
+              <ToggleGroupItem
+                value="low"
                 className={`px-4 py-2 rounded-md ${stockFilter === 'low' ? 'bg-white shadow-sm text-red-600' : 'hover:bg-transparent'}`}
               >
                 Low Stock
               </ToggleGroupItem>
             </ToggleGroup>
-          </div>          
+          </div>
         </div>
       </div>
     </Card>
