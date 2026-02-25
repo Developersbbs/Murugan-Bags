@@ -4,6 +4,7 @@ import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'react-hot-toast';
 import { uploadProfilePhoto } from '../services/storageService';
+import { setBackendUser } from '../redux/slices/authSlice';
 import orderService from '../services/orderService';
 import addressService from '../services/addressService';
 import ratingService from '../services/ratingService';
@@ -11,6 +12,7 @@ import { Star, Trash2 } from 'lucide-react';
 import { API_BASE_URL } from '../config/api';
 
 const ProfilePage = () => {
+  const dispatch = useDispatch();
   const [activeTab, setActiveTab] = useState('profile');
   const [isPageLoading, setIsPageLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -143,6 +145,9 @@ const ProfilePage = () => {
 
       setUserData(formattedData);
       setFormData(formattedData);
+
+      // CRITICAL: Sync with Redux state so navbar updates immediately
+      dispatch(setBackendUser(data));
 
       // Update cache
       localStorage.setItem(CACHE_KEY, JSON.stringify({
@@ -523,7 +528,7 @@ const ProfilePage = () => {
       setError(null);
       toast.success('Profile updated successfully!');
 
-      // Refetch user data to update the state
+      // Refetch user data to update the state and Redux
       await fetchUserData();
     } catch (error) {
       console.error('Error updating profile:', error);

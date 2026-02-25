@@ -30,23 +30,13 @@ export const uploadProfilePhoto = async (userId, file) => {
     console.log('Starting file upload...', { storagePath, size: file.size });
     await uploadBytes(storageRef, file, metadata);
     console.log('File uploaded, getting download URL...');
-    
+
     // Get the download URL
     const downloadURL = await getDownloadURL(storageRef);
     console.log('Successfully got download URL');
 
-    // Update the user's profile with the new image URL
-    try {
-      await axios.put(
-        `/api/auth/profile/${userId}`,
-        { image_url: downloadURL },
-        { headers: { Authorization: `Bearer ${getAuthToken()}` } }
-      );
-      console.log('Profile image URL updated in the database');
-    } catch (error) {
-      console.error('Failed to update profile with new image URL:', error);
-      // We don't throw here because the upload succeeded, only the profile update failed
-    }
+    // Note: Profile image update in the database is handled by the caller (ProfilePage.jsx)
+    // after getting the downloadURL to ensure all data is synced at once.
 
     return { downloadURL, storagePath };
   } catch (error) {
