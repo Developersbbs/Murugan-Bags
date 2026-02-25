@@ -32,6 +32,9 @@ const ProductDetails = ({ product, isLoading, isError, onCartUpdate }) => {
   const { addToCart: addToCartContext, openSidebar } = useCart();
   const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
 
+  const [isAddingToCart, setIsAddingToCart] = useState(false);
+  const [isUpdatingWishlist, setIsUpdatingWishlist] = useState(false);
+
   // Use the passed product data
   const displayProduct = product;
 
@@ -225,16 +228,22 @@ const ProductDetails = ({ product, isLoading, isError, onCartUpdate }) => {
   const currentImage = allImages[0] || '/images/products/placeholder-product.svg';
 
   const handleAddToCart = async () => {
+    if (isAddingToCart) return;
+    setIsAddingToCart(true);
     try {
       await addToCartContext(displayProduct, selectedVariant, quantity);
       toast.success(`${quantity} item(s) added to cart!`);
       if (onCartUpdate) onCartUpdate();
     } catch (error) {
       toast.error('Failed to add item to cart');
+    } finally {
+      setIsAddingToCart(false);
     }
   };
 
   const handleWishlistToggle = async () => {
+    if (isUpdatingWishlist) return;
+    setIsUpdatingWishlist(true);
     try {
       const mainProductId = product._id; // Use the main product's ID
       const variantId = selectedVariant ? selectedVariant._id : null;
@@ -256,6 +265,8 @@ const ProductDetails = ({ product, isLoading, isError, onCartUpdate }) => {
       }
     } catch (error) {
       toast.error('Failed to update wishlist');
+    } finally {
+      setIsUpdatingWishlist(false);
     }
   };
 
@@ -300,13 +311,17 @@ const ProductDetails = ({ product, isLoading, isError, onCartUpdate }) => {
               </div>
               <button
                 onClick={handleAddToCart}
-                disabled={displayProduct.product_type === 'physical' && displayStock <= 0}
+                disabled={(displayProduct.product_type === 'physical' && displayStock <= 0) || isAddingToCart}
                 className={`px-6 py-2 rounded-md text-white font-medium ${displayProduct.product_type === 'physical' && displayStock <= 0
                   ? 'bg-gray-300 cursor-not-allowed'
                   : 'bg-rose-600 hover:bg-rose-700'
-                  }`}
+                  } disabled:opacity-50 flex items-center justify-center`}
               >
-                Add to Cart
+                {isAddingToCart ? (
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                ) : (
+                  'Add to Cart'
+                )}
               </button>
             </div>
           </div>
@@ -352,16 +367,22 @@ const ProductDetails = ({ product, isLoading, isError, onCartUpdate }) => {
             <div className="hidden lg:flex flex-row gap-4 mt-4">
               <button
                 onClick={handleAddToCart}
-                disabled={displayProduct.product_type === 'physical' && displayStock <= 0}
+                disabled={(displayProduct.product_type === 'physical' && displayStock <= 0) || isAddingToCart}
                 className={`flex-1 flex items-center justify-center rounded-sm border px-6 py-4 text-base font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 ${displayProduct.product_type === 'physical' && displayStock <= 0
                   ? 'bg-gray-300 text-white border-transparent cursor-not-allowed'
                   : 'bg-white border-2 border-rose-600 text-rose-600 hover:bg-rose-50 focus:ring-rose-500'
-                  }`}
+                  } disabled:opacity-50`}
               >
-                <ShoppingCartIcon className="h-5 w-5 mr-2" />
-                {displayProduct.product_type === 'physical' && displayStock <= 0
-                  ? 'OUT OF STOCK'
-                  : 'ADD TO CART'}
+                {isAddingToCart ? (
+                  <div className="w-5 h-5 border-2 border-rose-600 border-t-transparent rounded-full animate-spin"></div>
+                ) : (
+                  <>
+                    <ShoppingCartIcon className="h-5 w-5 mr-2" />
+                    {displayProduct.product_type === 'physical' && displayStock <= 0
+                      ? 'OUT OF STOCK'
+                      : 'ADD TO CART'}
+                  </>
+                )}
               </button>
 
               <button
@@ -387,10 +408,13 @@ const ProductDetails = ({ product, isLoading, isError, onCartUpdate }) => {
               <h1 className="text-xl sm:text-2xl font-medium text-gray-900 flex-1">{displayProduct.name}</h1>
               <button
                 onClick={handleWishlistToggle}
-                className="ml-4 p-2 rounded-full hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-500"
+                disabled={isUpdatingWishlist}
+                className="ml-4 p-2 rounded-full hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-500 disabled:opacity-50"
                 aria-label={isInWishlist(product._id, selectedVariant?._id) ? "Remove from wishlist" : "Add to wishlist"}
               >
-                {isInWishlist(product._id, selectedVariant?._id) ? (
+                {isUpdatingWishlist ? (
+                  <div className="w-7 h-7 border-2 border-rose-600 border-t-transparent rounded-full animate-spin"></div>
+                ) : isInWishlist(product._id, selectedVariant?._id) ? (
                   <HeartSolidIcon className="h-7 w-7 text-rose-600" />
                 ) : (
                   <HeartIcon className="h-7 w-7 text-gray-400 hover:text-rose-600" />
@@ -734,15 +758,19 @@ const ProductDetails = ({ product, isLoading, isError, onCartUpdate }) => {
             <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-2 flex gap-2 lg:hidden z-50">
               <button
                 onClick={handleAddToCart}
-                disabled={displayProduct.product_type === 'physical' && displayStock <= 0}
+                disabled={(displayProduct.product_type === 'physical' && displayStock <= 0) || isAddingToCart}
                 className={`flex-1 flex items-center justify-center rounded-sm border px-4 py-3 text-sm font-medium shadow-sm ${displayProduct.product_type === 'physical' && displayStock <= 0
                   ? 'bg-gray-300 text-white border-transparent cursor-not-allowed'
                   : 'bg-white text-rose-600 border-2 border-rose-600'
-                  }`}
+                  } disabled:opacity-50`}
               >
-                {displayProduct.product_type === 'physical' && displayStock <= 0
-                  ? 'Out of Stock'
-                  : 'Add to Cart'}
+                {isAddingToCart ? (
+                  <div className="w-5 h-5 border-2 border-rose-600 border-t-transparent rounded-full animate-spin"></div>
+                ) : (
+                  displayProduct.product_type === 'physical' && displayStock <= 0
+                    ? 'Out of Stock'
+                    : 'Add to Cart'
+                )}
               </button>
               <button
                 onClick={async () => {

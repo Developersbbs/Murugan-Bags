@@ -67,6 +67,7 @@ const ProductCard = memo(({ product, viewMode = 'grid', className = '' }) => {
   const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
   const navigate = useNavigate();
   const [isAddingToCart, setIsAddingToCart] = useState(false);
+  const [isUpdatingWishlist, setIsUpdatingWishlist] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
 
   // ── Variants ─────────────────────────────────────────────────────────────────
@@ -182,6 +183,8 @@ const ProductCard = memo(({ product, viewMode = 'grid', className = '' }) => {
   // ── Handlers ───────────────────────────────────────────────────────────────
   const toggleWishlist = async (e) => {
     e.preventDefault(); e.stopPropagation();
+    if (isUpdatingWishlist) return;
+    setIsUpdatingWishlist(true);
     try {
       if (productInWishlist) { await removeFromWishlist(effectiveId, variantId); toast.success('Removed from wishlist'); }
       else {
@@ -194,7 +197,7 @@ const ProductCard = memo(({ product, viewMode = 'grid', className = '' }) => {
         });
         toast.success('Added to wishlist');
       }
-    } catch { toast.error('Failed to update wishlist'); }
+    } catch { toast.error('Failed to update wishlist'); } finally { setIsUpdatingWishlist(false); }
   };
 
   const handleAddToCart = async (e) => {
@@ -372,8 +375,12 @@ const ProductCard = memo(({ product, viewMode = 'grid', className = '' }) => {
             )}
           </div>
           <div className="flex flex-col gap-2">
-            <button onClick={toggleWishlist} className={`p-2 rounded-lg border ${productInWishlist ? 'bg-red-50 border-red-200 text-red-500' : 'bg-gray-50 border-gray-200 text-gray-400 hover:text-rose-500'}`}>
-              <svg className="w-5 h-5" fill={productInWishlist ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>
+            <button onClick={toggleWishlist} disabled={isUpdatingWishlist} className={`p-2 rounded-lg border ${productInWishlist ? 'bg-red-50 border-red-200 text-red-500' : 'bg-gray-50 border-gray-200 text-gray-400 hover:text-rose-500'} disabled:opacity-50`}>
+              {isUpdatingWishlist ? (
+                <div className="w-5 h-5 border-2 border-rose-600 border-t-transparent rounded-full animate-spin"></div>
+              ) : (
+                <svg className="w-5 h-5" fill={productInWishlist ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>
+              )}
             </button>
             <button onClick={handleAddToCart} disabled={isAddingToCart || isOutOfStock}
               className={`px-4 py-2 rounded-lg text-sm font-medium ${isOutOfStock ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-rose-600 text-white hover:bg-rose-700'} disabled:opacity-50`}>
@@ -452,12 +459,17 @@ const ProductCard = memo(({ product, viewMode = 'grid', className = '' }) => {
         {/* ── Wishlist button ──────────────────────────────────── */}
         <button
           onClick={toggleWishlist}
-          className={`absolute top-3 right-3 z-10 p-1.5 rounded-full bg-white/90 backdrop-blur-sm border border-gray-100 shadow-sm transition-all duration-200 ${productInWishlist ? 'text-rose-500' : 'text-gray-400 hover:text-rose-500'}`}
+          disabled={isUpdatingWishlist}
+          className={`absolute top-3 right-3 z-10 p-1.5 rounded-full bg-white/90 backdrop-blur-sm border border-gray-100 shadow-sm transition-all duration-200 ${productInWishlist ? 'text-rose-500' : 'text-gray-400 hover:text-rose-500'} disabled:opacity-50`}
           title={productInWishlist ? 'Remove from wishlist' : 'Add to wishlist'}
         >
-          <svg className="h-4 w-4" viewBox="0 0 24 24" fill={productInWishlist ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-          </svg>
+          {isUpdatingWishlist ? (
+            <div className="w-4 h-4 border-2 border-rose-500 border-t-transparent rounded-full animate-spin"></div>
+          ) : (
+            <svg className="h-4 w-4" viewBox="0 0 24 24" fill={productInWishlist ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+            </svg>
+          )}
         </button>
 
         {/* ── Share button ─────────────────────────────────────── */}
