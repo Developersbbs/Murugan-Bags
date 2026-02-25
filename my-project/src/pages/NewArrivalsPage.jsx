@@ -5,6 +5,7 @@ import Loading from '../components/common/Loading';
 import Skeleton from '../components/common/Skeleton';
 import { motion } from 'framer-motion';
 import { API_BASE_URL } from '../config/api';
+import { getFullImageUrl } from '../utils/imageUtils';
 
 const NewArrivalsPage = () => {
     const [banners, setBanners] = useState([]);
@@ -46,12 +47,6 @@ const NewArrivalsPage = () => {
         }
     };
 
-    const getFullImageUrl = (imagePath) => {
-        if (!imagePath) return '';
-        if (imagePath.startsWith('http')) return imagePath;
-        const baseUrl = API_BASE_URL.replace('/api', '');
-        return `${baseUrl}${imagePath}`;
-    };
 
     return (
         <div className="min-h-screen bg-slate-50 pt-24 pb-12">

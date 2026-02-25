@@ -4,6 +4,7 @@ import { FaShoppingBag, FaSuitcaseRolling, FaSchool, FaLaptop, FaTruck, FaShield
 import OfferPopup from '../components/OfferPopup';
 import ProductCard from '../components/product/ProductCard';
 import { API_BASE_URL } from '../config/api';
+import { getFullImageUrl } from '../utils/imageUtils';
 import { useCart } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
 import toast from 'react-hot-toast';
@@ -99,9 +100,7 @@ const HomePage = () => {
           // Fix image URLs to include backend base URL
           const slidesWithFixedImages = data.data.map(slide => ({
             ...slide,
-            image: slide.image.startsWith('http')
-              ? slide.image
-              : `http://localhost:5000${slide.image}`
+            image: getFullImageUrl(slide.image)
           }));
 
           console.log('Setting hero slides:', slidesWithFixedImages);
@@ -211,10 +210,8 @@ const HomePage = () => {
               fullData: cat
             });
 
-            // Firebase URLs are already complete, no need to prepend backend URL
-            // Only prepend if it's a relative path (starts with /)
-            if (imageUrl && imageUrl.startsWith('/')) {
-              imageUrl = `http://localhost:5000${imageUrl}`;
+            if (imageUrl) {
+              imageUrl = getFullImageUrl(imageUrl);
             }
 
             console.log(`  → Final image URL: ${imageUrl}`);
@@ -285,8 +282,8 @@ const HomePage = () => {
           imageUrl = variant.images?.[0] || variant.image_url?.[0] || variant.image;
         }
 
-        if (imageUrl && imageUrl.startsWith('/')) {
-          imageUrl = `http://localhost:5000${imageUrl}`;
+        if (imageUrl) {
+          imageUrl = getFullImageUrl(imageUrl);
         }
 
         let price = product.selling_price || product.price;
@@ -444,8 +441,8 @@ const HomePage = () => {
               }
             }
 
-            if (imageUrl && imageUrl.startsWith('/')) {
-              imageUrl = `http://localhost:5000${imageUrl}`;
+            if (imageUrl) {
+              imageUrl = getFullImageUrl(imageUrl);
             }
 
             return {

@@ -1,3 +1,5 @@
+import { API_BASE_URL } from '../config/api';
+
 /**
  * Utility to resolve full image URLs from relative paths
  * @param {string} imagePath - The path or URL of the image
@@ -29,15 +31,17 @@ export const getFullImageUrl = (imagePath) => {
     }
 
     // Handle backend image paths (e.g., /uploads/products/image.jpg)
-    let API_BASE = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
+    // Use the centralized API_BASE_URL and strip /api to get the root
+    let API_ROOT = API_BASE_URL.replace(/\/api$/, '').replace(/\/api\/$/, '');
 
-    // Force HTTP for localhost to avoid SSL Protocol Errors
-    if (typeof API_BASE === 'string' && API_BASE.startsWith('https://localhost')) {
-        API_BASE = API_BASE.replace('https://localhost', 'http://localhost');
+    // If API_ROOT becomes empty (e.g. if API_BASE_URL was just "/api"), 
+    // it means images should be served from the same domain as the app.
+    if (!API_ROOT) {
+        API_ROOT = window.location.origin;
     }
 
     // Ensure we don't double slash if the path already starts with /
     const sanitizedPath = path.startsWith('/') ? path : `/${path}`;
 
-    return `${API_BASE}${sanitizedPath}`;
+    return `${API_ROOT}${sanitizedPath}`;
 };
