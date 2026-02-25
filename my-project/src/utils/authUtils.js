@@ -28,8 +28,8 @@ export const clearAllAuthData = () => {
     });
 
     // Clear Firebase-specific keys (these are generated dynamically)
-    const firebaseKeys = Object.keys(localStorage).filter(key => 
-      key.startsWith('firebase:') || 
+    const firebaseKeys = Object.keys(localStorage).filter(key =>
+      key.startsWith('firebase:') ||
       key.includes('firebaseui') ||
       key.includes('firebase-heartbeat')
     );
@@ -81,7 +81,7 @@ export const getCurrentUserFromStorage = () => {
  */
 export const forceLogout = () => {
   clearAllAuthData();
-  
+
   // Clear any remaining global state
   if (window.recaptchaVerifier) {
     try {
@@ -91,9 +91,9 @@ export const forceLogout = () => {
     }
     window.recaptchaVerifier = null;
   }
-  
+
   window.confirmationResult = null;
-  
+
   // Redirect to login
   window.location.href = '/login';
 };

@@ -1,8 +1,8 @@
-import { 
-  getCartFromCookie, 
-  saveCartToCookie, 
-  clearCartCookie, 
-  shouldUseCookieStorage 
+import {
+  getCartFromCookie,
+  saveCartToCookie,
+  clearCartCookie,
+  shouldUseCookieStorage
 } from './cookieUtils';
 
 const CART_STORAGE_KEY = 'sbbs_cart';
@@ -16,9 +16,9 @@ const getCurrentUser = () => {
 // Get cart from appropriate storage (cookie for guests, localStorage for logged-in users)
 export const getCart = () => {
   if (typeof window === 'undefined') return [];
-  
+
   const user = getCurrentUser();
-  
+
   if (shouldUseCookieStorage(user)) {
     // Guest user - use cookies
     return getCartFromCookie();
@@ -32,9 +32,9 @@ export const getCart = () => {
 // Save cart to appropriate storage
 export const saveCart = (cart) => {
   if (typeof window === 'undefined') return;
-  
+
   const user = getCurrentUser();
-  
+
   if (shouldUseCookieStorage(user)) {
     // Guest user - save to cookies
     saveCartToCookie(cart);
@@ -42,10 +42,10 @@ export const saveCart = (cart) => {
     // Logged-in user - save to localStorage
     localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart));
   }
-  
+
   // Dispatch custom event to notify about cart update
   window.dispatchEvent(new Event('cartUpdated'));
-  
+
   // Also trigger storage event for cross-tab sync (only for localStorage)
   if (!shouldUseCookieStorage(user)) {
     window.dispatchEvent(new StorageEvent('storage', {
@@ -58,11 +58,11 @@ export const saveCart = (cart) => {
 // Add item to cart
 export const addToCart = (product, variant = null, quantity = 1) => {
   const cart = getCart();
-  
+
   // For variant products, use variant ID, otherwise use product ID
   const itemId = variant ? variant._id : product._id;
-  const existingItemIndex = cart.findIndex(item => 
-    item.id === itemId && 
+  const existingItemIndex = cart.findIndex(item =>
+    item.id === itemId &&
     JSON.stringify(item.variant) === JSON.stringify(variant?.attributes || {})
   );
 
@@ -93,8 +93,8 @@ export const addToCart = (product, variant = null, quantity = 1) => {
 export const removeFromCart = (itemId, variantAttributes = {}) => {
   const cart = getCart();
   const updatedCart = cart.filter(
-    item => !(item.id === itemId && 
-    JSON.stringify(item.variant || {}) === JSON.stringify(variantAttributes))
+    item => !(item.id === itemId &&
+      JSON.stringify(item.variant || {}) === JSON.stringify(variantAttributes))
   );
   saveCart(updatedCart);
   return updatedCart;
@@ -103,25 +103,25 @@ export const removeFromCart = (itemId, variantAttributes = {}) => {
 // Update item quantity in cart
 export const updateCartItemQuantity = (itemId, quantity, variantAttributes = {}) => {
   if (quantity < 1) return removeFromCart(itemId, variantAttributes);
-  
+
   const cart = getCart();
   const itemIndex = cart.findIndex(
-    item => item.id === itemId && 
-    JSON.stringify(item.variant || {}) === JSON.stringify(variantAttributes)
+    item => item.id === itemId &&
+      JSON.stringify(item.variant || {}) === JSON.stringify(variantAttributes)
   );
-  
+
   if (itemIndex >= 0) {
     cart[itemIndex].quantity = quantity;
     saveCart(cart);
   }
-  
+
   return cart;
 };
 
 // Clear the cart
 export const clearCart = () => {
   const user = getCurrentUser();
-  
+
   if (shouldUseCookieStorage(user)) {
     clearCartCookie();
   } else {
@@ -129,7 +129,7 @@ export const clearCart = () => {
       localStorage.removeItem(CART_STORAGE_KEY);
     }
   }
-  
+
   // Dispatch update event
   window.dispatchEvent(new Event('cartUpdated'));
   return [];
@@ -148,16 +148,16 @@ export const migrateCartFromCookies = () => {
     // Get existing localStorage cart
     const localCart = localStorage.getItem(CART_STORAGE_KEY);
     const existingCart = localCart ? JSON.parse(localCart) : [];
-    
+
     // Merge carts (avoid duplicates)
     const mergedCart = [...existingCart];
-    
+
     cookieCart.forEach(cookieItem => {
-      const existingIndex = mergedCart.findIndex(item => 
-        item.id === cookieItem.id && 
+      const existingIndex = mergedCart.findIndex(item =>
+        item.id === cookieItem.id &&
         JSON.stringify(item.variant || {}) === JSON.stringify(cookieItem.variant || {})
       );
-      
+
       if (existingIndex >= 0) {
         // Update quantity
         mergedCart[existingIndex].quantity += cookieItem.quantity;
@@ -166,18 +166,18 @@ export const migrateCartFromCookies = () => {
         mergedCart.push(cookieItem);
       }
     });
-    
+
     // Save merged cart to localStorage
     localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(mergedCart));
-    
+
     // Clear cookie cart
     clearCartCookie();
-    
+
     // Dispatch update event
     window.dispatchEvent(new Event('cartUpdated'));
-    
+
     return mergedCart;
   }
-  
+
   return [];
 };

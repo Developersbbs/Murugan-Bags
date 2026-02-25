@@ -4,12 +4,12 @@ import { useNavigate } from 'react-router-dom';
 import { ExclamationCircleIcon } from '@heroicons/react/24/outline';
 import { FaGoogle, FaPhone, FaEnvelope } from 'react-icons/fa';
 import { toast } from 'react-hot-toast';
-import { 
-  registerUser, 
-  loginUser, 
+import {
+  registerUser,
+  loginUser,
   signInWithGoogle,
   clearError,
-  setUser 
+  setUser
 } from '../../redux/slices/authSlice';
 import { sendOTP, verifyOTP, checkPhoneNumber, cleanupRecaptcha } from '../../services/authService';
 
@@ -37,7 +37,7 @@ const AuthenticationForm = ({ isLogin = false }) => {
 
   useEffect(() => {
     dispatch(clearError());
-    
+
     // Clean up reCAPTCHA when switching authentication methods
     if (authMethod !== 'phone') {
       cleanupRecaptcha();
@@ -159,15 +159,15 @@ const AuthenticationForm = ({ isLogin = false }) => {
       // Send OTP
       try {
         const formattedPhone = formData.phone.startsWith('+') ? formData.phone : `+91${formData.phone}`;
-        
+
         // Check if phone exists for login/signup validation
         const phoneExists = await checkPhoneNumber(formattedPhone);
-        
+
         if (isLogin && !phoneExists) {
           toast.error('This phone number is not registered. Please sign up first.');
           return;
         }
-        
+
         if (!isLogin && phoneExists) {
           toast.error('This phone number is already registered. Please sign in instead.');
           return;
@@ -177,7 +177,7 @@ const AuthenticationForm = ({ isLogin = false }) => {
         cleanupRecaptcha();
 
         const result = await sendOTP(formattedPhone, 'recaptcha-container');
-        
+
         if (result.success) {
           setConfirmationResult(result.confirmationResult);
           setOtpSent(true);
@@ -194,7 +194,7 @@ const AuthenticationForm = ({ isLogin = false }) => {
       try {
         const userName = isLogin ? 'User' : `${formData.firstName} ${formData.lastName}`.trim() || 'User';
         const result = await verifyOTP(formData.otp, userName);
-        
+
         if (result.user) {
           // Update Redux store with the user data
           dispatch(setUser(result.user));
@@ -221,14 +221,14 @@ const AuthenticationForm = ({ isLogin = false }) => {
 
   const handleResendOTP = async () => {
     if (countdown > 0) return;
-    
+
     try {
       // Clean up any existing reCAPTCHA before resending
       cleanupRecaptcha();
-      
+
       const formattedPhone = formData.phone.startsWith('+') ? formData.phone : `+91${formData.phone}`;
       const result = await sendOTP(formattedPhone, 'recaptcha-container');
-      
+
       if (result.success) {
         setConfirmationResult(result.confirmationResult);
         setCountdown(60);
@@ -273,7 +273,7 @@ const AuthenticationForm = ({ isLogin = false }) => {
             </svg>
           </div>
           <h2 className="text-3xl font-bold text-gray-900 mb-2">
-            {isLogin ? 'Welcome Back!' : 'Join SBBS Shop'}
+            {isLogin ? 'Welcome Back!' : 'Join Murugan Bags'}
           </h2>
           <p className="text-gray-600 text-sm">
             {isLogin ? 'Sign in to access your account' : 'Create your account to get started'}
@@ -300,11 +300,10 @@ const AuthenticationForm = ({ isLogin = false }) => {
           <button
             type="button"
             onClick={() => switchAuthMethod('email')}
-            className={`flex-1 flex items-center justify-center py-3 px-4 rounded-lg text-sm font-medium transition-all duration-200 ${
-              authMethod === 'email'
+            className={`flex-1 flex items-center justify-center py-3 px-4 rounded-lg text-sm font-medium transition-all duration-200 ${authMethod === 'email'
                 ? 'bg-white text-blue-600 shadow-md transform scale-105 border border-blue-100'
                 : 'text-gray-600 hover:text-gray-800 hover:bg-white/50'
-            }`}
+              }`}
           >
             <FaEnvelope className="mr-2 text-xs" />
             Email
@@ -312,11 +311,10 @@ const AuthenticationForm = ({ isLogin = false }) => {
           <button
             type="button"
             onClick={() => switchAuthMethod('phone')}
-            className={`flex-1 flex items-center justify-center py-3 px-4 rounded-lg text-sm font-medium transition-all duration-200 ${
-              authMethod === 'phone'
+            className={`flex-1 flex items-center justify-center py-3 px-4 rounded-lg text-sm font-medium transition-all duration-200 ${authMethod === 'phone'
                 ? 'bg-white text-blue-600 shadow-md transform scale-105 border border-blue-100'
                 : 'text-gray-600 hover:text-gray-800 hover:bg-white/50'
-            }`}
+              }`}
           >
             <FaPhone className="mr-2 text-xs" />
             Phone
@@ -338,11 +336,10 @@ const AuthenticationForm = ({ isLogin = false }) => {
                       name="firstName"
                       id="firstName"
                       placeholder="Enter your first name"
-                      className={`block w-full px-4 py-3 rounded-xl border-2 transition-all duration-200 ${
-                        errors.firstName 
-                          ? 'border-red-300 text-red-900 placeholder-red-300 focus:ring-red-500 focus:border-red-500 bg-red-50' 
+                      className={`block w-full px-4 py-3 rounded-xl border-2 transition-all duration-200 ${errors.firstName
+                          ? 'border-red-300 text-red-900 placeholder-red-300 focus:ring-red-500 focus:border-red-500 bg-red-50'
                           : 'border-gray-200 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-300 bg-gray-50 focus:bg-white'
-                      } text-sm font-medium`}
+                        } text-sm font-medium`}
                       value={formData.firstName}
                       onChange={handleInputChange}
                     />
@@ -396,11 +393,10 @@ const AuthenticationForm = ({ isLogin = false }) => {
                   name="email"
                   id="email"
                   placeholder="Enter your email address"
-                  className={`block w-full pl-10 pr-12 py-3 rounded-xl border-2 transition-all duration-200 ${
-                    errors.email 
-                      ? 'border-red-300 text-red-900 placeholder-red-300 focus:ring-red-500 focus:border-red-500 bg-red-50' 
+                  className={`block w-full pl-10 pr-12 py-3 rounded-xl border-2 transition-all duration-200 ${errors.email
+                      ? 'border-red-300 text-red-900 placeholder-red-300 focus:ring-red-500 focus:border-red-500 bg-red-50'
                       : 'border-gray-200 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-300 bg-gray-50 focus:bg-white'
-                  } text-sm font-medium`}
+                    } text-sm font-medium`}
                   value={formData.email}
                   onChange={handleInputChange}
                 />
@@ -436,11 +432,10 @@ const AuthenticationForm = ({ isLogin = false }) => {
                   id="password"
                   placeholder="Enter your password"
                   autoComplete={isLogin ? "current-password" : "new-password"}
-                  className={`block w-full pl-10 pr-12 py-3 rounded-xl border-2 transition-all duration-200 ${
-                    errors.password 
-                      ? 'border-red-300 text-red-900 placeholder-red-300 focus:ring-red-500 focus:border-red-500 bg-red-50' 
+                  className={`block w-full pl-10 pr-12 py-3 rounded-xl border-2 transition-all duration-200 ${errors.password
+                      ? 'border-red-300 text-red-900 placeholder-red-300 focus:ring-red-500 focus:border-red-500 bg-red-50'
                       : 'border-gray-200 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-300 bg-gray-50 focus:bg-white'
-                  } text-sm font-medium`}
+                    } text-sm font-medium`}
                   value={formData.password}
                   onChange={handleInputChange}
                 />
@@ -493,11 +488,10 @@ const AuthenticationForm = ({ isLogin = false }) => {
                     id="confirmPassword"
                     placeholder="Confirm your password"
                     autoComplete="new-password"
-                    className={`block w-full pl-10 pr-12 py-3 rounded-xl border-2 transition-all duration-200 ${
-                      errors.confirmPassword 
-                        ? 'border-red-300 text-red-900 placeholder-red-300 focus:ring-red-500 focus:border-red-500 bg-red-50' 
+                    className={`block w-full pl-10 pr-12 py-3 rounded-xl border-2 transition-all duration-200 ${errors.confirmPassword
+                        ? 'border-red-300 text-red-900 placeholder-red-300 focus:ring-red-500 focus:border-red-500 bg-red-50'
                         : 'border-gray-200 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-300 bg-gray-50 focus:bg-white'
-                    } text-sm font-medium`}
+                      } text-sm font-medium`}
                     value={formData.confirmPassword}
                     onChange={handleInputChange}
                   />
@@ -574,11 +568,10 @@ const AuthenticationForm = ({ isLogin = false }) => {
                       name="firstName"
                       id="firstName"
                       placeholder="Enter your first name"
-                      className={`block w-full px-4 py-3 rounded-xl border-2 transition-all duration-200 ${
-                        errors.firstName 
-                          ? 'border-red-300 text-red-900 placeholder-red-300 focus:ring-red-500 focus:border-red-500 bg-red-50' 
+                      className={`block w-full px-4 py-3 rounded-xl border-2 transition-all duration-200 ${errors.firstName
+                          ? 'border-red-300 text-red-900 placeholder-red-300 focus:ring-red-500 focus:border-red-500 bg-red-50'
                           : 'border-gray-200 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-300 bg-gray-50 focus:bg-white'
-                      } text-sm font-medium`}
+                        } text-sm font-medium`}
                       value={formData.firstName}
                       onChange={handleInputChange}
                     />
@@ -636,13 +629,12 @@ const AuthenticationForm = ({ isLogin = false }) => {
                   id="phone"
                   disabled={otpSent}
                   placeholder="Enter 10-digit mobile number"
-                  className={`block w-full pl-20 pr-12 py-3 rounded-xl border-2 transition-all duration-200 ${
-                    errors.phone 
-                      ? 'border-red-300 text-red-900 placeholder-red-300 focus:ring-red-500 focus:border-red-500 bg-red-50' 
-                      : otpSent 
+                  className={`block w-full pl-20 pr-12 py-3 rounded-xl border-2 transition-all duration-200 ${errors.phone
+                      ? 'border-red-300 text-red-900 placeholder-red-300 focus:ring-red-500 focus:border-red-500 bg-red-50'
+                      : otpSent
                         ? 'border-gray-200 bg-gray-100 text-gray-600 cursor-not-allowed'
                         : 'border-gray-200 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-300 bg-gray-50 focus:bg-white'
-                  } text-sm font-medium`}
+                    } text-sm font-medium`}
                   value={formData.phone}
                   onChange={handleInputChange}
                 />
@@ -686,11 +678,10 @@ const AuthenticationForm = ({ isLogin = false }) => {
                     id="otp"
                     placeholder="Enter 6-digit OTP"
                     maxLength="6"
-                    className={`block w-full pl-10 pr-12 py-3 rounded-xl border-2 transition-all duration-200 text-center text-lg font-bold tracking-widest ${
-                      errors.otp 
-                        ? 'border-red-300 text-red-900 placeholder-red-300 focus:ring-red-500 focus:border-red-500 bg-red-50' 
+                    className={`block w-full pl-10 pr-12 py-3 rounded-xl border-2 transition-all duration-200 text-center text-lg font-bold tracking-widest ${errors.otp
+                        ? 'border-red-300 text-red-900 placeholder-red-300 focus:ring-red-500 focus:border-red-500 bg-red-50'
                         : 'border-blue-200 focus:ring-blue-500 focus:border-blue-500 hover:border-blue-300 bg-white focus:bg-white'
-                    }`}
+                      }`}
                     value={formData.otp}
                     onChange={handleInputChange}
                   />

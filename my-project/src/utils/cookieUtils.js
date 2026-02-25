@@ -13,38 +13,38 @@ const COOKIE_OPTIONS = {
 // Set cookie
 export const setCookie = (name, value, options = {}) => {
   if (typeof window === 'undefined') return;
-  
+
   const cookieOptions = { ...COOKIE_OPTIONS, ...options };
   let cookieString = `${name}=${encodeURIComponent(JSON.stringify(value))}`;
-  
+
   if (cookieOptions.expires) {
     const date = new Date();
     date.setTime(date.getTime() + (cookieOptions.expires * 24 * 60 * 60 * 1000));
     cookieString += `; expires=${date.toUTCString()}`;
   }
-  
+
   if (cookieOptions.path) {
     cookieString += `; path=${cookieOptions.path}`;
   }
-  
+
   if (cookieOptions.secure) {
     cookieString += `; secure`;
   }
-  
+
   if (cookieOptions.sameSite) {
     cookieString += `; samesite=${cookieOptions.sameSite}`;
   }
-  
+
   document.cookie = cookieString;
 };
 
 // Get cookie
 export const getCookie = (name) => {
   if (typeof window === 'undefined') return null;
-  
+
   const nameEQ = name + "=";
   const cookies = document.cookie.split(';');
-  
+
   for (let i = 0; i < cookies.length; i++) {
     let cookie = cookies[i];
     while (cookie.charAt(0) === ' ') {
@@ -65,21 +65,21 @@ export const getCookie = (name) => {
 // Delete cookie
 export const deleteCookie = (name, options = {}) => {
   if (typeof window === 'undefined') return;
-  
+
   const cookieOptions = { ...COOKIE_OPTIONS, ...options };
   let cookieString = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC`;
-  
+
   if (cookieOptions.path) {
     cookieString += `; path=${cookieOptions.path}`;
   }
-  
+
   document.cookie = cookieString;
 };
 
 // Check if cookies are enabled
 export const areCookiesEnabled = () => {
   if (typeof window === 'undefined') return false;
-  
+
   try {
     const testCookie = 'test_cookie';
     setCookie(testCookie, 'test', { expires: 1 });

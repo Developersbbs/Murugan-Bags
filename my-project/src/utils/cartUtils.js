@@ -24,11 +24,11 @@ export const saveCart = (cart) => {
 // Add item to cart
 export const addToCart = (product, variant = null, quantity = 1) => {
   const cart = getCart();
-  
+
   // For variant products, use variant ID, otherwise use product ID
   const itemId = variant ? variant._id : product._id;
-  const existingItemIndex = cart.findIndex(item => 
-    item.id === itemId && 
+  const existingItemIndex = cart.findIndex(item =>
+    item.id === itemId &&
     JSON.stringify(item.variant) === JSON.stringify(variant?.attributes || {})
   );
 
@@ -59,8 +59,8 @@ export const addToCart = (product, variant = null, quantity = 1) => {
 export const removeFromCart = (itemId, variantAttributes = {}) => {
   const cart = getCart();
   const updatedCart = cart.filter(
-    item => !(item.id === itemId && 
-    JSON.stringify(item.variant || {}) === JSON.stringify(variantAttributes))
+    item => !(item.id === itemId &&
+      JSON.stringify(item.variant || {}) === JSON.stringify(variantAttributes))
   );
   saveCart(updatedCart);
   return updatedCart;
@@ -69,18 +69,18 @@ export const removeFromCart = (itemId, variantAttributes = {}) => {
 // Update item quantity in cart
 export const updateCartItemQuantity = (itemId, quantity, variantAttributes = {}) => {
   if (quantity < 1) return removeFromCart(itemId, variantAttributes);
-  
+
   const cart = getCart();
   const itemIndex = cart.findIndex(
-    item => item.id === itemId && 
-    JSON.stringify(item.variant || {}) === JSON.stringify(variantAttributes)
+    item => item.id === itemId &&
+      JSON.stringify(item.variant || {}) === JSON.stringify(variantAttributes)
   );
-  
+
   if (itemIndex >= 0) {
     cart[itemIndex].quantity = quantity;
     saveCart(cart);
   }
-  
+
   return cart;
 };
 

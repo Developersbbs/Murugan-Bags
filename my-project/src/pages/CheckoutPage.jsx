@@ -936,12 +936,12 @@ const CheckoutPage = () => {
 
               <p className="mt-4 text-center text-sm text-gray-500">
                 By placing your order, you agree to our{' '}
-                <Link to="/terms" className="text-blue-600 hover:underline">Terms of Service</Link> and{' '}
-                <Link to="/privacy" className="text-blue-600 hover:underline">Privacy Policy</Link>.
+                <Link to="/#hero" className="text-blue-600 hover:underline">Terms of Service</Link> and{' '}
+                <Link to="/#hero" className="text-blue-600 hover:underline">Privacy Policy</Link>.
               </p>
             </div>
           </form>
-        </div>v
+        </div>
       </div>
     </div>
   );

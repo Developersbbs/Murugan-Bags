@@ -1,5 +1,5 @@
 import React, { useEffect, Suspense, lazy } from 'react';
-import { Routes, Route, useLocation, useNavigate } from 'react-router-dom';
+import { Routes, Route, useLocation, useNavigate, Navigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { Toaster } from 'react-hot-toast';
 import { useDispatch, useSelector } from 'react-redux';
@@ -28,6 +28,8 @@ const RegisterPage = lazy(() => import('./pages/RegisterPage'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 const MyOrdersPage = lazy(() => import('./pages/MyOrdersPage'));
 const WishlistPage = lazy(() => import('./pages/WishlistPage'));
+const AboutPage = lazy(() => import('./pages/AboutPage'));
+const ContactPage = lazy(() => import('./pages/ContactPage'));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 const TestCartWishlistPage = lazy(() => import('./pages/TestCartWishlistPage'));
 const LoadingDemoPage = lazy(() => import('./pages/LoadingDemoPage'));
@@ -293,17 +295,12 @@ const App = () => {
 
   // Show loading state while checking auth - But allow public routes to render immediately
   // preventing the "White Screen / Spinner of Death" on cold starts
-  const isPublicRoute =
-    location.pathname === '/' ||
-    location.pathname === '/login' ||
-    location.pathname === '/register' ||
-    location.pathname.startsWith('/product') ||
-    location.pathname.startsWith('/products') ||
-    location.pathname.startsWith('/combo-offers') ||
-    location.pathname.startsWith('/new-arrivals') ||
-    location.pathname.startsWith('/bulk-orders') ||
-    location.pathname === '/cart' || // Allow cart to show empty or local items
-    location.pathname === '/wishlist'; // Allow wishlist to show proper redirect or empty
+  const isPrivateRoute =
+    location.pathname === '/checkout' ||
+    location.pathname === '/profile' ||
+    location.pathname === '/my-orders';
+
+  const isPublicRoute = !isPrivateRoute;
 
   if (loading && !isPublicRoute) {
     return <LoadingScreen message="Authenticating..." variant="ring" />;
@@ -369,8 +366,11 @@ const App = () => {
                 <Route path="login" element={<LoginPage />} />
                 <Route path="register" element={<RegisterPage />} />
 
-                {/* 404 Not Found */}
-                <Route path="*" element={<NotFoundPage />} />
+                <Route path="about" element={<AboutPage />} />
+                <Route path="contact" element={<ContactPage />} />
+
+                {/* 404 Not Found - Redirect to Home */}
+                <Route path="*" element={<Navigate to="/" replace />} />
               </Route>
             </Routes>
 

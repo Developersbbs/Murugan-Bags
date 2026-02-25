@@ -7,7 +7,7 @@ const Newsletter = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!email) {
       setStatus('error');
       setMessage('Please enter your email address');
@@ -21,18 +21,18 @@ const Newsletter = () => {
     }
 
     setStatus('loading');
-    
+
     try {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000));
-      
+
       // In a real app, you would make an API call here
       // await subscribeToNewsletter(email);
-      
+
       setStatus('success');
       setMessage('Thank you for subscribing to our newsletter!');
       setEmail('');
-      
+
       // Reset success message after 5 seconds
       setTimeout(() => {
         setStatus('idle');
@@ -91,16 +91,16 @@ const Newsletter = () => {
               </button>
             </div>
           </form>
-          
+
           {message && (
             <div className={`mt-3 text-sm ${status === 'error' ? 'text-red-200' : 'text-green-200'}`}>
               {message}
             </div>
           )}
-          
+
           <p className="mt-3 text-sm text-indigo-200">
             We care about your data. Read our{' '}
-            <a href="#" className="text-white font-medium underline">
+            <a href="/#hero" className="text-white font-medium underline">
               Privacy Policy
             </a>.
           </p>

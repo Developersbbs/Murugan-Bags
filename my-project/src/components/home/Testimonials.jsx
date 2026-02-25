@@ -6,7 +6,7 @@ const testimonials = [
     id: 1,
     name: 'Sarah Johnson',
     role: 'Fashion Blogger',
-    content: 'The quality of products at SBBS E-commerce is outstanding. I\'ve been shopping here for years and have never been disappointed.',
+    content: 'The quality of products at Murugan Bags is outstanding. I\'ve been shopping here for years and have never been disappointed.',
     avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=687&q=80',
     rating: 5,
   },

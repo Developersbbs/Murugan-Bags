@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 
 const Hero = () => {
   return (
-    <div className="relative bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 overflow-hidden">
+    <div id="hero" className="relative bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 overflow-hidden">
       {/* Animated background elements */}
       <div className="absolute inset-0">
         <div className="absolute top-0 -left-4 w-72 h-72 bg-purple-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob"></div>
@@ -27,19 +27,19 @@ const Hero = () => {
             ✨ New Collection Available
           </span>
         </div>
-        
+
         <h1 className="text-5xl md:text-7xl font-bold tracking-tight text-white mb-6">
           <span className="block">Welcome to</span>
           <span className="block bg-gradient-to-r from-yellow-400 via-pink-400 to-blue-400 bg-clip-text text-transparent">
-            SBBS Shop
+            Murugan Bags
           </span>
         </h1>
-        
+
         <p className="mt-6 text-xl md:text-2xl text-gray-200 max-w-3xl leading-relaxed">
           Discover amazing products at unbeatable prices. Shop the latest trends in fashion,
           electronics, home goods, and more with <span className="text-yellow-400 font-semibold">free shipping</span> on orders over $50.
         </p>
-        
+
         <div className="mt-10 flex flex-col sm:flex-row gap-4">
           <Link
             to="/products"
@@ -50,7 +50,7 @@ const Hero = () => {
             </svg>
             Shop Now
           </Link>
-          
+
           <Link
             to="/about"
             className="inline-flex items-center px-8 py-4 bg-white/10 hover:bg-white/20 text-white font-semibold rounded-xl backdrop-blur-sm border border-white/20 transition-all duration-200 hover:scale-105"
@@ -61,7 +61,7 @@ const Hero = () => {
             </svg>
           </Link>
         </div>
-        
+
         <div className="mt-16 grid grid-cols-3 gap-8 text-center">
           <div>
             <div className="text-3xl font-bold text-white">10K+</div>

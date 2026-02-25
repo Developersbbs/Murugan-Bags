@@ -107,7 +107,7 @@ class PaymentService {
         key: config.key_id,
         amount: razorpayOrder.amount,
         currency: razorpayOrder.currency,
-        name: 'SBBS E-commerce',
+        name: 'Murugan Bags',
         description: `Order #${order.invoice_no}`,
         order_id: razorpayOrder.id,
         handler: async (response) => {
@@ -137,7 +137,7 @@ class PaymentService {
         prefill: {
           name: orderData.shipping_address.name,
           email: orderData.shipping_address.email,
-          contact: orderData.shipping_address.phone
+          contact: '9884000951'
         },
         notes: {
           address: `${orderData.shipping_address.street}, ${orderData.shipping_address.city}, ${orderData.shipping_address.state} ${orderData.shipping_address.zipCode}`
