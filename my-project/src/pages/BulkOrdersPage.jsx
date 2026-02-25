@@ -113,18 +113,23 @@ export default function BulkOrdersPage() {
 
                         <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
                             <a
-                                href="tel:+919876543210"
+                                href="tel:+919884000951"
                                 className="flex items-center gap-2 bg-white text-blue-600 px-6 py-3 rounded-lg font-semibold hover:bg-blue-50 transition-colors"
                             >
                                 <FaPhone />
                                 <span>Call Us</span>
                             </a>
                             <a
-                                href="mailto:bulk@muruganbags.com"
+                                href="mailto:info@muruganbags.com"
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    const gmailUrl = "https://mail.google.com/mail/?view=cm&fs=1&to=info@muruganbags.com";
+                                    window.open(gmailUrl, '_blank');
+                                }}
                                 className="flex items-center gap-2 bg-white text-blue-600 px-6 py-3 rounded-lg font-semibold hover:bg-blue-50 transition-colors"
                             >
                                 <FaEnvelope />
-                                <span>Email Us</span>
+                                <span>Email: info@muruganbags.com</span>
                             </a>
                         </div>
                     </div>

@@ -112,13 +112,24 @@ const BulkOrderDetailsPage = () => {
                                 <h3 className="text-lg font-bold text-slate-900 mb-4">Interested? Contact Us</h3>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <a
-                                        href="tel:+919876543210"
+                                        href="tel:+919884000951"
                                         className="flex items-center justify-center gap-2 bg-slate-900 text-white py-4 px-6 rounded-xl font-bold hover:bg-slate-800 transition-colors"
                                     >
                                         <FaPhone /> Call Now
                                     </a>
                                     <a
-                                        href="https://wa.me/919876543210"
+                                        href="mailto:info@muruganbags.com"
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            const gmailUrl = "https://mail.google.com/mail/?view=cm&fs=1&to=info@muruganbags.com";
+                                            window.open(gmailUrl, '_blank');
+                                        }}
+                                        className="flex items-center justify-center gap-2 bg-blue-600 text-white py-4 px-6 rounded-xl font-bold hover:bg-blue-700 transition-colors"
+                                    >
+                                        <FaEnvelope /> info@muruganbags.com
+                                    </a>
+                                    <a
+                                        href="https://wa.me/919884000951"
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className="flex items-center justify-center gap-2 bg-green-600 text-white py-4 px-6 rounded-xl font-bold hover:bg-green-700 transition-colors"
