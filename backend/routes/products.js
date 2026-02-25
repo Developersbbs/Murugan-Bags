@@ -270,25 +270,31 @@ router.get("/colors", async (req, res) => {
   try {
     const colorSet = new Set();
 
-    // Get colors from the product color field
+    // Get colors from the product color field (only for products that are selling)
     const productColors = await Product.distinct("color", {
       published: true,
+      status: "selling",
       color: { $exists: true, $ne: "" }
     });
     productColors.forEach(color => {
       if (color) colorSet.add(color.toLowerCase());
     });
 
-    // Get colors from variant attributes
+    // Get colors from variant attributes (only for variants that are selling)
     const productsWithVariants = await Product.find({
       product_structure: "variant",
-      "product_variants.published": true
+      "product_variants": {
+        $elemMatch: {
+          published: true,
+          status: "selling"
+        }
+      }
     }).select("product_variants");
 
     productsWithVariants.forEach(product => {
       if (product.product_variants && Array.isArray(product.product_variants)) {
         product.product_variants.forEach(variant => {
-          if (variant.published && variant.attributes) {
+          if (variant.published && variant.status === "selling" && variant.attributes) {
             // Convert Map to plain object if needed
             let attributes = variant.attributes;
             if (attributes instanceof Map) {

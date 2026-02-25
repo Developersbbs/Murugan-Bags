@@ -1,31 +1,43 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { FaShoppingBag, FaSuitcaseRolling, FaSchool, FaLaptop, FaTruck, FaShieldAlt, FaCreditCard, FaHeadset, FaArrowRight, FaChevronLeft, FaChevronRight, FaStar, FaEnvelope, FaHeart } from 'react-icons/fa';
 import OfferPopup from '../components/OfferPopup';
+import ProductCard from '../components/product/ProductCard';
 import { API_BASE_URL } from '../config/api';
+import { useCart } from '../context/CartContext';
+import { useWishlist } from '../context/WishlistContext';
+import toast from 'react-hot-toast';
 
-const colorGradients = {
-  "Black": "from-gray-900 to-black",
-  "Red": "from-red-600 to-red-800",
-  "Blue": "from-blue-600 to-blue-800",
-  "Green": "from-green-600 to-green-800",
-  "Brown": "from-amber-800 to-amber-950",
-  "Navy": "from-blue-900 to-blue-950",
-  "Gray": "from-gray-600 to-gray-800",
-  "Purple": "from-purple-600 to-purple-800",
-  "Yellow": "from-yellow-400 to-yellow-600",
-  "Orange": "from-orange-500 to-orange-700",
-  "Pink": "from-pink-500 to-pink-700",
-  "White": "from-gray-100 to-white",
-  "Beige": "from-orange-100 to-orange-200",
-  "Maroon": "from-red-800 to-red-950",
-  "Teal": "from-teal-500 to-teal-700",
-  "Gold": "from-yellow-500 to-yellow-700",
-  "Silver": "from-gray-300 to-gray-500",
-  "default": "from-slate-400 to-slate-600"
+const colorValues = {
+  "Black": "#000000",
+  "Red": "#EF4444",
+  "Blue": "#3B82F6",
+  "Green": "#22C55E",
+  "Brown": "#78350F",
+  "Navy": "#1E3A8A",
+  "Gray": "#6B7280",
+  "Purple": "#A855F7",
+  "Yellow": "#FACC15",
+  "Orange": "#F97316",
+  "Pink": "#EC4899",
+  "White": "#FFFFFF",
+  "Beige": "#F5F5DC",
+  "Maroon": "#800000",
+  "Teal": "#14B8A6",
+  "Gold": "#D4AF37",
+  "Silver": "#C0C0C0",
+  "Olive": "#808000",
+  "Tan": "#D2B48C",
+  "Khaki": "#F0E68C",
+  "Burgundy": "#800020",
+  "Charcoal": "#36454F",
+  "Cyan": "#06B6D4",
+  "Lavender": "#E6E6FA",
+  "default": "#94A3B8"
 };
 
 const HomePage = () => {
+  const navigate = useNavigate();
   const [currentSlide, setCurrentSlide] = useState(0);
   const [selectedColor, setSelectedColor] = useState(null);
   const [comboOffers, setComboOffers] = useState([]);
@@ -288,6 +300,7 @@ const HomePage = () => {
         }
 
         return {
+          ...product, // Keep all raw data for ProductCard
           id: product._id,
           name: product.name,
           price: price,
@@ -367,33 +380,19 @@ const HomePage = () => {
         const data = await res.json();
 
         if (data.success && data.data && data.data.length > 0) {
-          // Map colors to gradients
+          // Map colors to hex values
           const mappedColors = data.data.map(colorName => ({
             name: colorName,
-            gradient: colorGradients[colorName] || colorGradients['default']
+            colorCode: colorValues[colorName] || colorName.toLowerCase()
           }));
           setColors(mappedColors);
         } else {
-          // Fallback colors if no colors found in DB
-          setColors([
-            { name: "Black", gradient: "from-gray-900 to-black" },
-            { name: "Red", gradient: "from-red-600 to-red-800" },
-            { name: "Blue", gradient: "from-blue-600 to-blue-800" },
-            { name: "Green", gradient: "from-green-600 to-green-800" },
-            { name: "Yellow", gradient: "from-yellow-400 to-yellow-600" },
-            { name: "Purple", gradient: "from-purple-600 to-purple-800" },
-            { name: "Pink", gradient: "from-pink-500 to-pink-700" },
-            { name: "White", gradient: "from-slate-100 to-white" }
-          ]);
+          // No colors found in DB, just keep empty to hide section
+          setColors([]);
         }
       } catch (error) {
         console.error('Error fetching colors:', error);
-        // Fallback colors
-        setColors([
-          { name: "Black", gradient: "from-gray-900 to-black" },
-          { name: "Red", gradient: "from-red-600 to-red-800" },
-          { name: "Blue", gradient: "from-blue-600 to-blue-800" }
-        ]);
+        setColors([]);
       } finally {
         setLoadingColors(false);
       }
@@ -450,6 +449,7 @@ const HomePage = () => {
             }
 
             return {
+              ...product, // Keep all raw data for ProductCard
               id: product._id,
               name: product.name,
               price: price,
@@ -796,49 +796,14 @@ const HomePage = () => {
             {newArrivals.map((product, index) => (
               <div
                 key={product.id}
-                className="group bg-white rounded-3xl shadow-sm hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 border border-slate-100 overflow-hidden"
                 style={{
                   animation: visibleSections.has('new-arrivals') ? `fadeInUp 0.6s ease-out ${index * 0.1}s both` : 'none'
                 }}
               >
-                <div className="relative overflow-hidden aspect-square bg-slate-100">
-                  <img
-                    src={product.image}
-                    alt={product.name}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                    loading="lazy"
-                    onError={(e) => {
-                      e.target.onerror = null;
-                      e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100%25' height='100%25' viewBox='0 0 800 600' preserveAspectRatio='none'%3E%3Crect width='800' height='600' fill='%23f1f5f9'/%3E%3Ctext x='400' y='300' font-family='sans-serif' font-size='48' fill='%2394a3b8' text-anchor='middle' dy='.3em'%3ENo Image%3C/text%3E%3C/svg%3E";
-                    }}
-                  />
-                  <div className="absolute top-4 left-4 bg-rose-600 text-white px-3 py-1 rounded-full text-xs font-bold shadow-md">
-                    {product.badge}
-                  </div>
-                  <button className="absolute top-4 right-4 w-10 h-10 bg-white rounded-full flex items-center justify-center text-slate-400 hover:text-rose-500 hover:bg-rose-50 shadow-md transition-all duration-300">
-                    <FaHeart />
-                  </button>
-                </div>
-                <div className="p-6">
-                  <div className="flex items-center mb-2 space-x-1">
-                    <FaStar className="text-amber-400 w-4 h-4" />
-                    <span className="text-sm font-bold text-slate-700">{product.rating}</span>
-                    <span className="text-xs text-slate-400">(120+ reviews)</span>
-                  </div>
-                  <h3 className="text-lg font-bold mb-3 text-slate-800 group-hover:text-rose-600 transition-colors duration-300 truncate">{product.name}</h3>
-                  <div className="flex items-center justify-between mb-4">
-                    <div>
-                      <span className="text-2xl font-bold text-slate-900">₹{product.price}</span>
-                      <span className="text-sm text-slate-400 line-through ml-2">₹{product.originalPrice}</span>
-                    </div>
-                  </div>
-                  <button className="w-full bg-slate-900 hover:bg-rose-600 text-white py-3 rounded-xl font-bold transition-all duration-300 transform active:scale-95 shadow-lg hover:shadow-rose-500/30 flex items-center justify-center">
-                    <FaShoppingBag className="mr-2" /> Add to Cart
-                  </button>
-                </div>
-              </div >
+                <ProductCard product={product} />
+              </div>
             ))}
-          </div >
+          </div>
 
           <div className="text-center mt-16">
             <Link
@@ -903,110 +868,138 @@ const HomePage = () => {
       }
 
       {/* Shop By Shade */}
-      <section id="colors" data-animate className="pt-20 pb-8 bg-slate-50">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold mb-4 text-slate-900 animate-text-reveal">
-              Shop by <span className="text-rose-600">Shade</span>
-            </h2>
-            <p className="text-lg text-slate-500">Find a bag that matches your personality.</p>
-          </div>
+      {colors.length > 0 && (
+        <section id="colors" data-animate className="pt-20 pb-8 bg-slate-50">
+          <div className="container mx-auto px-4">
+            <div className="text-center mb-16 px-4">
+              <span className="text-rose-500 font-semibold tracking-wider uppercase text-sm mb-2 block">Personalize</span>
+              <h2 className="text-4xl md:text-5xl font-bold mb-4 text-slate-900 animate-text-reveal">
+                Shop by <span className="text-rose-600">Shade</span>
+              </h2>
+              <p className="text-lg text-slate-500">Find a bag that matches your personality.</p>
+            </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-6">
-            {colors.map((color, index) => (
-              <div
-                key={index}
-                className="flex flex-col items-center"
-                style={{
-                  animation: visibleSections.has('colors') ? `fadeInUp 0.4s ease-out ${index * 0.05}s both` : 'none'
-                }}
-              >
-                <button
-                  onClick={() => setSelectedColor(color.name)}
-                  className={`group relative w-16 h-16 rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 transform hover:scale-110 ${selectedColor === color.name ? 'ring-4 ring-rose-500 scale-110' : ''
-                    }`}
+            <div className="flex flex-wrap justify-center gap-6 md:gap-8 max-w-6xl mx-auto">
+              {colors.map((color, index) => (
+                <div
+                  key={index}
+                  className="flex flex-col items-center"
+                  style={{
+                    animation: visibleSections.has('colors') ? `fadeInUp 0.4s ease-out ${index * 0.05}s both` : 'none'
+                  }}
                 >
-                  <div className={`w-full h-full bg-gradient-to-br ${color.gradient}`}></div>
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/10 transition-all duration-300"></div>
-                </button>
-                <span className={`mt-3 text-base font-semibold transition-colors duration-300 ${selectedColor === color.name ? 'text-rose-600' : 'text-slate-700'}`}>
-                  {color.name}
-                </span>
-              </div>
-            ))}
+                  <button
+                    onClick={() => {
+                      setSelectedColor(color.name);
+                      // Smooth scroll to color collection
+                      setTimeout(() => {
+                        document.getElementById('color-bags')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                      }, 100);
+                    }}
+                    className={`group relative w-16 h-16 md:w-20 md:h-20 rounded-full overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:scale-110 active:scale-95 border-2 ${selectedColor === color.name ? 'ring-4 ring-rose-500 ring-offset-2 scale-110 shadow-rose-200 border-rose-500' : 'border-slate-200'
+                      }`}
+                    title={color.name}
+                    style={{ backgroundColor: color.colorCode }}
+                  >
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/5 transition-all duration-300">
+                      {selectedColor === color.name && (
+                        <div className="w-8 h-8 md:w-10 md:h-10 bg-white/40 backdrop-blur-md rounded-full flex items-center justify-center text-white border border-white/60 shadow-xl animate-scale-in">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 md:h-6 md:w-6" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                        </div>
+                      )}
+                    </div>
+                  </button>
+                  <span className={`mt-4 text-sm md:text-base font-bold tracking-tight transition-all duration-300 ${selectedColor === color.name ? 'text-rose-600 transform scale-105' : 'text-slate-600 group-hover:text-slate-900 uppercase text-[10px] tracking-widest opacity-60'}`}>
+                    {color.name}
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
       {/* Color-specific Bags Section */}
       {
         selectedColor && (
-          <section id="color-bags" className="pt-4 pb-20 bg-slate-50">
+          <section id="color-bags" className="pt-8 pb-24 bg-slate-50 border-t border-slate-200/50">
             <div className="container mx-auto px-4">
-              <h2 className="text-4xl font-bold mb-4 text-slate-900">
-                {selectedColor} <span className="text-rose-600">Collection</span>
-              </h2>
-              <p className="text-lg text-slate-500 mb-10">Discover our premium {selectedColor.toLowerCase()} bags</p>
+              <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6">
+                <div>
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-8 h-8 rounded-full shadow-inner border border-slate-200" style={{ backgroundColor: colorValues[selectedColor] || selectedColor.toLowerCase() }}></div>
+                    <span className="text-rose-500 font-bold uppercase tracking-[0.2em] text-sm">Selected Shade</span>
+                  </div>
+                  <h2 className="text-4xl md:text-6xl font-black mb-4 text-slate-900 tracking-tighter">
+                    {selectedColor} <span className="text-rose-600">Collection</span>
+                  </h2>
+                  <p className="text-lg text-slate-500 max-w-xl">A curated selection of premium bags in your favorite {selectedColor.toLowerCase()} hue.</p>
+                </div>
+                <div className="flex items-center gap-4">
+                  <button
+                    onClick={() => {
+                      setSelectedColor(null);
+                      document.getElementById('colors')?.scrollIntoView({ behavior: 'smooth' });
+                    }}
+                    className="px-6 py-3 bg-white text-slate-600 border border-slate-200 rounded-2xl font-bold hover:bg-slate-50 transition-all duration-300 shadow-sm flex items-center gap-2 group"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-slate-400 group-hover:text-rose-500 transition-colors" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                    </svg>
+                    Clear Filter
+                  </button>
+                </div>
+              </div>
 
               {loadingColorProducts ? (
-                <div className="flex justify-center items-center py-20">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-rose-600"></div>
+                <div className="flex flex-col justify-center items-center py-24 space-y-6">
+                  <div className="relative w-20 h-20">
+                    <div className="absolute inset-0 border-4 border-rose-100 rounded-full"></div>
+                    <div className="absolute inset-0 border-4 border-rose-600 rounded-full border-t-transparent animate-spin"></div>
+                  </div>
+                  <p className="text-slate-400 font-medium animate-pulse">Curating your collection...</p>
                 </div>
               ) : colorProducts.length > 0 ? (
                 <>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
                     {colorProducts.map((product, index) => (
-                      <div key={product.id || index} className="group bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2">
-                        <div className="aspect-square overflow-hidden bg-slate-100 relative">
-                          <img
-                            src={product.image}
-                            alt={product.name}
-                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                            loading="lazy"
-                            onError={(e) => {
-                              e.target.onerror = null;
-                              e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100%25' height='100%25' viewBox='0 0 800 600' preserveAspectRatio='none'%3E%3Crect width='800' height='600' fill='%23f1f5f9'/%3E%3Ctext x='400' y='300' font-family='sans-serif' font-size='48' fill='%2394a3b8' text-anchor='middle' dy='.3em'%3ENo Image%3C/text%3E%3C/svg%3E";
-                            }}
-                          />
-                          <div className="absolute top-4 right-4 bg-rose-600 text-white px-3 py-1 rounded-full text-xs font-bold">
-                            NEW
-                          </div>
-                        </div>
-                        <div className="p-6">
-                          <h3 className="text-lg font-bold mb-3 text-slate-800 group-hover:text-rose-600 transition-colors duration-300">{product.name}</h3>
-                          <div className="flex items-center justify-between mb-4">
-                            <div>
-                              <span className="text-2xl font-bold text-slate-900">₹{product.price}</span>
-                              {product.originalPrice && (
-                                <span className="text-sm text-slate-400 line-through ml-2">₹{product.originalPrice}</span>
-                              )}
-                            </div>
-                          </div>
-                          <button className="w-full bg-slate-900 hover:bg-rose-600 text-white py-3 rounded-xl font-bold transition-all duration-300 transform active:scale-95 shadow-lg hover:shadow-rose-500/30 flex items-center justify-center">
-                            <FaShoppingBag className="mr-2" /> Add to Cart
-                          </button>
-                        </div>
+                      <div key={product.id || index} className="animate-fade-in-up" style={{ animationDelay: `${index * 0.1}s` }}>
+                        <ProductCard product={product} />
                       </div>
                     ))}
                   </div>
-                  <div className="text-center mt-12">
+                  <div className="text-center mt-16">
                     <Link
                       to={`/products?color=${encodeURIComponent(selectedColor)}`}
-                      className="inline-flex items-center px-8 py-3 bg-white text-slate-900 border border-slate-200 rounded-full font-bold hover:bg-rose-600 hover:text-white hover:border-transparent transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg group"
+                      className="inline-flex items-center px-10 py-4 bg-slate-900 text-white rounded-3xl font-bold hover:bg-rose-600 transition-all duration-500 transform hover:scale-105 shadow-2xl shadow-rose-900/10 group"
                     >
-                      View More {selectedColor} Bags
-                      <FaArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" />
+                      View All {selectedColor} Bags
+                      <FaArrowRight className="ml-3 group-hover:translate-x-2 transition-transform" />
                     </Link>
                   </div>
                 </>
               ) : (
-                <div className="text-center py-10">
-                  <p className="text-xl text-slate-500">No products found in {selectedColor}.</p>
-                  <button
-                    onClick={() => setSelectedColor(null)}
-                    className="mt-4 px-6 py-2 bg-slate-900 text-white rounded-full hover:bg-rose-600 transition-colors"
-                  >
-                    View All Colors
-                  </button>
+                <div className="text-center py-24 bg-white/50 backdrop-blur-sm rounded-[3rem] border-2 border-dashed border-slate-200">
+                  <div className="w-24 h-24 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-6 text-slate-300">
+                    <FaShoppingBag className="w-10 h-10" />
+                  </div>
+                  <h3 className="text-2xl font-bold text-slate-800 mb-2">No {selectedColor} Bags Found</h3>
+                  <p className="text-slate-500 mb-8 max-w-sm mx-auto text-lg leading-relaxed">We're constantly updating our collection. Try checking another shade or view all our products.</p>
+                  <div className="flex justify-center gap-4">
+                    <button
+                      onClick={() => setSelectedColor(null)}
+                      className="px-8 py-3 bg-slate-900 text-white rounded-2xl font-bold hover:bg-rose-600 transition-all duration-300 shadow-lg"
+                    >
+                      Browse Other Colors
+                    </button>
+                    <Link
+                      to="/products"
+                      className="px-8 py-3 bg-white text-slate-800 border border-slate-200 rounded-2xl font-bold hover:bg-slate-50 transition-all duration-300"
+                    >
+                      View All Products
+                    </Link>
+                  </div>
                 </div>
               )}
             </div>
@@ -1105,6 +1098,19 @@ const HomePage = () => {
         @keyframes float {
           0%, 100% { transform: translateY(0); }
           50% { transform: translateY(-10px); }
+        }
+        @keyframes scale-in {
+          from {
+            opacity: 0;
+            transform: scale(0.5);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+        .animate-scale-in {
+          animation: scale-in 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
         }
         .animate-float {
           animation: float 3s ease-in-out infinite;

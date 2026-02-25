@@ -10,6 +10,7 @@ import addressService from '../services/addressService';
 import ratingService from '../services/ratingService';
 import { Star, Trash2 } from 'lucide-react';
 import { API_BASE_URL } from '../config/api';
+import { formatCurrency } from '../utils/format';
 
 const ProfilePage = () => {
   const dispatch = useDispatch();
@@ -885,48 +886,60 @@ const ProfilePage = () => {
                       <ul className="divide-y divide-gray-200">
                         {orders.map((order) => (
                           <li key={order._id || order.id}>
-                            <div className="px-4 py-4 flex items-center sm:px-6">
-                              <div className="min-w-0 flex-1 sm:flex sm:items-center sm:justify-between">
-                                <div className="truncate">
-                                  <div className="flex text-sm">
-                                    <p className="font-medium text-blue-600 truncate">
-                                      Order #{order.order_number || order._id?.slice(-8) || 'N/A'}
-                                    </p>
-                                    <p className="ml-1 flex-shrink-0 font-normal text-gray-500">
-                                      on {order.created_at ? new Date(order.created_at).toLocaleDateString() : 'N/A'}
-                                    </p>
-                                  </div>
-                                  <div className="mt-2 flex">
-                                    <div className="flex items-center text-sm text-gray-500">
-                                      <p>
-                                        {order.items?.length || 0} item{order.items?.length !== 1 ? 's' : ''} •
-                                        Total: ${order.total_amount || order.total || 0}
+                            <Link
+                              to="/my-orders"
+                              state={{ orderId: order._id || order.id }}
+                              className="block hover:bg-gray-50 transition duration-150 ease-in-out"
+                            >
+                              <div className="px-4 py-4 flex items-center sm:px-6">
+                                <div className="min-w-0 flex-1 sm:flex sm:items-center sm:justify-between">
+                                  <div className="truncate">
+                                    <div className="flex text-sm">
+                                      <p className="font-medium text-blue-600 truncate">
+                                        Order #{order.invoice_no || order.order_number || (order._id && order._id.length > 8 ? order._id.slice(-8) : (order._id || 'N/A'))}
+                                      </p>
+                                      <p className="ml-1 flex-shrink-0 font-normal text-gray-500">
+                                        on {(order.order_time || order.created_at) ? new Date(order.order_time || order.created_at).toLocaleString('en-IN', {
+                                          year: 'numeric',
+                                          month: 'short',
+                                          day: 'numeric',
+                                          hour: '2-digit',
+                                          minute: '2-digit'
+                                        }) : 'N/A'}
                                       </p>
                                     </div>
-                                  </div>
-                                </div>
-                                <div className="mt-4 flex-shrink-0 sm:mt-0 sm:ml-5">
-                                  <div className="flex items-center">
-                                    <div className={`h-5 w-5 rounded-full flex items-center justify-center ${order.status === 'delivered' ? 'bg-green-500' :
-                                      order.status === 'shipped' ? 'bg-blue-500' :
-                                        order.status === 'processing' ? 'bg-yellow-500' : 'bg-gray-500'
-                                      }`}>
-                                      <svg className="h-3.5 w-3.5 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                      </svg>
+                                    <div className="mt-2 flex">
+                                      <div className="flex items-center text-sm text-gray-500">
+                                        <p>
+                                          {order.items?.length || 0} item{order.items?.length !== 1 ? 's' : ''} •
+                                          Total: <span className="font-semibold text-gray-900">{formatCurrency(order.total_amount || order.total || 0)}</span>
+                                        </p>
+                                      </div>
                                     </div>
-                                    <span className="ml-2 text-sm font-medium text-gray-900 capitalize">
-                                      {order.status || 'Processing'}
-                                    </span>
+                                  </div>
+                                  <div className="mt-4 flex-shrink-0 sm:mt-0 sm:ml-5">
+                                    <div className="flex items-center">
+                                      <div className={`h-5 w-5 rounded-full flex items-center justify-center ${order.status === 'delivered' ? 'bg-green-500' :
+                                        order.status === 'shipped' ? 'bg-blue-500' :
+                                          order.status === 'processing' ? 'bg-yellow-500' : 'bg-gray-500'
+                                        }`}>
+                                        <svg className="h-3.5 w-3.5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                        </svg>
+                                      </div>
+                                      <span className="ml-2 text-sm font-medium text-gray-900 capitalize">
+                                        {order.status || 'Processing'}
+                                      </span>
+                                    </div>
                                   </div>
                                 </div>
+                                <div className="ml-5 flex-shrink-0">
+                                  <svg className="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                    <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                                  </svg>
+                                </div>
                               </div>
-                              <div className="ml-5 flex-shrink-0">
-                                <svg className="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                                  <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
-                                </svg>
-                              </div>
-                            </div>
+                            </Link>
                           </li>
                         ))}
                       </ul>

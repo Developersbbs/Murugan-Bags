@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
-import { 
-  MagnifyingGlassIcon, 
+import {
+  MagnifyingGlassIcon,
   FunnelIcon,
   EyeIcon,
   TruckIcon,
@@ -29,6 +29,24 @@ const MyOrdersPage = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [showOrderDetails, setShowOrderDetails] = useState(false);
+  const location = useLocation();
+
+  // Handle auto-opening order details from navigation state
+  useEffect(() => {
+    if (!loading && orders.length > 0 && location.state?.orderId) {
+      const orderId = location.state.orderId;
+      console.log('MyOrdersPage: Detected orderId in state, opening details for:', orderId);
+
+      const orderToOpen = orders.find(o => o.id === orderId);
+      if (orderToOpen) {
+        setSelectedOrder(orderToOpen);
+        setShowOrderDetails(true);
+
+        // Clear the state so it doesn't reopen if the user refreshes or navigates back
+        window.history.replaceState({ ...location.state, orderId: null }, document.title);
+      }
+    }
+  }, [orders, loading, location.state]);
 
   useEffect(() => {
     fetchOrders();
@@ -111,7 +129,7 @@ const MyOrdersPage = () => {
 
   const filteredOrders = orders.filter(order => {
     const matchesSearch = order.orderNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         order.items.some(item => item.name.toLowerCase().includes(searchQuery.toLowerCase()));
+      order.items.some(item => item.name.toLowerCase().includes(searchQuery.toLowerCase()));
     const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
@@ -132,7 +150,7 @@ const MyOrdersPage = () => {
       // For now, just show a success message with tracking info
       // In a real app, this would open a tracking modal or redirect to tracking page
       toast.success(`Order ${response.orderId} is ${response.status}`);
-      
+
       // You could also open a tracking modal here or redirect to a tracking page
       // window.open(`/track/${trackingNumber}`, '_blank');
     } catch (error) {
@@ -242,7 +260,7 @@ const MyOrdersPage = () => {
           <EmptyState
             icon={ClockIcon}
             title="No orders found"
-            description={searchQuery || statusFilter !== 'all' 
+            description={searchQuery || statusFilter !== 'all'
               ? "No orders match your current filters. Try adjusting your search or filter criteria."
               : "You haven't placed any orders yet. Start shopping and place your first order to see it here."
             }
