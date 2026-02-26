@@ -17,14 +17,14 @@ export async function fetchCategories({
   search,
 }: FetchCategoriesParams): Promise<PaginatedResponse<Category>> {
   const params = new URLSearchParams();
-  
+
   params.append('page', page.toString());
   params.append('limit', limit.toString());
-  
+
   if (search) params.append('search', search);
 
   const { data } = await axiosInstance.get(`/api/categories?${params.toString()}`);
-  
+
   // Ensure each category has both _id and id fields for compatibility
   if (data.data) {
     data.data = data.data.map((category: any) => ({
@@ -34,12 +34,12 @@ export async function fetchCategories({
       subcategories: category.subcategories || [],
     }));
   }
-  
+
   return data;
 }
 
 export async function fetchCategoriesDropdown(): Promise<CategoryDropdown[]> {
-  const { data } = await axiosInstance.get('/api/categories/dropdown');
+  const { data } = await axiosInstance.get('/api/categories/dropdown?all=true');
 
   if (!data.success) {
     console.error('Error fetching categories:', data.error);
@@ -56,7 +56,7 @@ export async function fetchSubcategoriesByCategorySlug(categorySlug: string): Pr
 
   try {
     // First get the category by slug to get its ID
-    const categoryResponse = await axiosInstance.get(`/api/categories/dropdown`);
+    const categoryResponse = await axiosInstance.get(`/api/categories/dropdown?all=true`);
     if (!categoryResponse.data.success) {
       throw new Error('Failed to fetch categories');
     }

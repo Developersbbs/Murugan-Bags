@@ -457,7 +457,10 @@ router.put("/:id", async (req, res) => {
 // GET categories for dropdown
 router.get("/dropdown", async (req, res) => {
   try {
-    const categories = await Category.find({ published: true }) // only published
+    const { all } = req.query;
+    const filter = all === 'true' ? {} : { published: true };
+
+    const categories = await Category.find(filter)
       .select("name slug")
       .sort({ name: 1 });
 
