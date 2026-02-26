@@ -85,4 +85,4 @@ try {
   console.error("Please check your Firebase credentials");
 }
 
-module.exports = firebaseApp || admin;
+module.exports = admin; // Always export the module, it has .apps and .credential

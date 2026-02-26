@@ -27,6 +27,16 @@ export default function NewArrivalBannersPage() {
     const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
     const API_URL = baseUrl.endsWith('/api') ? baseUrl : `${baseUrl}/api`;
 
+    const getFullImageUrl = (imagePath: string) => {
+        if (!imagePath) return '';
+        if (imagePath.startsWith('http')) return imagePath;
+
+        // Strip /api from baseUrl if it exists to get the root
+        const rootUrl = baseUrl.endsWith('/api') ? baseUrl.replace('/api', '') : baseUrl;
+        const sanitizedPath = imagePath.startsWith('/') ? imagePath : `/${imagePath}`;
+        return `${rootUrl}${sanitizedPath}`;
+    };
+
     useEffect(() => {
         fetchBanners();
     }, []);
@@ -88,7 +98,7 @@ export default function NewArrivalBannersPage() {
             gradient: banner.gradient || 'from-black/90 via-black/40 to-transparent',
             isActive: banner.isActive
         });
-        setPreviewUrl(`${API_URL.replace('/api', '')}${banner.image}`);
+        setPreviewUrl(getFullImageUrl(banner.image));
         setIsEditing(true);
     };
 
@@ -323,7 +333,7 @@ export default function NewArrivalBannersPage() {
                     <div key={banner._id} className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden group hover:shadow-md transition-shadow">
                         <div className="relative h-48">
                             <Image
-                                src={`${API_URL.replace('/api', '')}${banner.image}`}
+                                src={getFullImageUrl(banner.image)}
                                 alt={banner.title}
                                 fill
                                 className="object-cover"

@@ -66,7 +66,7 @@ router.put('/:id', upload.single('image'), async (req, res) => {
         const updateData = { ...req.body };
 
         if (req.file) {
-            updateData.imageUrl = req.file.firebaseUrl || `/uploads/banners/${req.file.filename}`;
+            updateData.image = req.file.firebaseUrl || `/uploads/new-arrivals/${req.file.filename}`;
         }
 
         const banner = await NewArrivalBanner.findByIdAndUpdate(
