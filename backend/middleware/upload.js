@@ -10,6 +10,7 @@ class FirebaseStorage {
   constructor(opts) { }
 
   _handleFile(req, file, cb) {
+    console.log(`📡 MULTER: Processing file ${file.originalname} for ${req.originalUrl}`);
     // Determine upload directory based on file field name and URL context
     let folder = 'uploads/';
     let subfolder = 'products/';
@@ -57,11 +58,13 @@ class FirebaseStorage {
         });
 
         stream.on('error', (err) => {
-          console.error('FIREBASE UPLOAD ERROR, falling back to local:', err);
+          console.error('🔥 FIREBASE UPLOAD ERROR for', fullPath, ':', err);
+          console.log('🔄 Falling back to local storage...');
           this._handleLocalFile(req, file, folder, filename, localFilePath, cb);
         });
 
         stream.on('finish', async () => {
+          console.log('✅ FIREBASE UPLOAD FINISHED for', fullPath);
           try {
             await bucketFile.makePublic();
             const publicUrl = `https://storage.googleapis.com/${bucket.name}/${fullPath}`;
@@ -83,6 +86,7 @@ class FirebaseStorage {
           }
         });
 
+        console.log('📤 Piping file stream to Firebase Storage...');
         file.stream.pipe(stream);
         return; // Exit and wait for stream events
       } catch (err) {
@@ -103,6 +107,7 @@ class FirebaseStorage {
     });
 
     outStream.on('finish', () => {
+      console.log('✅ LOCAL UPLOAD FINISHED for', localFilePath);
       cb(null, {
         filename: filename,
         path: `/${folder}${filename}`,
@@ -111,6 +116,7 @@ class FirebaseStorage {
       });
     });
 
+    console.log('📤 Piping file stream to Local Storage...');
     file.stream.pipe(outStream);
   }
 
@@ -123,7 +129,7 @@ class FirebaseStorage {
 const upload = multer({
   storage: new FirebaseStorage(),
   limits: {
-    fileSize: 5 * 1024 * 1024 // 5MB limit
+    fileSize: 20 * 1024 * 1024 // 20MB limit
   },
   fileFilter: function (req, file, cb) {
     if (file.fieldname === 'fileUpload') return cb(null, true); // Allow all for digital products

@@ -36,6 +36,8 @@ router.get('/admin', async (req, res) => {
 
 // POST new banner
 router.post('/', upload.single('image'), async (req, res) => {
+    console.log('POST /api/new-arrival-banners - File:', req.file);
+    console.log('POST /api/new-arrival-banners - Body:', req.body);
     try {
         if (!req.file) {
             return res.status(400).json({ success: false, error: 'Image is required' });
@@ -56,7 +58,8 @@ router.post('/', upload.single('image'), async (req, res) => {
         await newBanner.save();
         res.status(201).json({ success: true, data: newBanner });
     } catch (err) {
-        res.status(500).json({ success: false, error: err.message });
+        console.error('SERVER ERROR (POST Banners):', err);
+        res.status(500).json({ success: false, error: err.message, stack: err.stack });
     }
 });
 
@@ -81,7 +84,8 @@ router.put('/:id', upload.single('image'), async (req, res) => {
 
         res.json({ success: true, data: banner });
     } catch (err) {
-        res.status(500).json({ success: false, error: err.message });
+        console.error('SERVER ERROR (PUT Banners):', err);
+        res.status(500).json({ success: false, error: err.message, stack: err.stack });
     }
 });
 

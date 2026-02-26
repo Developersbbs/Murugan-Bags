@@ -5,11 +5,11 @@ import { FaPlus, FaTrash, FaEdit, FaImage, FaSave, FaTimes } from 'react-icons/f
 import Image from 'next/image';
 
 export default function NewArrivalBannersPage() {
-    const [banners, setBanners] = useState([]);
+    const [banners, setBanners] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [isEditing, setIsEditing] = useState(false);
-    const [currentBanner, setCurrentBanner] = useState(null);
-    const [imageFile, setImageFile] = useState(null);
+    const [currentBanner, setCurrentBanner] = useState<any>(null);
+    const [imageFile, setImageFile] = useState<File | null>(null);
     const [previewUrl, setPreviewUrl] = useState('');
 
     // Form state
@@ -55,7 +55,7 @@ export default function NewArrivalBannersPage() {
         }
     };
 
-    const handleInputChange = (e) => {
+    const handleInputChange = (e: any) => {
         const { name, value, type, checked } = e.target;
         setFormData(prev => ({
             ...prev,
@@ -63,8 +63,8 @@ export default function NewArrivalBannersPage() {
         }));
     };
 
-    const handleImageChange = (e) => {
-        const file = e.target.files[0];
+    const handleImageChange = (e: any) => {
+        const file = e.target.files?.[0];
         if (file) {
             setImageFile(file);
             setPreviewUrl(URL.createObjectURL(file));
@@ -87,7 +87,7 @@ export default function NewArrivalBannersPage() {
         setCurrentBanner(null);
     };
 
-    const handleEdit = (banner) => {
+    const handleEdit = (banner: any) => {
         setCurrentBanner(banner);
         setFormData({
             title: banner.title,
@@ -102,7 +102,7 @@ export default function NewArrivalBannersPage() {
         setIsEditing(true);
     };
 
-    const handleDelete = async (id) => {
+    const handleDelete = async (id: string) => {
         if (!confirm('Are you sure you want to delete this banner?')) return;
 
         try {
@@ -120,12 +120,12 @@ export default function NewArrivalBannersPage() {
         }
     };
 
-    const handleSubmit = async (e) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
         const data = new FormData();
-        Object.keys(formData).forEach(key => {
-            data.append(key, formData[key]);
+        Object.entries(formData).forEach(([key, value]) => {
+            data.append(key, value as any);
         });
 
         if (imageFile) {
@@ -145,23 +145,31 @@ export default function NewArrivalBannersPage() {
             });
 
             if (!res.ok) {
-                const errorText = await res.text();
-                alert(`Failed to save banner: ${res.status} ${res.statusText}`);
+                let errorMessage = `Server error: ${res.status} ${res.statusText}`;
+                try {
+                    const errorJson = await res.json();
+                    errorMessage = errorJson.error || errorMessage;
+                } catch (e) {
+                    // Fallback to text if not JSON
+                    const text = await res.text().catch(() => '');
+                    if (text) errorMessage = text.substring(0, 100);
+                }
+                alert(`Failed to save banner: ${errorMessage}`);
                 return;
             }
 
             const result = await res.json();
 
             if (result.success) {
-                fetchBanners();
+                await fetchBanners();
                 resetForm();
                 alert('Banner saved successfully!');
             } else {
                 alert(result.error || 'Operation failed');
             }
-        } catch (error) {
-            console.error('Error saving banner:', error);
-            alert(`Error saving banner: ${error.message}`);
+        } catch (error: any) {
+            console.error('Network or client error saving banner:', error);
+            alert(`Error: ${error.message}`);
         }
     };
 
@@ -223,7 +231,7 @@ export default function NewArrivalBannersPage() {
                                     name="description"
                                     value={formData.description}
                                     onChange={handleInputChange}
-                                    rows="3"
+                                    rows={3}
                                     className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent"
                                 />
                             </div>
@@ -270,6 +278,8 @@ export default function NewArrivalBannersPage() {
                                                     src={previewUrl}
                                                     alt="Preview"
                                                     fill
+                                                    sizes="(max-width: 768px) 100vw, 50vw"
+                                                    priority
                                                     className="object-cover rounded-lg"
                                                 />
                                             </div>
@@ -329,13 +339,15 @@ export default function NewArrivalBannersPage() {
             )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {banners.map((banner) => (
+                {banners.map((banner, index) => (
                     <div key={banner._id} className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden group hover:shadow-md transition-shadow">
                         <div className="relative h-48">
                             <Image
                                 src={getFullImageUrl(banner.image)}
                                 alt={banner.title}
                                 fill
+                                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                                priority={index === 0}
                                 className="object-cover"
                             />
                             <div className={`absolute inset-0 bg-gradient-to-r ${banner.gradient}`}></div>
