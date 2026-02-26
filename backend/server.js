@@ -21,6 +21,9 @@ const allowedOrigins = [
   'http://localhost:3001',
   'http://localhost:3002',
   'http://localhost:3003',
+  'http://127.0.0.1:3000',
+  'http://127.0.0.1:3001',
+  'http://127.0.0.1:3002',
   'http://127.0.0.1:3003',
   'http://localhost:5173', // Vite default port
   'http://localhost:5174', // Vite alternate port
@@ -55,23 +58,16 @@ app.use((req, res, next) => {
 });
 
 // JSON and URL-encoded body parsing
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
-// Configure body parsing to skip multipart/form-data
+// Skip multipart/form-data for global parsers to let multer handle it
 app.use((req, res, next) => {
-  const contentType = req.get('content-type');
-  if (contentType && contentType.includes('multipart/form-data')) {
-    // Skip body parsing for multipart requests
+  if (req.headers['content-type']?.includes('multipart/form-data')) {
     return next();
   }
   express.json()(req, res, next);
 });
 
 app.use((req, res, next) => {
-  const contentType = req.get('content-type');
-  if (contentType && contentType.includes('multipart/form-data')) {
-    // Skip URL encoding for multipart requests
+  if (req.headers['content-type']?.includes('multipart/form-data')) {
     return next();
   }
   express.urlencoded({ extended: true })(req, res, next);
