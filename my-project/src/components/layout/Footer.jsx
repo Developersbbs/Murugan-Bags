@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { FaFacebook, FaInstagram, FaTwitter, FaLinkedin, FaWhatsapp } from 'react-icons/fa';
+import { FaFacebook, FaInstagram, FaYoutube } from 'react-icons/fa';
 import { API_BASE_URL } from '../../config/api';
 
 const Footer = () => {
@@ -115,20 +115,14 @@ const Footer = () => {
             <div className="mt-6">
               <h4 className="text-base font-semibold mb-3">Follow Us</h4>
               <div className="flex space-x-3">
-                <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" className="w-9 h-9 bg-gray-700 rounded-full flex items-center justify-center hover:bg-rose-600 transition-colors duration-300">
-                  <FaFacebook className="w-4 h-4" />
-                </a>
-                <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="w-9 h-9 bg-gray-700 rounded-full flex items-center justify-center hover:bg-rose-600 transition-colors duration-300">
+                <a href="https://www.instagram.com/murugan_bags/?hl=en" target="_blank" rel="noopener noreferrer" className="w-9 h-9 bg-gray-700 rounded-full flex items-center justify-center hover:bg-rose-600 transition-colors duration-300">
                   <FaInstagram className="w-4 h-4" />
                 </a>
-                <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" className="w-9 h-9 bg-gray-700 rounded-full flex items-center justify-center hover:bg-rose-600 transition-colors duration-300">
-                  <FaTwitter className="w-4 h-4" />
+                <a href="https://www.facebook.com/profile.php?id=61584476848713" target="_blank" rel="noopener noreferrer" className="w-9 h-9 bg-gray-700 rounded-full flex items-center justify-center hover:bg-rose-600 transition-colors duration-300">
+                  <FaFacebook className="w-4 h-4" />
                 </a>
-                <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer" className="w-9 h-9 bg-gray-700 rounded-full flex items-center justify-center hover:bg-rose-600 transition-colors duration-300">
-                  <FaLinkedin className="w-4 h-4" />
-                </a>
-                <a href="https://wa.me/919884000951" target="_blank" rel="noopener noreferrer" className="w-9 h-9 bg-gray-700 rounded-full flex items-center justify-center hover:bg-rose-600 transition-colors duration-300">
-                  <FaWhatsapp className="w-4 h-4" />
+                <a href="https://www.youtube.com/channel/UCQaC00A_1L5pVoMw21xMfxw" target="_blank" rel="noopener noreferrer" className="w-9 h-9 bg-gray-700 rounded-full flex items-center justify-center hover:bg-rose-600 transition-colors duration-300">
+                  <FaYoutube className="w-4 h-4" />
                 </a>
               </div>
             </div>
