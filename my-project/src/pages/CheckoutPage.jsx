@@ -184,6 +184,8 @@ const CheckoutPage = () => {
     fetchSavedAddresses();
   }, [isAuthenticated]);
   useEffect(() => {
+    if (orderPlaced) return;
+
     if (!isAuthenticated) {
       toast.error('Please login to place an order');
       navigate('/login');
@@ -195,7 +197,7 @@ const CheckoutPage = () => {
       navigate('/cart');
       return;
     }
-  }, [isAuthenticated, cartItems, navigate]);
+  }, [isAuthenticated, cartItems, navigate, orderPlaced]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
