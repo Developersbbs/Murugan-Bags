@@ -35,7 +35,7 @@ export default function FormProductTypeSelect<TFormData extends FieldValues>({
       control={control}
       name={name}
       render={({ field }) => (
-        <FormItem className="flex flex-col md:flex-row md:gap-x-4 md:space-y-0">
+        <FormItem className="hidden flex-col md:flex-row md:gap-x-4 md:space-y-0">
           <FormLabel className="md:flex-shrink-0 md:w-1/4 md:mt-2 leading-snug">
             {label}
           </FormLabel>
@@ -49,7 +49,6 @@ export default function FormProductTypeSelect<TFormData extends FieldValues>({
               </FormControl>
               <SelectContent>
                 <SelectItem value="physical">Physical Product</SelectItem>
-                <SelectItem value="digital">Digital Product</SelectItem>
               </SelectContent>
             </Select>
             <FormMessage />
