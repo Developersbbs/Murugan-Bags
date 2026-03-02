@@ -615,111 +615,114 @@ router.put("/:id", async (req, res) => {
   }
 });
 
-// PUT update order status with stock management
+
+// PUT update order status with proper stock management
 router.put("/:id/status", async (req, res) => {
   try {
     const { status } = req.body;
     const orderId = req.params.id;
 
-    // Validate status
-    const validStatuses = ["delivered", "cancelled", "pending", "processing", "shipped", "dispatched"];
+    const validStatuses = [
+      "delivered",
+      "cancelled",
+      "pending",
+      "processing",
+      "shipped",
+      "dispatched"
+    ];
+
     if (!validStatuses.includes(status)) {
       return res.status(400).json({ error: "Invalid status" });
     }
 
-    // Get the current order to check previous status
+    const Order = require("../models/Order");
+    const Stock = require("../models/Stock");
+    const { syncProductWithStock } = require("../routes/stock"); // if exported
+    // If not exported, just move sync function to a utils file
+
     const currentOrder = await Order.findById(orderId);
+
     if (!currentOrder) {
       return res.status(404).json({ error: "Order not found" });
     }
 
-    // If status is being changed to dispatched and it wasn't dispatched before
-    if (status === 'dispatched' && currentOrder.status !== 'dispatched') {
-      try {
-        const Product = require('../models/Product');
-        const Stock = require('../models/Stock');
+    const previousStatus = currentOrder.status;
 
-        // Update stock for each item from the embedded items array
-        for (const item of currentOrder.items) {
-          // Update Product collection stock
-          const product = await Product.findById(item.product_id);
-          if (product) {
-            const originalStock = product.baseStock || 0;
-            const newStock = Math.max(0, originalStock - item.quantity);
+    // 🔥 STOCK DEDUCTION LOGIC
+    if (status === "dispatched" && previousStatus !== "dispatched") {
 
-            // Update product stock
-            product.baseStock = newStock;
+      for (const item of currentOrder.items) {
 
-            // Update product status based on new stock
-            const minStock = product.minStock || 5;
-            if (newStock <= 0) {
-              product.status = 'out_of_stock';
-              product.published = false;
-            } else if (newStock <= minStock) {
-              product.status = 'low_stock';
-            } else {
-              product.status = 'selling';
-            }
+        // 🔹 Find stock record (source of truth)
+        const stock = await Stock.findOne({
+          productId: item.product_id,
+          variantId: item.variant_id || null
+        });
 
-            await product.save();
-            console.log(`Updated product stock for ${item.product_id}: ${originalStock} → ${newStock} units remaining`);
-
-            // Also update Stock collection for tracking
-            let stock = await Stock.findOne({
-              productId: item.product_id,
-              variantId: item.variant_id || null
-            });
-
-            if (stock) {
-              stock.quantity = newStock;
-              stock.notes = `Updated via order dispatch: ${originalStock} → ${newStock} (Order: ${currentOrder.invoice_no})`;
-              await stock.save();
-            } else {
-              // Create new stock record if none exists
-              const newStockRecord = new Stock({
-                productId: item.product_id,
-                variantId: item.variant_id || null,
-                quantity: newStock,
-                minStock: 5,
-                notes: `Created via order dispatch: ${originalStock} → ${newStock} (Order: ${currentOrder.invoice_no})`
-              });
-              await newStockRecord.save();
-              console.log(`Created new stock record for product ${item.product_id}`);
-            }
-          } else {
-            console.log(`Product not found: ${item.product_id}`);
-          }
+        if (!stock) {
+          console.log(`Stock not found for product ${item.product_id}`);
+          continue;
         }
-      } catch (stockError) {
-        console.error('Error updating stock:', stockError);
-        // Continue with status update even if stock update fails
+
+        // 🔹 Safety check
+        if (stock.quantity < item.quantity) {
+          return res.status(400).json({
+            error: `Insufficient stock for product ${item.product_id}`
+          });
+        }
+
+        // 🔹 Atomic decrement (race-condition safe)
+        const updatedStock = await Stock.findOneAndUpdate(
+          {
+            _id: stock._id,
+            quantity: { $gte: item.quantity } // prevent negative stock
+          },
+          {
+            $inc: { quantity: -item.quantity },
+            $set: {
+              updated_at: new Date(),
+              notes: `Reduced via order dispatch (${currentOrder.invoice_no})`
+            }
+          },
+          { new: true }
+        );
+
+        if (!updatedStock) {
+          return res.status(400).json({
+            error: `Stock update failed due to concurrent modification`
+          });
+        }
+
+        // 🔹 Sync Product from Stock (your architecture)
+        await syncProductWithStock(updatedStock);
+
+        console.log(
+          `Stock reduced for product ${item.product_id}: -${item.quantity}`
+        );
       }
     }
 
-    // Update the order status
-    const updateData = {
-      status,
-      updated_at: new Date()
-    };
-
-    const order = await Order.findByIdAndUpdate(
-      orderId,
-      updateData,
-      { new: true }
-    );
+    // ✅ Update order status
+    currentOrder.status = status;
+    currentOrder.updated_at = new Date();
+    await currentOrder.save();
 
     res.json({
       success: true,
       message: "Order status updated successfully",
-      order
+      order: currentOrder
     });
+
   } catch (err) {
-    console.error('Order status update error:', err);
-    res.status(500).json({ error: "Failed to update order status" });
+    console.error("Order status update error:", err);
+    res.status(500).json({
+      error: "Failed to update order status"
+    });
   }
 });
 
 // PATCH update order status (admin functionality)
+// ✅ FIX: Added stock deduction logic when status changes to "delivered"
 router.patch("/:id/status", authenticateHybridToken, async (req, res) => {
   try {
     const { status, trackingNumber } = req.body;
@@ -728,6 +731,69 @@ router.patch("/:id/status", authenticateHybridToken, async (req, res) => {
     const validStatuses = ["delivered", "cancelled", "pending", "processing", "shipped"];
     if (!validStatuses.includes(status)) {
       return res.status(400).json({ error: "Invalid status" });
+    }
+
+    const Stock = require("../models/Stock");
+    const { syncProductWithStock } = require("../routes/stock");
+
+    // Fetch the current order to check previous status and get items
+    const currentOrder = await Order.findById(req.params.id);
+    if (!currentOrder) {
+      return res.status(404).json({ error: "Order not found" });
+    }
+
+    const previousStatus = currentOrder.status;
+
+    // ✅ STOCK DEDUCTION: Only deduct when transitioning to "delivered" for the first time
+    if (status === "delivered" && previousStatus !== "delivered") {
+      console.log(`🚚 Order ${currentOrder.invoice_no} marked as delivered — deducting stock...`);
+
+      for (const item of currentOrder.items) {
+        // Find stock record matching product and variant
+        const stock = await Stock.findOne({
+          productId: item.product_id,
+          variantId: item.variant_id || null
+        });
+
+        if (!stock) {
+          console.log(`⚠️ Stock not found for product ${item.product_id} — skipping`);
+          continue;
+        }
+
+        // Safety check: ensure enough stock exists
+        if (stock.quantity < item.quantity) {
+          return res.status(400).json({
+            error: `Insufficient stock for product ${item.product_id}. Available: ${stock.quantity}, Required: ${item.quantity}`
+          });
+        }
+
+        // Atomic decrement to prevent race conditions
+        const updatedStock = await Stock.findOneAndUpdate(
+          {
+            _id: stock._id,
+            quantity: { $gte: item.quantity } // Guard against concurrent updates
+          },
+          {
+            $inc: { quantity: -item.quantity },
+            $set: {
+              updated_at: new Date(),
+              notes: `Reduced via order delivery (${currentOrder.invoice_no}): ${stock.quantity} → ${stock.quantity - item.quantity}`
+            }
+          },
+          { new: true }
+        );
+
+        if (!updatedStock) {
+          return res.status(400).json({
+            error: `Stock update failed due to concurrent modification for product ${item.product_id}`
+          });
+        }
+
+        // Sync product status based on new stock level
+        await syncProductWithStock(updatedStock);
+
+        console.log(`✅ Stock reduced for product ${item.product_id}: -${item.quantity} (remaining: ${updatedStock.quantity})`);
+      }
     }
 
     const updateData = {

@@ -49,8 +49,10 @@ const MyOrdersPage = () => {
   }, [orders, loading, location.state]);
 
   useEffect(() => {
+  if (isAuthenticated && user?.uid) {
     fetchOrders();
-  }, []);
+  }
+}, [isAuthenticated, user]);
 
   const fetchOrders = async () => {
     setLoading(true);
@@ -210,7 +212,7 @@ const MyOrdersPage = () => {
             </div>
             <button
               onClick={fetchOrders}
-              className="inline-flex items-center px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
+              className="inline-flex items-center px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-medium rounded-lg  transition-colors"
             >
               <ArrowPathIcon className="h-4 w-4 mr-2" />
               Refresh
@@ -276,7 +278,7 @@ const MyOrdersPage = () => {
                   <div className="flex flex-col md:flex-row md:items-center md:justify-between">
                     <div className="flex items-center space-x-4">
                       <div>
-                        <h3 className="text-lg font-semibold text-gray-900">
+                        <h3 className="md:text-lg font-semibold text-gray-900">
                           Order {order.orderNumber}
                         </h3>
                         <p className="text-sm text-gray-600">
@@ -313,12 +315,12 @@ const MyOrdersPage = () => {
                 </div>
 
                 {/* Shipping Address - Compact Display */}
-                <div className="px-6 py-3 bg-blue-50 border-t border-gray-200">
+                <div className="px-6 py-3 bg-rose-50 border-t border-gray-200">
                   <div className="flex items-center space-x-3">
-                    <MapPinIcon className="h-4 w-4 text-blue-600 flex-shrink-0" />
+                    <MapPinIcon className="h-4 w-4 text-rose-600 flex-shrink-0" />
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium text-blue-900 uppercase tracking-wide">Shipping To</p>
-                      <div className="text-sm text-blue-800 mt-1">
+                      <p className="text-xs font-medium text-rose-600 uppercase tracking-wide">Shipping To</p>
+                      <div className="text-sm text-rose-800 mt-1">
                         {/* Handle structured and legacy address formats */}
                         {order.shippingAddress && order.shippingAddress.name ? (
                           // Structured address format - show compact version
@@ -330,7 +332,7 @@ const MyOrdersPage = () => {
                           <p className="font-medium truncate">{order.shippingAddress}</p>
                         ) : (
                           // No address
-                          <p className="text-blue-600 italic">Address not available</p>
+                          <p className="text-rose-600 italic">Address not available</p>
                         )}
                       </div>
                     </div>
@@ -343,7 +345,7 @@ const MyOrdersPage = () => {
                     <div className="flex space-x-3">
                       <button
                         onClick={() => handleViewOrder(order)}
-                        className="inline-flex items-center px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
+                        className="inline-flex items-center px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-medium rounded-lg  transition-colors"
                       >
                         <EyeIcon className="h-4 w-4 mr-2" />
                         View Details
@@ -362,7 +364,7 @@ const MyOrdersPage = () => {
                       onClick={() => handleDownloadInvoice(order.id)}
                       className="inline-flex items-center px-4 py-2 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors"
                     >
-                      <ArrowDownTrayIcon className="h-4 w-4 mr-2" />
+                      <ArrowDownTrayIcon className="h-4 w-4 mr-2 hidden md:block" />
                       Download Invoice
                     </button>
                   </div>

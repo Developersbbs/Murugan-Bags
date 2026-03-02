@@ -156,7 +156,7 @@ const ComboOfferDetailsPage = () => {
                                     <span className="font-medium">100% Authentic Products</span>
                                 </div>
                                 <div className="flex items-center gap-3 text-slate-700">
-                                    <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
+                                    <div className="w-8 h-8 rounded-full bg-rose-100 flex items-center justify-center text-rose-600">
                                         <FaTruck className="w-3 h-3" />
                                     </div>
                                     <span className="font-medium">Free Shipping Available</span>

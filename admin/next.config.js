@@ -5,7 +5,7 @@ const nextConfig = {
   // Increase server action body size limit for image uploads
   experimental: {
     serverActions: {
-      bodySizeLimit: '10mb', // Increased from default 1MB to handle product images
+      bodySizeLimit: '70mb', // Increased from default 1MB to handle product images
     },
   },
 

@@ -68,7 +68,7 @@ export default function BulkOrdersPage() {
                                     )}
 
                                     <div className="p-6">
-                                        <h3 className="text-2xl font-bold text-gray-900 mb-3 group-hover:text-blue-600 transition-colors">
+                                        <h3 className="text-2xl font-bold text-gray-900 mb-3 group-hover:text-rose-600 transition-colors">
                                             {order.title}
                                         </h3>
 
@@ -76,7 +76,7 @@ export default function BulkOrdersPage() {
                                             {order.description}
                                         </p>
 
-                                        <div className="flex items-center gap-2 mb-4 text-blue-600">
+                                        <div className="flex items-center gap-2 mb-4 text-rose-600">
                                             <FaBox />
                                             <span className="font-medium">
                                                 Minimum Quantity: {order.minQuantity} units
@@ -104,17 +104,17 @@ export default function BulkOrdersPage() {
                 )}
 
                 {/* Contact Section */}
-                <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl shadow-xl p-8 text-white">
+                <div className="bg-gradient-to-r from-rose-600 to-rose-700 rounded-xl shadow-xl p-8 text-white">
                     <div className="max-w-3xl mx-auto text-center">
                         <h2 className="text-3xl font-bold mb-4">Need a Custom Bulk Order?</h2>
-                        <p className="text-lg mb-6 text-blue-100">
+                        <p className="text-lg mb-6 text-rose-100">
                             Contact us for customized bulk orders, special pricing, and branding options.
                         </p>
 
                         <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
                             <a
                                 href="tel:+919884000951"
-                                className="flex items-center gap-2 bg-white text-blue-600 px-6 py-3 rounded-lg font-semibold hover:bg-blue-50 transition-colors"
+                                className="flex items-center gap-2 bg-white text-rose-600 px-6 py-3 rounded-lg font-semibold hover:bg-rose-50 transition-colors"
                             >
                                 <FaPhone />
                                 <span>Call Us</span>
@@ -126,9 +126,9 @@ export default function BulkOrdersPage() {
                                     const gmailUrl = "https://mail.google.com/mail/?view=cm&fs=1&to=info@muruganbags.com";
                                     window.open(gmailUrl, '_blank');
                                 }}
-                                className="flex items-center gap-2 bg-white text-blue-600 px-6 py-3 rounded-lg font-semibold hover:bg-blue-50 transition-colors"
+                                className="flex items-center gap-2 bg-white text-rose-600 px-6 py-3 rounded-lg font-semibold hover:bg-rose-50 transition-colors"
                             >
-                                <FaEnvelope />
+                                <FaEnvelope className='hidden md:block'/>
                                 <span>Email: info@muruganbags.com</span>
                             </a>
                         </div>

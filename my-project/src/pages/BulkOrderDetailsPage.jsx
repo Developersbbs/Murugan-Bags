@@ -78,7 +78,7 @@ const BulkOrderDetailsPage = () => {
 
                         {/* Content Section */}
                         <div className="p-8 lg:p-12 flex flex-col justify-center">
-                            <span className="inline-block bg-blue-100 text-blue-800 px-4 py-1.5 rounded-full text-sm font-bold mb-4 w-fit">
+                            <span className="inline-block bg-rose-100 text-rose-800 px-4 py-1.5 rounded-full text-sm font-bold mb-4 w-fit">
                                 BULK PACKAGE
                             </span>
 
@@ -96,7 +96,7 @@ const BulkOrderDetailsPage = () => {
                             <div className="bg-slate-50 border border-slate-200 rounded-xl p-6 mb-8">
                                 <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-2">Minimum Order Quantity</h3>
                                 <p className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-                                    <FaBox className="text-blue-600" />
+                                    <FaBox className="text-rose-600" />
                                     {order.minQuantity} Units
                                 </p>
                             </div>
@@ -124,7 +124,7 @@ const BulkOrderDetailsPage = () => {
                                             const gmailUrl = "https://mail.google.com/mail/?view=cm&fs=1&to=info@muruganbags.com";
                                             window.open(gmailUrl, '_blank');
                                         }}
-                                        className="flex items-center justify-center gap-2 bg-blue-600 text-white py-4 px-6 rounded-xl font-bold hover:bg-blue-700 transition-colors"
+                                        className="flex items-center justify-center gap-2 bg-rose-600 text-white py-4 px-6 rounded-xl font-bold hover:bg-rose-700 transition-colors"
                                     >
                                         <FaEnvelope /> info@muruganbags.com
                                     </a>

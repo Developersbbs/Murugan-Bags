@@ -60,7 +60,7 @@ const ContactPage = () => {
                                 <h2 className="text-2xl font-bold text-gray-900 mb-8 border-b pb-4">Get In Touch</h2>
                                 <div className="space-y-6">
                                     <div className="flex items-start">
-                                        <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center mr-4 flex-shrink-0">
+                                        <div className="w-12 h-12 bg-rose-100 text-rose-600 rounded-xl flex items-center justify-center mr-4 flex-shrink-0">
                                             <FaPhoneAlt />
                                         </div>
                                         <div>
@@ -122,7 +122,7 @@ const ContactPage = () => {
                                                 value={formData.name}
                                                 onChange={handleChange}
                                                 required
-                                                className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none"
+                                                className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-rose-500 focus:border-transparent transition-all outline-none"
                                                 placeholder="John Doe"
                                             />
                                         </div>
@@ -134,7 +134,7 @@ const ContactPage = () => {
                                                 value={formData.email}
                                                 onChange={handleChange}
                                                 required
-                                                className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none"
+                                                className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-rose-500 focus:border-transparent transition-all outline-none"
                                                 placeholder="john@example.com"
                                             />
                                         </div>
@@ -148,7 +148,7 @@ const ContactPage = () => {
                                             value={formData.subject}
                                             onChange={handleChange}
                                             required
-                                            className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none"
+                                            className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-rose-500 focus:border-transparent transition-all outline-none"
                                             placeholder="Inquiry about School Bags"
                                         />
                                     </div>
@@ -161,7 +161,7 @@ const ContactPage = () => {
                                             value={formData.message}
                                             onChange={handleChange}
                                             required
-                                            className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none resize-none"
+                                            className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-rose-500 focus:border-transparent transition-all outline-none resize-none"
                                             placeholder="Your message here..."
                                         ></textarea>
                                     </div>
@@ -169,7 +169,7 @@ const ContactPage = () => {
                                     <button
                                         type="submit"
                                         disabled={isSubmitting}
-                                        className={`w-full py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold rounded-xl shadow-lg transform transition-all duration-200 active:scale-95 flex items-center justify-center space-x-2 ${isSubmitting ? 'opacity-70 cursor-not-allowed' : 'hover:scale-[1.02] hover:shadow-blue-200'}`}
+                                        className={`w-full py-4 bg-gradient-to-r from-rose-600 to-purple-600 text-white font-bold rounded-xl shadow-lg transform transition-all duration-200 active:scale-95 flex items-center justify-center space-x-2 ${isSubmitting ? 'opacity-70 cursor-not-allowed' : 'hover:scale-[1.02] hover:shadow-rose-200'}`}
                                     >
                                         {isSubmitting ? (
                                             <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
@@ -192,7 +192,7 @@ const ContactPage = () => {
             <section className="h-[450px] bg-gray-200 relative">
                 <div className="absolute inset-0 flex items-center justify-center text-gray-500">
                     <div className="text-center">
-                        <FaMapMarkerAlt className="text-5xl mx-auto mb-4 text-blue-600 opacity-50" />
+                        <FaMapMarkerAlt className="text-5xl mx-auto mb-4 text-rose-600 opacity-50" />
                         <p className="text-lg">Google Map Integration Placeholder</p>
                         <p className="text-sm text-gray-400">Visit us at Gnanaprakasam Street, Tharapakkam, Chennai</p>
                     </div>

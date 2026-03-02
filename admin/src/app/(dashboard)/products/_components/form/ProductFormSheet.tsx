@@ -496,187 +496,126 @@ export default function ProductFormSheet({
     console.log('Form field values:', { fileSize, downloadFormat });
   }, [fileSize, downloadFormat]);
 
-  const onSubmit = (data: ProductFormData) => {
-    console.log('=== FORM SUBMISSION STARTED ===');
-    console.log('Form submission data:', data);
-    console.log('Product structure value:', data.productStructure);
+const onSubmit = async (data: ProductFormData) => {
+  try {
+    console.log("=== FORM SUBMISSION STARTED ===");
 
-    // Get the absolute latest form values to ensure we have current state
     const currentFormData = form.getValues();
-    console.log('Current form values from form.getValues():', currentFormData);
-    console.log('Product structure from form.getValues:', currentFormData.productStructure);
-    console.log('costPrice from form.getValues:', currentFormData.costPrice);
-    console.log('salesPrice from form.getValues:', currentFormData.salesPrice);
+    const finalData: any = { ...data, ...currentFormData };
 
-    // Use the current form values instead of the potentially stale 'data' parameter
-    const finalData = { ...data, ...currentFormData };
-
-    // Add existing images to the final data so they are sent to the backend
-    // The backend expects 'existing_images' as a JSON string of URLs
+    // Handle existing images
     if (existingImages && existingImages.length > 0) {
-      console.log('Adding existing images to submission:', existingImages);
-      // @ts-ignore - adding property that might not be in the type definition yet
       finalData.existing_images = JSON.stringify(existingImages);
     } else {
-      // Explicitly send empty string if no existing images, to signal removal of all previous images
-      // (unless new images are being uploaded, which are handled by the 'images' field)
-      console.log('No existing images to preserve');
-      // @ts-ignore
       finalData.existing_images = "";
     }
 
-    // Ensure auto-generated values are set before submission
-    const currentSlug = form.getValues('slug');
-    // For variant products, stock values come from variants, not the main product
-    const currentStock = finalData.productStructure === 'variant' ? undefined : form.getValues('stock');
-    const currentMinStock = finalData.productStructure === 'variant' ? undefined : form.getValues('minStockThreshold');
-    const currentVariants = form.getValues('product_variants');
-
-    console.log('Current variants from form.getValues():', currentVariants);
-    console.log('Variants combinations count:', currentVariants?.combinations?.length || 0);
-
-    // Trigger canonical URL generation if slug exists
-    if (currentSlug) {
-      const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://yourstore.com';
-      const canonicalUrl = `${baseUrl}/products/${currentSlug}`;
-      form.setValue('seoCanonical', canonicalUrl, {
-        shouldValidate: false,
-        shouldDirty: false,
-        shouldTouch: false
-      });
+    // Canonical URL
+    if (finalData.slug) {
+      const baseUrl =
+        process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+      finalData.seoCanonical = `${baseUrl}/products/${finalData.slug}`;
     }
 
-    // Trigger robots meta generation based on stock and variants
-    const isBaseInStock = (currentStock || 0) > (currentMinStock || 0);
-    const hasVariantsInStock = currentVariants?.combinations && currentVariants.combinations.length > 0
-      ? currentVariants.combinations.some((variant: any) =>
-        variant.stock !== undefined &&
-        variant.minStock !== undefined &&
-        variant.stock > variant.minStock
-      )
-      : false;
+    // Robots logic
+    const isBaseInStock =
+      (finalData.stock || 0) > (finalData.minStockThreshold || 0);
+
+    const hasVariantsInStock =
+      finalData.product_variants?.combinations?.some(
+        (variant: any) =>
+          variant.stock !== undefined &&
+          variant.minStock !== undefined &&
+          variant.stock > variant.minStock
+      ) || false;
 
     const isInStock = isBaseInStock || hasVariantsInStock;
-    const isPublished = true;
 
-    let robotsValue: 'index,follow' | 'noindex,nofollow' | 'index,nofollow' | 'noindex,follow' = 'noindex,nofollow';
+    finalData.seoRobots = isInStock
+      ? "index,follow"
+      : "noindex,follow";
 
-    if (isPublished && isInStock) {
-      robotsValue = 'index,follow';
-    } else if (isPublished && !isInStock) {
-      robotsValue = 'noindex,follow';
-    }
-
-    form.setValue('seoRobots', robotsValue, {
-      shouldValidate: false,
-      shouldDirty: false,
-      shouldTouch: false
-    });
-
+    // Convert to FormData
     const formData = objectToFormData(finalData);
 
-    console.log('=== CALLING BACKEND ACTION ===');
+    console.log("🚀 Sending request to backend...");
 
-    // Add a small delay to ensure all form field updates are processed
-    setTimeout(() => {
-      startTransition(async () => {
-        try {
-          const result = await action(formData);
-          console.log('=== BACKEND RESPONSE ===', result);
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/api/products`,
+      {
+        method: "POST",
+        body: formData,
+      }
+    );
 
-          if (!result) {
-            toast.error("No response received from server");
-            return;
-          }
+    const result = await response.json();
 
-          if ("validationErrors" in result) {
-            console.log('Validation errors:', result.validationErrors);
-            Object.keys(result.validationErrors).forEach((key) => {
-              form.setError(key as keyof ProductFormData, {
-                message: result.validationErrors![key],
-              });
-            });
+    if (!response.ok) {
+      toast.error(result.error || "Failed to save product");
+      return;
+    }
 
-            form.setFocus(
-              Object.keys(result.validationErrors)[0] as keyof ProductFormData
-            );
-          } else if ("product" in result) {
-            console.log('Product created successfully:', result.product);
-            // Reset form but keep the default variant structure
-            form.reset({
-              productType: "physical",
-              productStructure: "simple",
-              name: "",
-              description: "",
-              images: [],
-              sku: "",
-              categories: [],
-              costPrice: undefined,
-              salesPrice: undefined,
-              stock: undefined,
-              minStockThreshold: undefined,
-              status: "selling",
-              weight: undefined,
-              color: "",
-              size: "",
-              material: "",
-              brand: "",
-              warranty: "",
-              isCodAvailable: true,
-              isFreeShipping: false,
-              showRatings: true,
-              fileUpload: undefined,
-              fileSize: undefined,
-              downloadFormat: "",
-              seoTitle: "",
-              seoDescription: "",
-              seoKeywords: [],
-              seoCanonical: "",
-              seoRobots: "index,follow",
-              seoOgTitle: "",
-              seoOgDescription: "",
-              seoOgImage: "",
-              slug: "",
-              // Keep default variant structure for new products
-              product_variants: {
-                attributes: [
-                  {
-                    id: "attr-size",
-                    name: "size",
-                    values: [],
-                  },
-                  {
-                    id: "attr-color",
-                    name: "color",
-                    values: [],
-                  },
-                  {
-                    id: "attr-material",
-                    name: "material",
-                    values: [],
-                  },
-                ],
-                combinations: [],
-                autoGenerateSKU: true,
-              },
-            });
-            toast.success(
-              `Product "${result.product?.name || 'Product'}" ${actionVerb} successfully!`,
-              { position: "top-center" }
-            );
-            queryClient.invalidateQueries({ queryKey: ["products"] });
-            setIsSheetOpen(false);
-          } else {
-            console.log('Unexpected response:', result);
-            toast.error("Unexpected response from server");
-          }
-        } catch (error) {
-          console.error('=== ACTION ERROR ===', error);
-          toast.error("An error occurred while saving the product");
-        }
-      });
-    }, 100);
-  };
+    toast.success(
+      `Product "${result.data?.name || "Product"}" ${actionVerb} successfully!`,
+      { position: "top-center" }
+    );
+
+    queryClient.invalidateQueries({ queryKey: ["products"] });
+
+    form.reset({
+      productType: "physical",
+      productStructure: "simple",
+      name: "",
+      description: "",
+      images: [],
+      sku: "",
+      categories: [],
+      costPrice: undefined,
+      salesPrice: undefined,
+      stock: undefined,
+      minStockThreshold: undefined,
+      weight: undefined,
+      color: "",
+      size: "",
+      material: "",
+      brand: "",
+      warranty: "",
+      isCodAvailable: true,
+      isFreeShipping: false,
+      showRatings: true,
+      fileUpload: undefined,
+      fileSize: undefined,
+      downloadFormat: "",
+      licenseType: "",
+      downloadLimit: undefined,
+      tags: [],
+      seoTitle: "",
+      seoDescription: "",
+      seoKeywords: [],
+      seoCanonical: "",
+      seoRobots: "index,follow",
+      seoOgTitle: "",
+      seoOgDescription: "",
+      seoOgImage: "",
+      slug: "",
+      product_variants: {
+        attributes: [
+          { id: "attr-size", name: "size", values: [] },
+          { id: "attr-color", name: "color", values: [] },
+          { id: "attr-material", name: "material", values: [] },
+        ],
+        combinations: [],
+        autoGenerateSKU: true,
+      },
+    });
+
+    setIsSheetOpen(false);
+
+  } catch (error) {
+    console.error("UPLOAD ERROR:", error);
+    toast.error("An error occurred while saving the product");
+  }
+};
 
   const onInvalid = (errors: FieldErrors<ProductFormData>) => {
     console.log('=== FORM VALIDATION FAILED ===');
@@ -706,7 +645,10 @@ export default function ProductFormSheet({
       <SheetContent className="w-[90%] max-w-5xl">
         <Form {...form}>
           <form
-            onSubmit={form.handleSubmit(onSubmit, onInvalid)}
+            onSubmit={(e) => {
+              e.preventDefault();
+              form.handleSubmit(onSubmit, onInvalid)(e);
+            }}
             className="size-full"
           >
             <FormSheetContent>

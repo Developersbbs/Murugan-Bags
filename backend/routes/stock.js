@@ -827,4 +827,7 @@ router.get("/alerts/low-stock", async (req, res) => {
   }
 });
 
+// ✅ FIX: Export both the router AND the syncProductWithStock helper
+// so orders.js can import and use it without circular dependency issues
 module.exports = router;
+module.exports.syncProductWithStock = syncProductWithStock;

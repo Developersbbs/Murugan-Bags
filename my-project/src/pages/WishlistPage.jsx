@@ -166,69 +166,75 @@ export default function WishlistPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 ">
       {/* Header */}
       <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+
+          {/* Title Row */}
           <div className="flex items-center justify-between">
             <div className="flex items-center">
-              <div className="flex items-center justify-center w-12 h-12 bg-gradient-to-br from-red-100 to-pink-100 rounded-xl mr-4">
-                <HeartSolidIcon className="h-6 w-6 text-red-500" />
+              <div className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-red-100 to-pink-100 rounded-xl mr-3 sm:mr-4 flex-shrink-0">
+                <HeartSolidIcon className="h-5 w-5 sm:h-6 sm:w-6 text-red-500" />
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">My Wishlist</h1>
-                <p className="text-gray-600 mt-1">
+                <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">My Wishlist</h1>
+                <p className="text-sm sm:text-base text-gray-600 mt-0.5">
                   {filteredAndSortedItems.length} {filteredAndSortedItems.length === 1 ? 'item' : 'items'} saved
                 </p>
               </div>
             </div>
-
-            {filteredAndSortedItems.length > 0 && (
-              <div className="flex items-center space-x-3">
-                {selectedItems.size > 0 && (
-                  <>
-                    <button
-                      onClick={handleAddSelectedToCart}
-                      className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
-                    >
-                      <ShoppingBagIcon className="h-4 w-4" />
-                      <span>Add Selected to Cart ({selectedItems.size})</span>
-                    </button>
-
-                    <button
-                      onClick={handleRemoveSelected}
-                      className="text-red-600 hover:text-red-700 px-4 py-2 border border-red-200 rounded-lg hover:bg-red-50 transition-colors"
-                    >
-                      Remove Selected
-                    </button>
-                  </>
-                )}
-
-                <button
-                  onClick={() => handleAddAllToCart()}
-                  disabled={isAddingAllToCart}
-                  className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors disabled:bg-green-400 flex items-center space-x-2"
-                >
-                  <ShoppingBagIcon className="h-4 w-4" />
-                  <span>{isAddingAllToCart ? 'Adding...' : 'Add All to Cart'}</span>
-                </button>
-
-                <button
-                  onClick={handleClearWishlist}
-                  className="text-red-600 hover:text-red-700 px-4 py-2 border border-red-200 rounded-lg hover:bg-red-50 transition-colors"
-                >
-                  Clear All
-                </button>
-
-                <button
-                  onClick={() => console.log('🐛 [WishlistPage] Items:', wishlistItems)}
-                  className="text-gray-600 hover:text-gray-800 px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                  Debug
-                </button>
-              </div>
-            )}
           </div>
+
+          {/* Action Buttons — full width wrapping row on mobile */}
+          {filteredAndSortedItems.length > 0 && (
+            <div className="mt-3 sm:mt-4 flex flex-wrap gap-2">
+
+              {selectedItems.size > 0 && (
+                <>
+                  <button
+                    onClick={handleAddSelectedToCart}
+                    className="flex items-center justify-center space-x-1.5 bg-rose-600 text-white text-xs sm:text-sm px-3 py-2 rounded-lg hover:bg-rose-700 transition-colors flex-1 sm:flex-none min-w-0"
+                  >
+                    <ShoppingBagIcon className="h-4 w-4 flex-shrink-0" />
+                    <span className="truncate">Add Selected ({selectedItems.size})</span>
+                  </button>
+
+                  <button
+                    onClick={handleRemoveSelected}
+                    className="flex items-center justify-center text-red-600 hover:text-red-700 text-xs sm:text-sm px-3 py-2 border border-red-200 rounded-lg hover:bg-red-50 transition-colors flex-1 sm:flex-none"
+                  >
+                    Remove Selected
+                  </button>
+                </>
+              )}
+
+              <button
+                onClick={() => handleAddAllToCart()}
+                disabled={isAddingAllToCart}
+                className="flex items-center justify-center space-x-1.5 bg-rose-600 hover:bg-rose-700 text-white text-xs sm:text-sm px-3 py-2 rounded-lg transition-colors disabled:bg-green-400 flex-1 sm:flex-none"
+              >
+                <ShoppingBagIcon className="h-4 w-4 flex-shrink-0 hidden sm:block"/>
+                <span>{isAddingAllToCart ? 'Adding...' : 'Add All to Cart'}</span>
+              </button>
+
+              <button
+                onClick={handleClearWishlist}
+                className="flex items-center justify-center text-red-600 hover:text-red-700 text-xs sm:text-sm px-3 py-2 border border-red-200 rounded-lg hover:bg-red-50 transition-colors flex-1 sm:flex-none"
+              >
+                Clear All
+              </button>
+
+              <button
+                onClick={() => console.log('🐛 [WishlistPage] Items:', wishlistItems)}
+                className="flex items-center justify-center text-gray-600 hover:text-gray-800 text-xs sm:text-sm px-3 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors flex-1 sm:flex-none"
+              >
+                Debug
+              </button>
+
+            </div>
+          )}
+
         </div>
       </div>
 
@@ -264,7 +270,7 @@ export default function WishlistPage() {
                           placeholder="Search wishlist..."
                           value={searchQuery}
                           onChange={(e) => setSearchQuery(e.target.value)}
-                          className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent"
                         />
                       </div>
 
@@ -275,7 +281,7 @@ export default function WishlistPage() {
                           placeholder="Min price"
                           value={priceRange.min}
                           onChange={(e) => setPriceRange(prev => ({ ...prev, min: e.target.value }))}
-                          className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent"
                         />
                         <span className="text-gray-500">-</span>
                         <input
@@ -283,7 +289,7 @@ export default function WishlistPage() {
                           placeholder="Max price"
                           value={priceRange.max}
                           onChange={(e) => setPriceRange(prev => ({ ...prev, max: e.target.value }))}
-                          className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent"
                         />
                       </div>
                     </div>
@@ -295,7 +301,7 @@ export default function WishlistPage() {
                         <select
                           value={sortBy}
                           onChange={(e) => setSortBy(e.target.value)}
-                          className="appearance-none bg-white border border-gray-300 rounded-lg px-4 py-2 pr-8 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          className="appearance-none bg-white border border-gray-300 rounded-lg px-4 py-2 pr-8 focus:ring-2 focus:ring-rose-500 focus:border-transparent"
                         >
                           <option value="newest">Newest First</option>
                           <option value="oldest">Oldest First</option>
@@ -339,7 +345,7 @@ export default function WishlistPage() {
                             type="checkbox"
                             checked={selectedItems.size === filteredAndSortedItems.length && filteredAndSortedItems.length > 0}
                             onChange={handleSelectAll}
-                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            className="rounded border-gray-300 text-rose-600 focus:ring-rose-500"
                           />
                           <span className="text-sm text-gray-700">
                             Select All ({filteredAndSortedItems.length})
@@ -347,7 +353,7 @@ export default function WishlistPage() {
                         </label>
 
                         {selectedItems.size > 0 && (
-                          <span className="text-sm text-blue-600 font-medium">
+                          <span className="text-sm text-rose-600 font-medium">
                             {selectedItems.size} selected
                           </span>
                         )}
@@ -382,7 +388,7 @@ export default function WishlistPage() {
                     setSearchQuery('');
                     setPriceRange({ min: '', max: '' });
                   }}
-                  className="text-blue-600 hover:text-blue-700 font-medium"
+                  className="text-rose-600 hover:text-rose-700 font-medium"
                 >
                   Clear all filters
                 </button>
@@ -417,7 +423,7 @@ export default function WishlistPage() {
                   <p className="mb-4">Recommended products based on your wishlist will appear here</p>
                   <Link
                     to="/products"
-                    className="inline-flex items-center px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
+                    className="inline-flex items-center px-6 py-3 bg-rose-600 hover:bg-rose-700 text-white font-medium rounded-lg  transition-colors"
                   >
                     Browse all products
                     <svg className="ml-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

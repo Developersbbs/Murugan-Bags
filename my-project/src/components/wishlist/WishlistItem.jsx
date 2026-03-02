@@ -303,7 +303,7 @@ const WishlistItem = ({
           <button
             onClick={handleAddToCart}
             disabled={isAddingToCart || loading || item.stock === 0}
-            className="flex-1 bg-blue-600 text-white py-2 px-3 rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center space-x-1 text-sm font-medium"
+            className="flex-1 bg-rose-600 hover:bg-rose-700 text-white transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center space-x-1 text-sm font-medium"
           >
             <ShoppingCartIcon className="h-4 w-4" />
             <span>

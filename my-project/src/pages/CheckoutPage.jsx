@@ -396,21 +396,21 @@ const CheckoutPage = () => {
             <p className="text-sm text-green-700">Total: {formatCurrency(orderDetails.total)}</p>
           </div>
 
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+          <div className="bg-rose-50 border border-rose-200 rounded-lg p-4 mb-6">
             <div className="flex items-center mb-2">
               {orderDetails.payment_method === 'razorpay' ? (
                 <>
-                  <CreditCardIcon className="h-5 w-5 text-blue-600 mr-2" />
-                  <span className="text-sm font-medium text-blue-800">Payment Successful</span>
+                  <CreditCardIcon className="h-5 w-5 text-rose-600 mr-2" />
+                  <span className="text-sm font-medium text-rose-800">Payment Successful</span>
                 </>
               ) : (
                 <>
-                  <TruckIcon className="h-5 w-5 text-blue-600 mr-2" />
-                  <span className="text-sm font-medium text-blue-800">Cash on Delivery</span>
+                  <TruckIcon className="h-5 w-5 text-rose-600 mr-2" />
+                  <span className="text-sm font-medium text-rose-800">Cash on Delivery</span>
                 </>
               )}
             </div>
-            <p className="text-sm text-blue-700">
+            <p className="text-sm text-rose-700">
               {orderDetails.payment_method === 'razorpay'
                 ? `Your payment of ${formatCurrency(orderDetails.total)} has been processed successfully.`
                 : `You will pay ${formatCurrency(orderDetails.total)} in cash when your order is delivered.`
@@ -421,7 +421,7 @@ const CheckoutPage = () => {
           <div className="space-y-3">
             <Link
               to="/my-orders"
-              className="inline-flex items-center justify-center w-full px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
+              className="inline-flex items-center justify-center w-full px-6 py-3 bg-rose-600 text-white font-medium rounded-lg hover:bg-rose-700 transition-colors"
             >
               View My Orders
             </Link>
@@ -473,7 +473,7 @@ const CheckoutPage = () => {
                       <div
                         key={address._id}
                         className={`relative rounded-lg border-2 p-4 transition-all ${selectedAddressId === address._id
-                          ? 'border-blue-500 bg-blue-50'
+                          ? 'border-rose-500 bg-rose-50'
                           : isLegacyAddress
                             ? 'border-gray-200 bg-gray-50'
                             : 'border-gray-200 hover:border-gray-300 cursor-pointer'
@@ -487,7 +487,7 @@ const CheckoutPage = () => {
                             checked={selectedAddressId === address._id}
                             onChange={() => !isLegacyAddress && handleAddressSelect(address)}
                             disabled={isLegacyAddress}
-                            className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 disabled:opacity-50"
+                            className="mt-1 h-4 w-4 text-rose-600 focus:ring-rose-500 border-gray-300 disabled:opacity-50"
                           />
                           <div className="ml-3 flex-1">
                             <div className="flex items-center justify-between">
@@ -506,7 +506,7 @@ const CheckoutPage = () => {
                                 <button
                                   type="button"
                                   onClick={(e) => handleEditAddress(e, address)}
-                                  className={`text-xs font-medium underline ml-2 ${isLegacyAddress ? 'text-blue-600 hover:text-blue-800' : 'text-gray-500 hover:text-gray-700'}`}
+                                  className={`text-xs font-medium underline ml-2 ${isLegacyAddress ? 'text-rose-600 hover:text-rose-800' : 'text-gray-500 hover:text-gray-700'}`}
                                 >
                                   {isLegacyAddress ? 'Update Format' : 'Edit'}
                                 </button>
@@ -540,7 +540,7 @@ const CheckoutPage = () => {
                   {/* Add New Address Option */}
                   <div
                     className={`relative rounded-lg border-2 border-dashed p-4 cursor-pointer transition-all ${selectedAddressId === null && showAddressForm
-                      ? 'border-blue-500 bg-blue-50'
+                      ? 'border-rose-500 bg-rose-50'
                       : 'border-gray-300 hover:border-gray-400'
                       }`}
                     onClick={handleNewAddress}
@@ -580,7 +580,7 @@ const CheckoutPage = () => {
                           country: 'India'
                         }));
                       }}
-                      className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                      className="text-sm text-rose-600 hover:text-rose-800 font-medium"
                     >
                       Use different address
                     </button>
@@ -621,12 +621,12 @@ const CheckoutPage = () => {
                 )}
 
                 {editingAddressId && (
-                  <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="mb-4 p-3 bg-rose-50 border border-rose-200 rounded-lg">
                     <div className="flex items-center">
-                      <svg className="h-5 w-5 text-blue-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                      <svg className="h-5 w-5 text-rose-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
                         <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
                       </svg>
-                      <p className="text-sm text-blue-800">
+                      <p className="text-sm text-rose-800">
                         Editing address. Update the details below and click "Update Address".
                       </p>
                     </div>
@@ -643,7 +643,7 @@ const CheckoutPage = () => {
                       name="firstName"
                       value={formData.firstName}
                       onChange={handleChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent"
                       required
                     />
                   </div>
@@ -656,7 +656,7 @@ const CheckoutPage = () => {
                       name="lastName"
                       value={formData.lastName}
                       onChange={handleChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent"
                       required
                     />
                   </div>
@@ -672,7 +672,7 @@ const CheckoutPage = () => {
                       name="email"
                       value={formData.email}
                       onChange={handleChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent"
                       required
                     />
                   </div>
@@ -685,7 +685,7 @@ const CheckoutPage = () => {
                       name="phone"
                       value={formData.phone}
                       onChange={handleChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent"
                       required
                     />
                   </div>
@@ -700,7 +700,7 @@ const CheckoutPage = () => {
                     name="address"
                     value={formData.address}
                     onChange={handleChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent"
                     required
                   />
                 </div>
@@ -715,7 +715,7 @@ const CheckoutPage = () => {
                       name="city"
                       value={formData.city}
                       onChange={handleChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent"
                       required
                     />
                   </div>
@@ -728,7 +728,7 @@ const CheckoutPage = () => {
                       name="state"
                       value={formData.state}
                       onChange={handleChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent"
                       required
                     />
                   </div>
@@ -741,7 +741,7 @@ const CheckoutPage = () => {
                       name="zipCode"
                       value={formData.zipCode}
                       onChange={handleChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent"
                       required
                     />
                   </div>
@@ -755,7 +755,7 @@ const CheckoutPage = () => {
                     checked={formData.saveInfo}
                     onChange={handleChange}
                     disabled={!!editingAddressId} // Disable when editing
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded disabled:opacity-50"
+                    className="h-4 w-4 text-rose-600 focus:ring-rose-500 border-gray-300 rounded disabled:opacity-50"
                   />
                   <label htmlFor="saveInfo" className={`ml-2 text-sm ${editingAddressId ? 'text-gray-400' : 'text-gray-700'}`}>
                     Save this address for future orders
@@ -777,7 +777,7 @@ const CheckoutPage = () => {
                     value="cod"
                     checked={formData.paymentMethod === 'cod'}
                     onChange={handleChange}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                    className="h-4 w-4 text-rose-600 focus:ring-rose-500 border-gray-300"
                   />
                   <label htmlFor="cod" className="ml-3 flex items-center">
                     <span className="text-sm font-medium text-gray-700">Cash on Delivery</span>
@@ -807,7 +807,7 @@ const CheckoutPage = () => {
                     value="razorpay"
                     checked={formData.paymentMethod === 'razorpay'}
                     onChange={handleChange}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                    className="h-4 w-4 text-rose-600 focus:ring-rose-500 border-gray-300"
                   />
                   <label htmlFor="razorpay" className="ml-3 flex items-center">
                     <span className="text-sm font-medium text-gray-700">Razorpay / UPI / Net Banking</span>
@@ -820,12 +820,12 @@ const CheckoutPage = () => {
                 </div>
 
                 {formData.paymentMethod === 'razorpay' && (
-                  <div className="ml-7 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="ml-7 p-4 bg-rose-50 border border-rose-200 rounded-lg">
                     <div className="flex items-center">
-                      <CreditCardIcon className="h-5 w-5 text-blue-600 mr-2" />
-                      <span className="text-sm font-medium text-blue-800">Secure Payment</span>
+                      <CreditCardIcon className="h-5 w-5 text-rose-600 mr-2" />
+                      <span className="text-sm font-medium text-rose-800">Secure Payment</span>
                     </div>
-                    <p className="text-sm text-blue-700 mt-1">
+                    <p className="text-sm text-rose-700 mt-1">
                       Pay securely with credit card, debit card, UPI, or net banking. Your payment is protected.
                     </p>
                   </div>
@@ -839,7 +839,7 @@ const CheckoutPage = () => {
                     value="credit-card"
                     checked={formData.paymentMethod === 'credit-card'}
                     onChange={handleChange}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                    className="h-4 w-4 text-rose-600 focus:ring-rose-500 border-gray-300"
                     disabled
                   />
                   <label htmlFor="credit-card" className="ml-3 flex items-center">
@@ -858,7 +858,7 @@ const CheckoutPage = () => {
                     value="paypal"
                     checked={formData.paymentMethod === 'paypal'}
                     onChange={handleChange}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                    className="h-4 w-4 text-rose-600 focus:ring-rose-500 border-gray-300"
                     disabled
                   />
                   <label htmlFor="paypal" className="ml-3 flex items-center">
@@ -920,7 +920,7 @@ const CheckoutPage = () => {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full mt-6 bg-blue-600 text-white py-4 px-6 rounded-lg font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="w-full mt-6 bg-rose-600 text-white py-4 px-6 rounded-lg font-medium hover:bg-rose-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 {loading ? (
                   <div className="flex items-center justify-center">
@@ -938,8 +938,8 @@ const CheckoutPage = () => {
 
               <p className="mt-4 text-center text-sm text-gray-500">
                 By placing your order, you agree to our{' '}
-                <Link to="/#hero" className="text-blue-600 hover:underline">Terms of Service</Link> and{' '}
-                <Link to="/#hero" className="text-blue-600 hover:underline">Privacy Policy</Link>.
+                <Link to="/#hero" className="text-rose-600 hover:underline">Terms of Service</Link> and{' '}
+                <Link to="/#hero" className="text-rose-600 hover:underline">Privacy Policy</Link>.
               </p>
             </div>
           </form>

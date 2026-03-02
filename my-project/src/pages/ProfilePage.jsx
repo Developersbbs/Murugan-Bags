@@ -594,7 +594,7 @@ const ProfilePage = () => {
   if (!authChecked || authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-rose-500"></div>
       </div>
     );
   }
@@ -605,96 +605,102 @@ const ProfilePage = () => {
   }
 
   return (
-    <div className="bg-gray-50 min-h-screen py-8">
+    <div className="bg-gray-50 min-h-screen py-4 sm:py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="max-w-3xl mx-auto">
           {error && (
-            <div className="mb-4 bg-red-50 border-l-4 border-red-400 p-4">
+            <div className="mb-4 bg-red-50 border-l-4 border-red-400 p-4 rounded-r-lg">
               <div className="flex">
                 <div className="flex-shrink-0">
                   <svg className="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
                   </svg>
                 </div>
-                <div className="ml-3">
-                  <p className="text-sm text-red-700">{error}</p>
+                <div className="ml-3 flex-1">
+                  <p className="text-sm text-red-700 break-words">{error}</p>
                 </div>
               </div>
             </div>
           )}
+          
           <div className="bg-white shadow overflow-hidden sm:rounded-lg">
+            {/* Header Section - Mobile Optimized */}
             <div className="px-4 py-5 sm:px-6 bg-gray-50 border-b border-gray-200">
-              <h1 className="text-2xl font-bold text-gray-900">My Account</h1>
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900">My Account</h1>
               <p className="mt-1 text-sm text-gray-500">
                 Manage your account settings and view your order history.
               </p>
             </div>
 
-            <div className="border-b border-gray-200">
-              <nav className="flex -mb-px">
+            {/* Tabs Navigation - Mobile Optimized with Horizontal Scroll */}
+            <div className="border-b border-gray-200 overflow-x-auto">
+              <nav className="flex -mb-px min-w-max sm:min-w-0 px-2">
                 <button
                   onClick={() => setActiveTab('profile')}
-                  className={`${activeTab === 'profile' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'} whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm`}
+                  className={`${activeTab === 'profile' ? 'border-rose-500 text-rose-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'} whitespace-nowrap py-4 px-3 sm:px-6 border-b-2 font-medium text-xs sm:text-sm transition-colors duration-200`}
                 >
                   Profile
                 </button>
                 <button
                   onClick={() => setActiveTab('orders')}
-                  className={`${activeTab === 'orders' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'} whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm`}
+                  className={`${activeTab === 'orders' ? 'border-rose-500 text-rose-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'} whitespace-nowrap py-4 px-3 sm:px-6 border-b-2 font-medium text-xs sm:text-sm transition-colors duration-200`}
                 >
                   Orders
                 </button>
                 <button
                   onClick={() => setActiveTab('addresses')}
-                  className={`${activeTab === 'addresses' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'} whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm`}
+                  className={`${activeTab === 'addresses' ? 'border-rose-500 text-rose-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'} whitespace-nowrap py-4 px-3 sm:px-6 border-b-2 font-medium text-xs sm:text-sm transition-colors duration-200`}
                 >
                   Addresses
                 </button>
                 <button
                   onClick={() => setActiveTab('reviews')}
-                  className={`${activeTab === 'reviews' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'} whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm`}
+                  className={`${activeTab === 'reviews' ? 'border-rose-500 text-rose-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'} whitespace-nowrap py-4 px-3 sm:px-6 border-b-2 font-medium text-xs sm:text-sm transition-colors duration-200`}
                 >
                   My Reviews
                 </button>
               </nav>
             </div>
 
+            {/* Profile Tab - Mobile Optimized */}
             {activeTab === 'profile' && (
               <div className="px-4 py-5 sm:p-6">
-                <div className="md:flex md:items-center md:justify-between">
+                {/* Header with Edit Button - Mobile Stacked */}
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                   <div className="flex-1 min-w-0">
                     <h2 className="text-lg font-medium leading-6 text-gray-900">Profile Information</h2>
                     <p className="mt-1 text-sm text-gray-500">
                       Update your account's profile information and email address.
                     </p>
                   </div>
-                  {(!isEditing && (
-                    <div className="mt-4 flex-shrink-0 flex md:mt-0 md:ml-4">
+                  {!isEditing && (
+                    <div className="flex-shrink-0">
                       <button
                         type="button"
                         onClick={handleEditProfile}
-                        className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                        className="w-full sm:w-auto inline-flex justify-center items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-500"
                       >
                         Edit Profile
                       </button>
                     </div>
-                  ))}
+                  )}
                 </div>
 
                 {isEditing ? (
                   <form key="edit-form" className="mt-6 space-y-6" onSubmit={handleSubmit}>
-                    <div className="flex items-center space-x-6">
-                      <div className="flex-shrink-0 h-24 w-24">
+                    {/* Avatar Section - Mobile Optimized */}
+                    <div className="flex flex-col sm:flex-row sm:items-center space-y-4 sm:space-y-0 sm:space-x-6">
+                      <div className="flex-shrink-0 flex justify-center sm:justify-start">
                         <img
-                          className="h-24 w-24 rounded-full object-cover"
+                          className="h-24 w-24 rounded-full object-cover border-2 border-gray-200"
                           src={formData.avatar}
                           alt="Profile"
                         />
                       </div>
-                      <div>
+                      <div className="flex-1 text-center sm:text-left">
                         <label
                           htmlFor="avatar"
-                          className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 cursor-pointer"
+                          className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-500 cursor-pointer"
                         >
                           Change Photo
                           <input
@@ -710,6 +716,7 @@ const ProfilePage = () => {
                       </div>
                     </div>
 
+                    {/* Form Fields - Mobile Optimized Grid */}
                     <div className="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
                       <div className="sm:col-span-3">
                         <label htmlFor="firstName" className="block text-sm font-medium text-gray-700">
@@ -721,7 +728,7 @@ const ProfilePage = () => {
                           id="firstName"
                           value={formData.firstName}
                           onChange={handleChange}
-                          className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                          className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-rose-500 focus:border-rose-500 sm:text-sm"
                         />
                       </div>
 
@@ -735,7 +742,7 @@ const ProfilePage = () => {
                           id="lastName"
                           value={formData.lastName}
                           onChange={handleChange}
-                          className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                          className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-rose-500 focus:border-rose-500 sm:text-sm"
                         />
                       </div>
 
@@ -749,7 +756,7 @@ const ProfilePage = () => {
                           type="email"
                           value={formData.email}
                           onChange={handleChange}
-                          className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                          className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-rose-500 focus:border-rose-500 sm:text-sm"
                         />
                       </div>
 
@@ -763,7 +770,7 @@ const ProfilePage = () => {
                           id="phone"
                           value={formData.phone}
                           onChange={handleChange}
-                          className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                          className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-rose-500 focus:border-rose-500 sm:text-sm"
                         />
                       </div>
 
@@ -777,23 +784,24 @@ const ProfilePage = () => {
                           id="address"
                           value={formData.address}
                           onChange={handleChange}
-                          className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                          className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-rose-500 focus:border-rose-500 sm:text-sm"
                         />
                       </div>
                     </div>
 
+                    {/* Form Buttons - Mobile Stacked */}
                     <div className="pt-5">
-                      <div className="flex justify-end">
+                      <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
                         <button
                           type="button"
                           onClick={handleCancel}
-                          className="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                          className="w-full sm:w-auto inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-500"
                         >
                           Cancel
                         </button>
                         <button
                           type="submit"
-                          className="ml-3 inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                          className="w-full sm:w-auto inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-rose-600 hover:bg-rose-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-500"
                         >
                           Save
                         </button>
@@ -805,32 +813,32 @@ const ProfilePage = () => {
                     <dl className="divide-y divide-gray-200">
                       <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4">
                         <dt className="text-sm font-medium text-gray-500">Full name</dt>
-                        <dd className="mt-1 flex text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                          <span className="flex-grow">{`${userData.firstName} ${userData.lastName}`}</span>
+                        <dd className="mt-1 sm:mt-0 text-sm text-gray-900 sm:col-span-2 break-words">
+                          {`${userData.firstName} ${userData.lastName}`}
                         </dd>
                       </div>
                       <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4">
                         <dt className="text-sm font-medium text-gray-500">Email address</dt>
-                        <dd className="mt-1 flex text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                          <span className="flex-grow">{userData.email}</span>
+                        <dd className="mt-1 sm:mt-0 text-sm text-gray-900 sm:col-span-2 break-words">
+                          {userData.email}
                         </dd>
                       </div>
                       <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4">
                         <dt className="text-sm font-medium text-gray-500">Phone number</dt>
-                        <dd className="mt-1 flex text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                          <span className="flex-grow">{userData.phone}</span>
+                        <dd className="mt-1 sm:mt-0 text-sm text-gray-900 sm:col-span-2 break-words">
+                          {userData.phone}
                         </dd>
                       </div>
                       <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4">
                         <dt className="text-sm font-medium text-gray-500">Address</dt>
-                        <dd className="mt-1 flex text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                          <span className="flex-grow">{userData.address}</span>
+                        <dd className="mt-1 sm:mt-0 text-sm text-gray-900 sm:col-span-2 break-words">
+                          {userData.address}
                         </dd>
                       </div>
                       <div className="py-4 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4">
                         <dt className="text-sm font-medium text-gray-500">Member since</dt>
-                        <dd className="mt-1 flex text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                          <span className="flex-grow">{userData.memberSince}</span>
+                        <dd className="mt-1 sm:mt-0 text-sm text-gray-900 sm:col-span-2 break-words">
+                          {userData.memberSince}
                         </dd>
                       </div>
                     </dl>
@@ -839,34 +847,36 @@ const ProfilePage = () => {
               </div>
             )}
 
+            {/* Orders Tab - Mobile Optimized */}
             {activeTab === 'orders' && (
               <div className="px-4 py-5 sm:p-6">
-                <div className="md:flex md:items-center md:justify-between">
+                {/* Header with Refresh - Mobile Stacked */}
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                   <div className="flex-1 min-w-0">
                     <h2 className="text-lg font-medium leading-6 text-gray-900">Order History</h2>
                     <p className="mt-1 text-sm text-gray-500">
                       View your recent orders and track their status.
                     </p>
                   </div>
-                  <div className="mt-4 flex-shrink-0 flex md:mt-0 md:ml-4">
+                  <div className="flex-shrink-0">
                     <button
                       type="button"
                       onClick={() => fetchUserOrders()}
                       disabled={isOrdersLoading}
-                      className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+                      className="w-full sm:w-auto inline-flex justify-center items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-500 disabled:opacity-50"
                     >
                       {isOrdersLoading ? 'Loading...' : 'Refresh'}
                     </button>
                   </div>
                 </div>
 
-                <div className="mt-8">
+                <div className="mt-6">
                   {isOrdersLoading ? (
                     <div className="flex justify-center items-center h-32">
-                      <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+                      <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-rose-500"></div>
                     </div>
                   ) : orders.length === 0 ? (
-                    <div className="text-center py-12">
+                    <div className="text-center py-8 sm:py-12">
                       <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
                       </svg>
@@ -875,7 +885,7 @@ const ProfilePage = () => {
                       <div className="mt-6">
                         <Link
                           to="/shop"
-                          className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+                          className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-rose-600 hover:bg-rose-700"
                         >
                           Start Shopping
                         </Link>
@@ -891,52 +901,46 @@ const ProfilePage = () => {
                               state={{ orderId: order._id || order.id }}
                               className="block hover:bg-gray-50 transition duration-150 ease-in-out"
                             >
-                              <div className="px-4 py-4 flex items-center sm:px-6">
-                                <div className="min-w-0 flex-1 sm:flex sm:items-center sm:justify-between">
-                                  <div className="truncate">
-                                    <div className="flex text-sm">
-                                      <p className="font-medium text-blue-600 truncate">
+                              <div className="px-4 py-4 sm:px-6">
+                                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                                      <p className="text-sm font-medium text-rose-600 truncate">
                                         Order #{order.invoice_no || order.order_number || (order._id && order._id.length > 8 ? order._id.slice(-8) : (order._id || 'N/A'))}
                                       </p>
-                                      <p className="ml-1 flex-shrink-0 font-normal text-gray-500">
-                                        on {(order.order_time || order.created_at) ? new Date(order.order_time || order.created_at).toLocaleString('en-IN', {
+                                      <p className="text-xs sm:text-sm text-gray-500">
+                                        {order.order_time || order.created_at ? new Date(order.order_time || order.created_at).toLocaleString('en-IN', {
                                           year: 'numeric',
                                           month: 'short',
-                                          day: 'numeric',
-                                          hour: '2-digit',
-                                          minute: '2-digit'
+                                          day: 'numeric'
                                         }) : 'N/A'}
                                       </p>
                                     </div>
-                                    <div className="mt-2 flex">
-                                      <div className="flex items-center text-sm text-gray-500">
-                                        <p>
-                                          {order.items?.length || 0} item{order.items?.length !== 1 ? 's' : ''} •
-                                          Total: <span className="font-semibold text-gray-900">{formatCurrency(order.total_amount || order.total || 0)}</span>
-                                        </p>
-                                      </div>
-                                    </div>
-                                  </div>
-                                  <div className="mt-4 flex-shrink-0 sm:mt-0 sm:ml-5">
-                                    <div className="flex items-center">
-                                      <div className={`h-5 w-5 rounded-full flex items-center justify-center ${order.status === 'delivered' ? 'bg-green-500' :
-                                        order.status === 'shipped' ? 'bg-blue-500' :
-                                          order.status === 'processing' ? 'bg-yellow-500' : 'bg-gray-500'
-                                        }`}>
-                                        <svg className="h-3.5 w-3.5 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                        </svg>
-                                      </div>
-                                      <span className="ml-2 text-sm font-medium text-gray-900 capitalize">
-                                        {order.status || 'Processing'}
+                                    <div className="mt-2 flex flex-wrap items-center gap-2 text-sm">
+                                      <span className="text-gray-500">
+                                        {order.items?.length || 0} item{order.items?.length !== 1 ? 's' : ''}
+                                      </span>
+                                      <span className="text-gray-300 hidden sm:inline">•</span>
+                                      <span className="text-gray-900 font-semibold">
+                                        {formatCurrency(order.total_amount || order.total || 0)}
                                       </span>
                                     </div>
                                   </div>
-                                </div>
-                                <div className="ml-5 flex-shrink-0">
-                                  <svg className="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                                    <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
-                                  </svg>
+                                  <div className="mt-3 sm:mt-0 sm:ml-5 flex items-center justify-between sm:justify-start">
+                                    <div className="flex items-center">
+                                      <div className={`h-2.5 w-2.5 sm:h-3 sm:w-3 rounded-full ${
+                                        order.status === 'delivered' ? 'bg-green-500' :
+                                        order.status === 'shipped' ? 'bg-rose-500' :
+                                        order.status === 'processing' ? 'bg-yellow-500' : 'bg-gray-500'
+                                      }`} />
+                                      <span className="ml-2 text-xs sm:text-sm font-medium text-gray-900 capitalize">
+                                        {order.status || 'Processing'}
+                                      </span>
+                                    </div>
+                                    <svg className="ml-3 h-4 w-4 sm:h-5 sm:w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                      <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                                    </svg>
+                                  </div>
                                 </div>
                               </div>
                             </Link>
@@ -949,33 +953,35 @@ const ProfilePage = () => {
               </div>
             )}
 
+            {/* Addresses Tab - Mobile Optimized */}
             {activeTab === 'addresses' && (
               <div className="px-4 py-5 sm:p-6">
-                <div className="md:flex md:items-center md:justify-between">
+                {/* Header with Actions - Mobile Stacked */}
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                   <div className="flex-1 min-w-0">
                     <h2 className="text-lg font-medium leading-6 text-gray-900">Saved Addresses</h2>
                     <p className="mt-1 text-sm text-gray-500">
                       Manage your saved addresses for faster checkout.
                     </p>
                   </div>
-                  <div className="mt-4 flex-shrink-0 flex md:mt-0 md:ml-4">
+                  <div className="flex flex-col sm:flex-row gap-3">
                     <button
                       type="button"
                       onClick={() => fetchUserAddresses()}
                       disabled={isAddressesLoading}
-                      className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 mr-3"
+                      className="w-full sm:w-auto inline-flex justify-center items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-500 disabled:opacity-50"
                     >
                       {isAddressesLoading ? 'Loading...' : 'Refresh'}
                     </button>
                     <button
                       type="button"
                       onClick={handleAddAddress}
-                      className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                      className="w-full sm:w-auto inline-flex justify-center items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-rose-600 hover:bg-rose-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-500"
                     >
                       <svg className="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                         <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
                       </svg>
-                      Add New Address
+                      Add New
                     </button>
                   </div>
                 </div>
@@ -983,10 +989,10 @@ const ProfilePage = () => {
                 <div className="mt-6">
                   {isAddressesLoading ? (
                     <div className="flex justify-center items-center h-32">
-                      <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+                      <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-rose-500"></div>
                     </div>
                   ) : addresses.length === 0 ? (
-                    <div className="text-center py-12">
+                    <div className="text-center py-8 sm:py-12">
                       <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -997,7 +1003,7 @@ const ProfilePage = () => {
                         <button
                           type="button"
                           onClick={handleAddAddress}
-                          className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+                          className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-rose-600 hover:bg-rose-700"
                         >
                           <svg className="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                             <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
@@ -1007,56 +1013,50 @@ const ProfilePage = () => {
                       </div>
                     </div>
                   ) : (
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div className="grid grid-cols-1 gap-4">
                       {addresses.map((address) => (
-                        <div key={address._id || address.id} className="relative rounded-lg border border-gray-300 bg-white px-6 py-5 shadow-sm flex items-center space-x-3 hover:border-gray-400 focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
+                        <div key={address._id || address.id} className="relative rounded-lg border border-gray-300 bg-white px-4 py-4 sm:px-6 sm:py-5 shadow-sm hover:border-gray-400 transition-colors">
                           <div className="flex-1 min-w-0">
-                            <div className="focus:outline-none">
-                              <div className="flex items-center justify-between">
-                                <p className="text-sm font-medium text-gray-900">{address.type}</p>
-                                {address.is_default && (
-                                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                    Default
-                                  </span>
-                                )}
-                              </div>
-                              <div className="mt-2 text-sm text-gray-600">
-                                {/* Handle both structured and legacy address formats */}
-                                {address.firstName && address.lastName ? (
-                                  // Structured address format
-                                  <>
-                                    <p className="font-medium">{address.firstName} {address.lastName}</p>
-                                    <p>{address.street}, {address.city}, {address.state} {address.zipCode}</p>
-                                    <p>{address.country || 'India'}</p>
-                                    <p className="mt-1">{address.phone}</p>
-                                    <p>{address.email}</p>
-                                  </>
-                                ) : (
-                                  // Legacy address format (single address field)
-                                  <p className="font-medium">{address.address || 'Address not available'}</p>
-                                )}
-                              </div>
-                              <div className="mt-2 flex items-center space-x-2">
-                                <div className="flex space-x-2">
+                            <div className="flex items-center justify-between mb-2">
+                              <p className="text-sm font-medium text-gray-900">{address.type}</p>
+                              {address.is_default && (
+                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                  Default
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-sm text-gray-600 space-y-1">
+                              {address.firstName && address.lastName ? (
+                                <>
+                                  <p className="font-medium">{address.firstName} {address.lastName}</p>
+                                  <p className="break-words">{address.street}</p>
+                                  <p>{address.city}, {address.state} {address.zipCode}</p>
+                                  <p>{address.country || 'India'}</p>
+                                  <p className="mt-2">{address.phone}</p>
+                                  <p className="break-words">{address.email}</p>
+                                </>
+                              ) : (
+                                <p className="font-medium break-words">{address.address || 'Address not available'}</p>
+                              )}
+                            </div>
+                            <div className="mt-3 flex items-center space-x-3">
+                              <button
+                                className="text-xs text-rose-600 hover:text-rose-800 font-medium"
+                                onClick={() => handleEditAddress(address)}
+                              >
+                                Edit
+                              </button>
+                              {!address.is_default && (
+                                <>
+                                  <span className="text-gray-300">|</span>
                                   <button
-                                    className="text-xs text-blue-600 hover:text-blue-800 font-medium"
-                                    onClick={() => handleEditAddress(address)}
+                                    className="text-xs text-red-600 hover:text-red-800 font-medium"
+                                    onClick={() => handleDeleteAddress(address)}
                                   >
-                                    Edit
+                                    Delete
                                   </button>
-                                  {!address.is_default && (
-                                    <>
-                                      <span className="text-gray-300">|</span>
-                                      <button
-                                        className="text-xs text-red-600 hover:text-red-800 font-medium"
-                                        onClick={() => handleDeleteAddress(address)}
-                                      >
-                                        Delete
-                                      </button>
-                                    </>
-                                  )}
-                                </div>
-                              </div>
+                                </>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -1065,10 +1065,10 @@ const ProfilePage = () => {
                   )}
                 </div>
 
-                {/* Address Modal */}
+                {/* Address Modal - Mobile Optimized */}
                 {showAddressModal && (
-                  <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-                    <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+                  <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 p-4">
+                    <div className="relative top-4 sm:top-20 mx-auto max-w-sm sm:max-w-md p-5 border shadow-lg rounded-md bg-white">
                       <div className="mt-3">
                         <div className="flex items-center justify-between mb-4">
                           <h3 className="text-lg font-medium text-gray-900">
@@ -1092,7 +1092,7 @@ const ProfilePage = () => {
                                 is_default: false
                               });
                             }}
-                            className="text-gray-400 hover:text-gray-600"
+                            className="text-gray-400 hover:text-gray-600 p-1"
                           >
                             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -1100,7 +1100,7 @@ const ProfilePage = () => {
                           </button>
                         </div>
 
-                        <div className="space-y-4">
+                        <div className="space-y-4 max-h-[70vh] overflow-y-auto px-1">
                           <div>
                             <label htmlFor="addressType" className="block text-sm font-medium text-gray-700">
                               Address Type
@@ -1109,7 +1109,7 @@ const ProfilePage = () => {
                               id="addressType"
                               value={addressForm.type}
                               onChange={(e) => setAddressForm(prev => ({ ...prev, type: e.target.value }))}
-                              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-rose-500 focus:border-rose-500 sm:text-sm"
                             >
                               <option value="Home">Home</option>
                               <option value="Work">Work</option>
@@ -1117,8 +1117,7 @@ const ProfilePage = () => {
                             </select>
                           </div>
 
-                          {/* Name Fields */}
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                               <label htmlFor="firstName" className="block text-sm font-medium text-gray-700">
                                 First Name *
@@ -1128,7 +1127,7 @@ const ProfilePage = () => {
                                 id="firstName"
                                 value={addressForm.firstName}
                                 onChange={(e) => setAddressForm(prev => ({ ...prev, firstName: e.target.value }))}
-                                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-rose-500 focus:border-rose-500 sm:text-sm"
                                 required
                               />
                             </div>
@@ -1141,14 +1140,13 @@ const ProfilePage = () => {
                                 id="lastName"
                                 value={addressForm.lastName}
                                 onChange={(e) => setAddressForm(prev => ({ ...prev, lastName: e.target.value }))}
-                                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-rose-500 focus:border-rose-500 sm:text-sm"
                                 required
                               />
                             </div>
                           </div>
 
-                          {/* Contact Fields */}
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                               <label htmlFor="email" className="block text-sm font-medium text-gray-700">
                                 Email Address *
@@ -1158,7 +1156,7 @@ const ProfilePage = () => {
                                 id="email"
                                 value={addressForm.email}
                                 onChange={(e) => setAddressForm(prev => ({ ...prev, email: e.target.value }))}
-                                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-rose-500 focus:border-rose-500 sm:text-sm"
                                 required
                               />
                             </div>
@@ -1171,13 +1169,12 @@ const ProfilePage = () => {
                                 id="phone"
                                 value={addressForm.phone}
                                 onChange={(e) => setAddressForm(prev => ({ ...prev, phone: e.target.value }))}
-                                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-rose-500 focus:border-rose-500 sm:text-sm"
                                 required
                               />
                             </div>
                           </div>
 
-                          {/* Address Fields */}
                           <div>
                             <label htmlFor="street" className="block text-sm font-medium text-gray-700">
                               Street Address *
@@ -1187,12 +1184,12 @@ const ProfilePage = () => {
                               id="street"
                               value={addressForm.street}
                               onChange={(e) => setAddressForm(prev => ({ ...prev, street: e.target.value }))}
-                              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-rose-500 focus:border-rose-500 sm:text-sm"
                               required
                             />
                           </div>
 
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                             <div>
                               <label htmlFor="city" className="block text-sm font-medium text-gray-700">
                                 City *
@@ -1202,7 +1199,7 @@ const ProfilePage = () => {
                                 id="city"
                                 value={addressForm.city}
                                 onChange={(e) => setAddressForm(prev => ({ ...prev, city: e.target.value }))}
-                                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-rose-500 focus:border-rose-500 sm:text-sm"
                                 required
                               />
                             </div>
@@ -1215,7 +1212,7 @@ const ProfilePage = () => {
                                 id="state"
                                 value={addressForm.state}
                                 onChange={(e) => setAddressForm(prev => ({ ...prev, state: e.target.value }))}
-                                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-rose-500 focus:border-rose-500 sm:text-sm"
                                 required
                               />
                             </div>
@@ -1228,7 +1225,7 @@ const ProfilePage = () => {
                                 id="zipCode"
                                 value={addressForm.zipCode}
                                 onChange={(e) => setAddressForm(prev => ({ ...prev, zipCode: e.target.value }))}
-                                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-rose-500 focus:border-rose-500 sm:text-sm"
                                 required
                               />
                             </div>
@@ -1240,7 +1237,7 @@ const ProfilePage = () => {
                               type="checkbox"
                               checked={addressForm.is_default}
                               onChange={(e) => setAddressForm(prev => ({ ...prev, is_default: e.target.checked }))}
-                              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                              className="h-4 w-4 text-rose-600 focus:ring-rose-500 border-gray-300 rounded"
                             />
                             <label htmlFor="is_default" className="ml-2 block text-sm text-gray-900">
                               Set as default address
@@ -1248,7 +1245,7 @@ const ProfilePage = () => {
                           </div>
                         </div>
 
-                        <div className="flex justify-end space-x-3 mt-6">
+                        <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 mt-6">
                           <button
                             onClick={() => {
                               setShowAddressModal(false);
@@ -1267,13 +1264,13 @@ const ProfilePage = () => {
                                 is_default: false
                               });
                             }}
-                            className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+                            className="w-full sm:w-auto px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
                           >
                             Cancel
                           </button>
                           <button
                             onClick={handleSaveAddress}
-                            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                            className="w-full sm:w-auto px-4 py-2 text-sm font-medium text-white bg-rose-600 border border-transparent rounded-md hover:bg-rose-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-500"
                           >
                             Save Address
                           </button>
@@ -1282,42 +1279,45 @@ const ProfilePage = () => {
                     </div>
                   </div>
                 )}
-
               </div>
             )}
+
+            {/* Reviews Tab - Mobile Optimized */}
             {activeTab === 'reviews' && (
               <div className="px-4 py-5 sm:p-6">
-                <div className="md:flex md:items-center md:justify-between">
-                  <div className="flex-1 min-w-0">
-                    <h2 className="text-lg font-medium leading-6 text-gray-900">My Reviews</h2>
-                    <p className="mt-1 text-sm text-gray-500">
-                      Manage reviews you have posted for products.
-                    </p>
-                  </div>
+                <div className="flex-1 min-w-0 mb-4">
+                  <h2 className="text-lg font-medium leading-6 text-gray-900">My Reviews</h2>
+                  <p className="mt-1 text-sm text-gray-500">
+                    Manage reviews you have posted for products.
+                  </p>
                 </div>
 
-                <div className="mt-6">
+                <div className="mt-4">
                   {isReviewsLoading ? (
                     <div className="flex justify-center p-8">
-                      <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+                      <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-rose-500"></div>
                     </div>
                   ) : reviews.length === 0 ? (
-                    <div className="text-center py-12 text-gray-500">
+                    <div className="text-center py-8 sm:py-12 text-gray-500">
                       You haven't posted any reviews yet.
                     </div>
                   ) : (
                     <div className="space-y-4">
                       {reviews.map((review) => (
-                        <div key={review._id} className="bg-white border rounded-lg p-4 flex gap-4">
-                          <img
-                            src={review.product_id?.image_url?.[0] || 'https://via.placeholder.com/64'}
-                            alt={review.product_id?.name}
-                            className="w-16 h-16 object-cover rounded"
-                          />
+                        <div key={review._id} className="bg-white border rounded-lg p-4 flex flex-col sm:flex-row gap-4">
+                          <div className="flex justify-center sm:justify-start">
+                            <img
+                              src={review.product_id?.image_url?.[0] || 'https://via.placeholder.com/64'}
+                              alt={review.product_id?.name}
+                              className="w-16 h-16 object-cover rounded"
+                            />
+                          </div>
                           <div className="flex-1">
-                            <div className="flex justify-between items-start">
+                            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
                               <div>
-                                <h3 className="font-medium text-gray-900">{review.product_id?.name}</h3>
+                                <h3 className="font-medium text-gray-900 text-sm sm:text-base break-words">
+                                  {review.product_id?.name}
+                                </h3>
                                 <div className="flex items-center gap-1 mt-1">
                                   {Array.from({ length: 5 }).map((_, i) => (
                                     <Star
@@ -1331,7 +1331,7 @@ const ProfilePage = () => {
                                   </span>
                                 </div>
                               </div>
-                              <div className="flex bg-gray-100 rounded px-2 py-1 text-xs font-medium uppercase tracking-wide">
+                              <div className="inline-flex self-start bg-gray-100 rounded px-2 py-1 text-xs font-medium uppercase tracking-wide">
                                 <span className={
                                   review.status === 'approved' ? 'text-green-700' :
                                     review.status === 'rejected' ? 'text-red-700' : 'text-yellow-700'
@@ -1340,13 +1340,13 @@ const ProfilePage = () => {
                                 </span>
                               </div>
                             </div>
-                            <p className="mt-2 text-sm text-gray-600">{review.review}</p>
+                            <p className="mt-2 text-sm text-gray-600 break-words">{review.review}</p>
                             <div className="mt-3 flex justify-end">
                               <button
                                 onClick={() => handleDeleteReview(review._id)}
-                                className="text-red-500 hover:text-red-700 text-sm flex items-center gap-1"
+                                className="text-red-500 hover:text-red-700 text-sm flex items-center gap-1 px-3 py-1"
                               >
-                                <Trash2 size={14} /> Delete Review
+                                <Trash2 size={14} /> Delete
                               </button>
                             </div>
                           </div>

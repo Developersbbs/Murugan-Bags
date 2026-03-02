@@ -1,4 +1,4 @@
-import React, { useState, memo, useMemo } from 'react';
+import React, { useState, memo, useMemo, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../../context/CartContext';
 import { useWishlist } from '../../context/WishlistContext';
@@ -61,6 +61,24 @@ function detectSwatchType(attributes) {
   return 'other';
 }
 
+// ─── Custom hook for detecting mobile ─────────────────────────────────────────
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768); // Standard mobile breakpoint
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  return isMobile;
+}
+
 // ─── Main Component ────────────────────────────────────────────────────────────
 const ProductCard = memo(({ product, viewMode = 'grid', className = '' }) => {
   const { addToCart, isInCart } = useCart();
@@ -69,6 +87,7 @@ const ProductCard = memo(({ product, viewMode = 'grid', className = '' }) => {
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [isUpdatingWishlist, setIsUpdatingWishlist] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+  const isMobile = useIsMobile();
 
   // ── Variants ─────────────────────────────────────────────────────────────────
   const hasVariants = product.product_structure === 'variant' &&
@@ -226,6 +245,16 @@ const ProductCard = memo(({ product, viewMode = 'grid', className = '' }) => {
   const handleSwatchClick = (e, idx) => {
     e.preventDefault(); e.stopPropagation();
     setSelectedVariantIdx(idx);
+  };
+
+  const handleMouseEnter = () => {
+    if (!isMobile) {
+      setIsHovered(true);
+    }
+  };
+
+  const handleMouseLeave = () => {
+    setIsHovered(false);
   };
 
   // ── Colour swatches ────────────────────────────────────────────────────────
@@ -396,8 +425,10 @@ const ProductCard = memo(({ product, viewMode = 'grid', className = '' }) => {
   return (
     <div
       className={`bg-white rounded-xl border border-gray-100 shadow-sm h-full flex flex-col overflow-hidden transition-all duration-300 ${className}`}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      // For mobile, ensure hover state is always false
+      onTouchStart={() => isMobile && setIsHovered(false)}
     >
       {/* ── Image Block ─────────────────────────────────────────── */}
       <div className="relative overflow-hidden bg-gray-50 group">
@@ -418,8 +449,8 @@ const ProductCard = memo(({ product, viewMode = 'grid', className = '' }) => {
             />
           </div>
 
-          {/* Hover Image (Fades in over main image on hover) */}
-          {hoverImage && (
+          {/* Hover Image (Fades in over main image on hover - ONLY on desktop) */}
+          {hoverImage && !isMobile && (
             <div className={`absolute inset-0 bg-white transition-opacity duration-500 ease-in-out ${isHovered ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
               <LazyImage
                 src={hoverImage}
@@ -431,7 +462,7 @@ const ProductCard = memo(({ product, viewMode = 'grid', className = '' }) => {
 
           {/* ── "Select Size" hover overlay ─────────────────────── */}
           <div
-            className={`absolute inset-x-0 bottom-0 z-20 transition-all duration-300 ease-in-out ${isHovered ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0'
+            className={`absolute inset-x-0 bottom-0 z-20 transition-all duration-300 ease-in-out ${!isMobile && isHovered ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0'
               }`}
           >
             <div className="bg-rose-600/90 backdrop-blur-sm text-center py-2.5 px-4 shadow-[0_-4px_10px_rgba(0,0,0,0.1)]">
