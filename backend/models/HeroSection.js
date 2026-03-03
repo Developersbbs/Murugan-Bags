@@ -14,10 +14,17 @@ const heroSectionSchema = new mongoose.Schema({
         type: String,
         trim: true
     },
-    image: {
+     image: {
         type: String,
         required: true
     },
+
+    //  NEW FIELD
+    mobileImage: {
+        type: String,
+        default: ''  
+    },
+    
     ctaText: {
         type: String,
         default: 'Shop Now'

@@ -35,44 +35,58 @@ router.get('/admin', async (req, res) => {
 });
 
 // POST new slide
-router.post('/', upload.single('image'), async (req, res) => {
+router.post('/', async (req, res) => {
     try {
-        let imageUrl = '';
+        const { image, mobileImage, ...rest } = req.body;
 
-        if (req.file) {
-            imageUrl = req.file.firebaseUrl || `/uploads/hero/${req.file.filename}`;
-        } else if (req.body.image) {
-            imageUrl = req.body.image;
-        } else {
-            return res.status(400).json({ success: false, error: 'Image is required' });
+        if (!image) {
+            return res.status(400).json({
+                success: false,
+                error: 'Desktop image is required'
+            });
         }
 
-        // Get highest order to append to end
+        // Get highest order
         const lastSlide = await HeroSection.findOne().sort({ order: -1 });
         const newOrder = lastSlide ? lastSlide.order + 1 : 0;
 
         const newSlide = new HeroSection({
-            ...req.body,
-            image: imageUrl,
+            ...rest,
+            image,
+            mobileImage: mobileImage || '',
             order: newOrder
         });
 
         await newSlide.save();
-        res.status(201).json({ success: true, data: newSlide });
+
+        res.status(201).json({
+            success: true,
+            data: newSlide
+        });
+
     } catch (err) {
-        res.status(500).json({ success: false, error: err.message });
+        res.status(500).json({
+            success: false,
+            error: err.message
+        });
     }
 });
 
 // PUT update slide
-router.put('/:id', upload.single('image'), async (req, res) => {
+router.put('/:id', async (req, res) => {
     try {
-        const updateData = { ...req.body };
+        const { image, mobileImage, ...rest } = req.body;
 
-        if (req.file) {
-            updateData.imageUrl = req.file.firebaseUrl || `/uploads/heros/${req.file.filename}`;
+        const updateData = { ...rest };
+
+        // IMPORTANT FIX 
+        if (image !== undefined) {
+            updateData.image = image;
         }
-        // If req.body.image is present (from Firebase upload), it's already in updateData
+
+        if (mobileImage !== undefined) {
+            updateData.mobileImage = mobileImage;
+        }
 
         const slide = await HeroSection.findByIdAndUpdate(
             req.params.id,
@@ -81,15 +95,24 @@ router.put('/:id', upload.single('image'), async (req, res) => {
         );
 
         if (!slide) {
-            return res.status(404).json({ success: false, error: 'Slide not found' });
+            return res.status(404).json({
+                success: false,
+                error: 'Slide not found'
+            });
         }
 
-        res.json({ success: true, data: slide });
+        res.json({
+            success: true,
+            data: slide
+        });
+
     } catch (err) {
-        res.status(500).json({ success: false, error: err.message });
+        res.status(500).json({
+            success: false,
+            error: err.message
+        });
     }
 });
-
 // DELETE slide
 router.delete('/:id', async (req, res) => {
     try {

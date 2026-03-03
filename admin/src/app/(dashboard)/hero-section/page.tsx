@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { FaPlus, FaTrash, FaEdit, FaImage, FaSave, FaTimes } from 'react-icons/fa';
+import { FaPlus, FaTrash, FaEdit, FaImage, FaSave, FaTimes, FaMobile } from 'react-icons/fa';
 import Image from 'next/image';
 import { uploadFile, deleteFile } from '@/lib/firebase/storage';
 
@@ -11,6 +11,7 @@ interface Slide {
     subtitle: string;
     description: string;
     image: string;
+    mobileImage?: string; // New field for mobile image
     gradient: string;
     ctaText: string;
     ctaLink: string;
@@ -23,8 +24,12 @@ export default function HeroSectionPage() {
     const [loading, setLoading] = useState(true);
     const [isEditing, setIsEditing] = useState(false);
     const [currentSlide, setCurrentSlide] = useState(null);
-    const [imageFile, setImageFile] = useState<File | null>(null);
-    const [previewUrl, setPreviewUrl] = useState('');
+    const [desktopImageFile, setDesktopImageFile] = useState<File | null>(null);
+    const [mobileImageFile, setMobileImageFile] = useState<File | null>(null);
+    const [desktopPreviewUrl, setDesktopPreviewUrl] = useState('');
+    const [mobilePreviewUrl, setMobilePreviewUrl] = useState('');
+    const [removeDesktopImage, setRemoveDesktopImage] = useState(false);
+    const [removeMobileImage, setRemoveMobileImage] = useState(false);
 
     // Form state
     const [formData, setFormData] = useState({
@@ -34,15 +39,13 @@ export default function HeroSectionPage() {
         ctaText: 'Shop Now',
         ctaLink: '/products',
         gradient: 'from-black/90 via-black/40 to-transparent',
-        isActive: true
+        isActive: true,
+        useMobileImage: false // Flag to use mobile image
     });
 
     // Fix: Ensure API_URL always includes /api
     const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
     const API_URL = baseUrl.endsWith('/api') ? baseUrl : `${baseUrl}/api`;
-
-    console.log('API_URL:', API_URL);
-    console.log('NEXT_PUBLIC_API_URL:', process.env.NEXT_PUBLIC_API_URL);
 
     // Helper to handle both external URLs (Firebase) and local paths
     const getImageUrl = (path: string) => {
@@ -78,11 +81,59 @@ export default function HeroSectionPage() {
         }));
     };
 
-    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleDesktopImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
-            setImageFile(file);
-            setPreviewUrl(URL.createObjectURL(file));
+            setDesktopImageFile(file);
+            setDesktopPreviewUrl(URL.createObjectURL(file));
+        }
+    };
+
+    const handleMobileImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            setMobileImageFile(file);
+            setMobilePreviewUrl(URL.createObjectURL(file));
+        }
+    };
+
+    const handleRemoveDesktopImage = async () => {
+        if (!currentSlide?.image) return;
+
+        if (confirm('Remove desktop image?')) {
+            try {
+                if (currentSlide.image.includes('firebase')) {
+                    await deleteFile(currentSlide.image);
+                }
+
+                setDesktopImageFile(null);
+                setDesktopPreviewUrl('');
+                setRemoveDesktopImage(true);
+
+            } catch (err) {
+                console.error(err);
+                alert('Failed to remove desktop image');
+            }
+        }
+    };
+
+    const handleRemoveMobileImage = async () => {
+        if (!currentSlide?.mobileImage) return;
+
+        if (confirm('Remove mobile image?')) {
+            try {
+                if (currentSlide.mobileImage.includes('firebase')) {
+                    await deleteFile(currentSlide.mobileImage);
+                }
+
+                setMobileImageFile(null);
+                setMobilePreviewUrl('');
+                setRemoveMobileImage(true);
+
+            } catch (err) {
+                console.error(err);
+                alert('Failed to remove mobile image');
+            }
         }
     };
 
@@ -94,12 +145,17 @@ export default function HeroSectionPage() {
             ctaText: 'Shop Now',
             ctaLink: '/products',
             gradient: 'from-black/90 via-black/40 to-transparent',
-            isActive: true
+            isActive: true,
+            useMobileImage: false
         });
-        setImageFile(null);
-        setPreviewUrl('');
+        setDesktopImageFile(null);
+        setMobileImageFile(null);
+        setDesktopPreviewUrl('');
+        setMobilePreviewUrl('');
         setIsEditing(false);
         setCurrentSlide(null);
+        setRemoveDesktopImage(false);
+        setRemoveMobileImage(false);
     };
 
     const handleEdit = (slide: Slide) => {
@@ -111,9 +167,13 @@ export default function HeroSectionPage() {
             ctaText: slide.ctaText || 'Shop Now',
             ctaLink: slide.ctaLink || '/products',
             gradient: slide.gradient || 'from-black/90 via-black/40 to-transparent',
-            isActive: slide.isActive
+            isActive: slide.isActive,
+            useMobileImage: !!slide.mobileImage
         });
-        setPreviewUrl(getImageUrl(slide.image));
+        setDesktopPreviewUrl(getImageUrl(slide.image));
+        if (slide.mobileImage) {
+            setMobilePreviewUrl(getImageUrl(slide.mobileImage));
+        }
         setIsEditing(true);
     };
 
@@ -121,13 +181,18 @@ export default function HeroSectionPage() {
         if (!confirm('Are you sure you want to delete this slide?')) return;
 
         try {
-            // Delete from Firebase if it's a firebase URL
-            if (slider.image && slider.image.startsWith('https://firebasestorage')) {
-                try {
-                    await deleteFile(slider.image);
-                } catch (err) {
-                    console.error('Error deleting image from Firebase:', err);
-                    // Continue with DB deletion even if image deletion fails
+            // Delete images from Firebase if they exist
+            const imageUrls = [slider.image];
+            if (slider.mobileImage) imageUrls.push(slider.mobileImage);
+
+            for (const imageUrl of imageUrls) {
+                if (imageUrl && imageUrl.startsWith('https://firebasestorage')) {
+                    try {
+                        await deleteFile(imageUrl);
+                    } catch (err) {
+                        console.error('Error deleting image from Firebase:', err);
+                        // Continue with DB deletion even if image deletion fails
+                    }
                 }
             }
 
@@ -149,36 +214,43 @@ export default function HeroSectionPage() {
         e.preventDefault();
 
         try {
-            let imageUrl = '';
+            let desktopImageUrl = '';
+            let mobileImageUrl = '';
 
-            // Handle image upload to Firebase if a new file is selected
-            if (imageFile) {
-                console.log('Uploading image to Firebase...');
-                imageUrl = await uploadFile(imageFile, 'hero-section');
-                console.log('Image uploaded:', imageUrl);
+            // Upload desktop image to Firebase if a new file is selected
+            if (desktopImageFile) {
+                console.log('Uploading desktop image to Firebase...');
+                desktopImageUrl = await uploadFile(desktopImageFile, 'hero-section/desktop');
+                console.log('Desktop image uploaded:', desktopImageUrl);
+            }
+
+            // Upload mobile image to Firebase if a new file is selected
+            if (mobileImageFile) {
+                console.log('Uploading mobile image to Firebase...');
+                mobileImageUrl = await uploadFile(mobileImageFile, 'hero-section/mobile');
+                console.log('Mobile image uploaded:', mobileImageUrl);
             }
 
             // Prepare data for backend
-            const payload: any = { ...formData };
-            if (imageUrl) {
-                payload.image = imageUrl;
-            }
+            const payload: any = {
+                ...formData,
+                image: removeDesktopImage
+                    ? ''
+                    : (desktopImageUrl || currentSlide?.image || ''),
+
+                mobileImage: removeMobileImage
+                    ? ''
+                    : (mobileImageUrl || currentSlide?.mobileImage || '')
+            };
+
+            // Remove the useMobileImage flag from payload as it's not needed in backend
+            delete payload.useMobileImage;
 
             const url = isEditing && currentSlide
                 ? `${API_URL}/hero-section/${currentSlide._id}`
                 : `${API_URL}/hero-section`;
 
             const method = isEditing && currentSlide ? 'PUT' : 'POST';
-
-            // If we are editing and have a current slide with a Firebase URL, 
-            // and we are uploading a new image, we should delete the old one.
-            // Note: This is an optimization we can add, but for now let's focus on the upload workflow.
-
-            // Construct request
-            // Note: We are now sending JSON instead of FormData because we are sending a URL string
-            // However, the backend uses `upload.single('image')` which expects multipart/form-data
-            // BUT our modified backend can also handle JSON body if `req.file` is missing.
-            // So let's send JSON.
 
             const res = await fetch(url, {
                 method,
@@ -192,7 +264,6 @@ export default function HeroSectionPage() {
 
             if (!res.ok) {
                 const errorText = await res.text();
-                // console.error('Error response:', errorText);
                 throw new Error(`Failed to save slide: ${res.status} ${res.statusText}`);
             }
 
@@ -238,137 +309,212 @@ export default function HeroSectionPage() {
                         </button>
                     </div>
 
-                    <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-1">Title</label>
-                                <input
-                                    type="text"
-                                    name="title"
-                                    value={formData.title}
-                                    onChange={handleInputChange}
-                                    className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent"
-                                    required
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-1">Subtitle</label>
-                                <input
-                                    type="text"
-                                    name="subtitle"
-                                    value={formData.subtitle}
-                                    onChange={handleInputChange}
-                                    className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-1">Description</label>
-                                <textarea
-                                    name="description"
-                                    value={formData.description}
-                                    onChange={handleInputChange}
-                                    rows="3"
-                                    className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent"
-                                />
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4">
+                    <form onSubmit={handleSubmit} className="space-y-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="space-y-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-1">CTA Text</label>
+                                    <label className="block text-sm font-medium text-slate-700 mb-1">Title</label>
                                     <input
                                         type="text"
-                                        name="ctaText"
-                                        value={formData.ctaText}
+                                        name="title"
+                                        value={formData.title}
+                                        onChange={handleInputChange}
+                                        className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent"
+                                        required
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-1">Subtitle</label>
+                                    <input
+                                        type="text"
+                                        name="subtitle"
+                                        value={formData.subtitle}
                                         onChange={handleInputChange}
                                         className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent"
                                     />
                                 </div>
+
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-1">CTA Link</label>
-                                    <input
-                                        type="text"
-                                        name="ctaLink"
-                                        value={formData.ctaLink}
+                                    <label className="block text-sm font-medium text-slate-700 mb-1">Description</label>
+                                    <textarea
+                                        name="description"
+                                        value={formData.description}
                                         onChange={handleInputChange}
+                                        rows="3"
                                         className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent"
                                     />
                                 </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 mb-1">CTA Text</label>
+                                        <input
+                                            type="text"
+                                            name="ctaText"
+                                            value={formData.ctaText}
+                                            onChange={handleInputChange}
+                                            className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 mb-1">CTA Link</label>
+                                        <input
+                                            type="text"
+                                            name="ctaLink"
+                                            value={formData.ctaLink}
+                                            onChange={handleInputChange}
+                                            className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="space-y-4">
+
+                                {/* ================= DESKTOP IMAGE ================= */}
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-1 flex items-center gap-2">
+                                        <FaImage className="text-rose-600" /> Desktop Background Image (16:9 recommended)
+                                    </label>
+
+                                    <div className="border-2 border-dashed border-slate-300 rounded-lg p-4 text-center hover:border-rose-500 transition-colors">
+
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            onChange={handleDesktopImageChange}
+                                            className="hidden"
+                                            id="desktop-image-upload"
+                                        />
+
+                                        <label htmlFor="desktop-image-upload" className="cursor-pointer flex flex-col items-center">
+
+                                            {/* Preview */}
+                                            {desktopPreviewUrl ? (
+                                                <>
+                                                    <div className="relative w-full h-48 mb-2">
+                                                        <Image
+                                                            src={desktopPreviewUrl}
+                                                            alt="Desktop Preview"
+                                                            fill
+                                                            className="object-cover rounded-lg"
+                                                        />
+                                                    </div>
+
+                                                    {/* REMOVE BUTTON */}
+                                                    <button
+                                                        type="button"
+                                                        onClick={handleRemoveDesktopImage}
+                                                        className="text-xs text-red-500 hover:text-red-700 mt-1"
+                                                    >
+                                                        Remove Desktop Image
+                                                    </button>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <FaImage className="w-12 h-12 text-slate-300 mb-2" />
+                                                    {currentSlide?.image && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={handleRemoveDesktopImage}
+                                                            className="text-xs text-red-500 hover:text-red-700 mt-1"
+                                                        >
+                                                            Remove Existing Desktop Image
+                                                        </button>
+                                                    )}
+                                                </>
+                                            )}
+
+                                            <span className="text-sm text-slate-500 mt-2">
+                                                Click to upload desktop image
+                                            </span>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                {/* ================= MOBILE IMAGE ================= */}
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-1 flex items-center gap-2">
+                                        <FaMobile className="text-rose-600" /> Mobile Background Image (9:16 recommended)
+                                    </label>
+
+                                    <div className="border-2 border-dashed border-slate-300 rounded-lg p-4 text-center hover:border-rose-500 transition-colors">
+
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            onChange={handleMobileImageChange}
+                                            className="hidden"
+                                            id="mobile-image-upload"
+                                        />
+
+                                        <label htmlFor="mobile-image-upload" className="cursor-pointer flex flex-col items-center">
+
+                                            {/* Preview */}
+                                            {mobilePreviewUrl ? (
+                                                <>
+                                                    <div className="relative w-full h-48 mb-2">
+                                                        <Image
+                                                            src={mobilePreviewUrl}
+                                                            alt="Mobile Preview"
+                                                            fill
+                                                            className="object-cover rounded-lg"
+                                                        />
+                                                    </div>
+
+                                                    {/* REMOVE BUTTON */}
+                                                    <button
+                                                        type="button"
+                                                        onClick={handleRemoveMobileImage}
+                                                        className="text-xs text-red-500 hover:text-red-700 mt-1"
+                                                    >
+                                                        Remove Mobile Image
+                                                    </button>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <FaMobile className="w-12 h-12 text-slate-300 mb-2" />
+                                                    {currentSlide?.mobileImage && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={handleRemoveMobileImage}
+                                                            className="text-xs text-red-500 hover:text-red-700 mt-1"
+                                                        >
+                                                            Remove Existing Mobile Image
+                                                        </button>
+                                                    )}
+                                                </>
+                                            )}
+
+                                            <span className="text-sm text-slate-500 mt-2">
+                                                Click to upload mobile image
+                                            </span>
+                                        </label>
+                                    </div>
+
+                                    <p className="text-xs text-slate-500 mt-1">
+                                        For best results, use a 9:16 aspect ratio image (e.g., 1080x1920px)
+                                    </p>
+                                </div>
+
                             </div>
                         </div>
 
-                        <div className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-1">Background Image</label>
-                                <div className="border-2 border-dashed border-slate-300 rounded-lg p-4 text-center hover:border-rose-500 transition-colors">
-                                    <input
-                                        type="file"
-                                        accept="image/*"
-                                        onChange={handleImageChange}
-                                        className="hidden"
-                                        id="image-upload"
-                                    />
-                                    <label htmlFor="image-upload" className="cursor-pointer flex flex-col items-center">
-                                        {previewUrl ? (
-                                            <div className="relative w-full h-48 mb-2">
-                                                <Image
-                                                    src={previewUrl}
-                                                    alt="Preview"
-                                                    fill
-                                                    className="object-cover rounded-lg"
-                                                />
-                                            </div>
-                                        ) : (
-                                            <FaImage className="w-12 h-12 text-slate-300 mb-2" />
-                                        )}
-                                        <span className="text-sm text-slate-500">Click to upload image</span>
-                                    </label>
-                                </div>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-1">Gradient Overlay</label>
-                                <select
-                                    name="gradient"
-                                    value={formData.gradient}
-                                    onChange={handleInputChange}
-                                    className="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent"
-                                >
-                                    <option value="from-black/90 via-black/40 to-transparent">Black Fade</option>
-                                    <option value="from-slate-900/90 via-slate-900/40 to-transparent">Slate Fade</option>
-                                    <option value="from-rose-900/90 via-rose-900/40 to-transparent">Rose Fade</option>
-                                    <option value="from-blue-900/90 via-blue-900/40 to-transparent">Blue Fade</option>
-                                </select>
-                            </div>
-
-                            <div className="flex items-center gap-2">
-                                <input
-                                    type="checkbox"
-                                    name="isActive"
-                                    checked={formData.isActive}
-                                    onChange={handleInputChange}
-                                    id="isActive"
-                                    className="w-4 h-4 text-rose-600 rounded focus:ring-rose-500"
-                                />
-                                <label htmlFor="isActive" className="text-sm font-medium text-slate-700">Active</label>
-                            </div>
-
-                            <div className="flex justify-end gap-3 mt-6">
-                                <button
-                                    type="button"
-                                    onClick={resetForm}
-                                    className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    type="submit"
-                                    className="flex items-center gap-2 bg-rose-600 text-white px-6 py-2 rounded-lg hover:bg-rose-700 transition-colors"
-                                >
-                                    <FaSave /> Save Slide
-                                </button>
-                            </div>
+                        <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-slate-200">
+                            <button
+                                type="button"
+                                onClick={resetForm}
+                                className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="submit"
+                                className="flex items-center gap-2 bg-rose-600 text-white px-6 py-2 rounded-lg hover:bg-rose-700 transition-colors"
+                            >
+                                <FaSave /> Save Slide
+                            </button>
                         </div>
                     </form>
                 </div>
@@ -385,6 +531,15 @@ export default function HeroSectionPage() {
                                 className="object-cover"
                             />
                             <div className={`absolute inset-0 bg-gradient-to-r ${slide.gradient}`}></div>
+
+                            {/* Mobile image indicator */}
+                            {slide.mobileImage && (
+                                <div className="absolute top-2 left-2 bg-white/90 text-slate-700 px-2 py-1 rounded-full text-xs flex items-center gap-1">
+                                    <FaMobile size={10} />
+                                    <span>Has mobile image</span>
+                                </div>
+                            )}
+
                             <div className="absolute bottom-4 left-4 right-4 text-white">
                                 <h3 className="font-bold text-lg truncate">{slide.title}</h3>
                                 <p className="text-sm opacity-90 truncate">{slide.subtitle}</p>

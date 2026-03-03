@@ -250,6 +250,7 @@ export const CartProvider = ({ children }) => {
             quantity: item.quantity || 1,
             image: displayImage || null,
             variant: item.variant_attributes || {},
+            variant_sku: item.variant_sku || null, // Include SKU for stock lookup
             stock: item.product_id.stock || 999,
             isCombo: isCombo
           };
@@ -386,6 +387,7 @@ export const CartProvider = ({ children }) => {
                 quantity: item.quantity || 1,
                 image: variantImage || (Array.isArray(item.product_id.image_url) ? item.product_id.image_url[0] : item.product_id.image_url) || item.product_image || null,
                 variant: item.variant_attributes || {},
+                variant_sku: item.variant_sku || null, // Include SKU for stock lookup
                 stock: item.product_id.stock || 999
               };
             });

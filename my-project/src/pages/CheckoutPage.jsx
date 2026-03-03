@@ -315,7 +315,10 @@ const CheckoutPage = () => {
         items: cartItems.map(item => ({
           product_id: item.id || item.product_id,
           quantity: item.quantity,
-          unit_price: item.price
+          unit_price: item.price,
+          // Include variant info so backend can resolve variant ID
+          variant_sku: item.variant_sku,
+          variant_attributes: item.variant || {}
         })),
         shipping_cost: shipping, // Use calculated shipping cost
         coupon_id: null
@@ -831,7 +834,7 @@ const CheckoutPage = () => {
                   </div>
                 )}
 
-                <div className="flex items-center">
+                {/* <div className="flex items-center">
                   <input
                     type="radio"
                     id="credit-card"
@@ -848,9 +851,9 @@ const CheckoutPage = () => {
                       Coming Soon
                     </span>
                   </label>
-                </div>
+                </div> */}
 
-                <div className="flex items-center">
+                {/* <div className="flex items-center">
                   <input
                     type="radio"
                     id="paypal"
@@ -867,7 +870,7 @@ const CheckoutPage = () => {
                       Coming Soon
                     </span>
                   </label>
-                </div>
+                </div> */}
               </div>
             </div>
 

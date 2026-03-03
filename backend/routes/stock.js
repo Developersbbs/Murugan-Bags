@@ -7,16 +7,29 @@ const router = express.Router();
 async function syncProductWithStock(stockEntry) {
   try {
     console.log('=== SYNCING PRODUCT WITH STOCK ===');
-    console.log('Stock Entry:', {
-      productId: stockEntry.productId,
-      variantId: stockEntry.variantId,
-      quantity: stockEntry.quantity,
-      minStock: stockEntry.minStock
+
+    // ✅ FIX: Re-fetch the stock entry fresh from DB to ensure we have
+    // the latest quantity AND minStock (especially after $inc updates
+    // where the returned doc might have stale minStock = 0)
+    const freshStock = await Stock.findById(stockEntry._id);
+
+    if (!freshStock) {
+      console.error('Could not re-fetch stock entry:', stockEntry._id);
+      // Fall back to passed-in entry
+    }
+
+    const entry = freshStock || stockEntry;
+
+    console.log('Stock Entry (fresh):', {
+      productId: entry.productId,
+      variantId: entry.variantId,
+      quantity: entry.quantity,
+      minStock: entry.minStock
     });
 
-    const product = await Product.findById(stockEntry.productId);
+    const product = await Product.findById(entry.productId);
     if (!product) {
-      console.error('Product not found for stock entry:', stockEntry.productId);
+      console.error('Product not found for stock entry:', entry.productId);
       return { success: false, message: 'Product not found' };
     }
 
@@ -29,85 +42,83 @@ async function syncProductWithStock(stockEntry) {
     let updateData = {};
     let statusMessage = '';
 
+    // ✅ FIX: Use fresh entry values so minStock is never stale
+    const currentQty = entry.quantity ?? 0;
+    const currentMin = entry.minStock ?? 0;
+
+    const isOutOfStock = currentQty <= 0;
+    const isLowStock   = currentQty > 0 && currentQty <= currentMin;
+
     // Update variant stock
-    if (stockEntry.variantId) {
-      console.log('Updating variant stock for variantId:', stockEntry.variantId);
+    if (entry.variantId) {
+      console.log('Updating variant stock for variantId:', entry.variantId);
 
       // Find the variant in the product
       const variantIndex = product.product_variants.findIndex(
-        v => v._id.toString() === stockEntry.variantId.toString()
+        v => v._id.toString() === entry.variantId.toString()
       );
 
       if (variantIndex === -1) {
-        console.error('Variant not found:', stockEntry.variantId);
+        console.error('Variant not found:', entry.variantId);
         return { success: false, message: 'Variant not found' };
       }
 
       // Update the specific variant's stock and minStock
-      updateData[`product_variants.${variantIndex}.stock`] = stockEntry.quantity;
-      updateData[`product_variants.${variantIndex}.minStock`] = stockEntry.minStock;
+      updateData[`product_variants.${variantIndex}.stock`]    = currentQty;
+      updateData[`product_variants.${variantIndex}.minStock`] = currentMin;
 
-      // Determine variant status and published state
-      const isOutOfStock = stockEntry.quantity <= 0;
-      const isLowStock = stockEntry.quantity > 0 && stockEntry.quantity <= stockEntry.minStock;
-
-      // Update variant status and published state
       if (isOutOfStock) {
-        updateData[`product_variants.${variantIndex}.status`] = 'out_of_stock';
-        updateData[`product_variants.${variantIndex}.published`] = true; // Keep published for out_of_stock
+        updateData[`product_variants.${variantIndex}.status`]    = 'out_of_stock';
+        updateData[`product_variants.${variantIndex}.published`] = true;
         statusMessage = `Variant out of stock`;
       } else if (isLowStock) {
-        updateData[`product_variants.${variantIndex}.status`] = 'low_stock';
-        updateData[`product_variants.${variantIndex}.published`] = true; // Keep published for low_stock
-        statusMessage = `Variant low stock (${stockEntry.quantity}/${stockEntry.minStock})`;
+        updateData[`product_variants.${variantIndex}.status`]    = 'low_stock';
+        updateData[`product_variants.${variantIndex}.published`] = true;
+        statusMessage = `Variant low stock (${currentQty}/${currentMin})`;
       } else {
-        updateData[`product_variants.${variantIndex}.status`] = 'selling';
-        updateData[`product_variants.${variantIndex}.published`] = true; // Ensure published for selling
-        statusMessage = `Variant stock updated (${stockEntry.quantity}/${stockEntry.minStock})`;
+        updateData[`product_variants.${variantIndex}.status`]    = 'selling';
+        updateData[`product_variants.${variantIndex}.published`] = true;
+        statusMessage = `Variant stock updated (${currentQty}/${currentMin})`;
       }
 
       console.log('Variant update data:', updateData);
 
       // Apply the update
       await Product.findByIdAndUpdate(
-        stockEntry.productId,
+        entry.productId,
         { $set: updateData },
         { new: true }
       );
 
       // After updating variant, check if product should be updated based on ALL variants
-      const updatedProduct = await Product.findById(stockEntry.productId);
+      const updatedProduct = await Product.findById(entry.productId);
       await updateProductStatusBasedOnVariants(updatedProduct);
 
     } else {
       // Update base product stock (for simple products)
       console.log('Updating base product stock');
 
-      updateData.baseStock = stockEntry.quantity;
-      updateData.minStock = stockEntry.minStock;
-
-      // Determine product status and published state
-      const isOutOfStock = stockEntry.quantity <= 0;
-      const isLowStock = stockEntry.quantity > 0 && stockEntry.quantity <= stockEntry.minStock;
+      updateData.baseStock = currentQty;
+      updateData.minStock  = currentMin;
 
       if (isOutOfStock) {
-        updateData.status = 'out_of_stock';
-        updateData.published = true; // Keep published for out_of_stock
+        updateData.status    = 'out_of_stock';
+        updateData.published = true;
         statusMessage = `Product out of stock`;
       } else if (isLowStock) {
-        updateData.status = 'low_stock';
-        updateData.published = true; // Keep published for low_stock
-        statusMessage = `Product low stock (${stockEntry.quantity}/${stockEntry.minStock})`;
+        updateData.status    = 'low_stock';
+        updateData.published = true;
+        statusMessage = `Product low stock (${currentQty}/${currentMin})`;
       } else {
-        updateData.status = 'selling';
-        updateData.published = true; // Ensure published for selling
-        statusMessage = `Product stock updated (${stockEntry.quantity}/${stockEntry.minStock})`;
+        updateData.status    = 'selling';
+        updateData.published = true;
+        statusMessage = `Product stock updated (${currentQty}/${currentMin})`;
       }
 
       console.log('Base product update data:', updateData);
 
       await Product.findByIdAndUpdate(
-        stockEntry.productId,
+        entry.productId,
         updateData,
         { new: true }
       );
@@ -156,24 +167,24 @@ async function updateProductStatusBasedOnVariants(product) {
       // No available variants
       if (outOfStockVariants.length === product.product_variants.length) {
         // All variants are out of stock
-        productUpdate.status = 'out_of_stock';
-        productUpdate.published = true; // Keep published for out_of_stock
+        productUpdate.status    = 'out_of_stock';
+        productUpdate.published = true;
         console.log('All variants out of stock');
       } else {
         // Some variants are draft or unpublished
-        productUpdate.status = 'draft';
-        productUpdate.published = false; // Unpublish for draft status
+        productUpdate.status    = 'draft';
+        productUpdate.published = false;
         console.log('No available variants - setting to draft');
       }
     } else if (lowStockVariants.length > 0 && availableVariants.length === lowStockVariants.length) {
       // All available variants are low stock
-      productUpdate.status = 'low_stock';
-      productUpdate.published = true; // Keep published for low_stock
+      productUpdate.status    = 'low_stock';
+      productUpdate.published = true;
       console.log('All available variants are low stock');
     } else {
       // At least one variant is selling normally
-      productUpdate.status = 'selling';
-      productUpdate.published = true; // Ensure published for selling
+      productUpdate.status    = 'selling';
+      productUpdate.published = true;
       console.log('Product has variants available for sale');
     }
 
@@ -247,11 +258,9 @@ router.get("/", async (req, res) => {
 
       // If query.productId is already set, intersect the results
       if (query.productId) {
-        // If searching a specific product ID that is NOT in the search results, return empty
         if (!matchingProductIds.some(id => id.toString() === query.productId.toString())) {
-          query.productId = null; // No matches possible
+          query.productId = null;
         }
-        // Otherwise keep original productId constraint
       } else {
         query.productId = { $in: matchingProductIds };
       }
@@ -304,7 +313,7 @@ router.get("/:id", async (req, res) => {
           path: 'product_variants',
           select: 'slug name'
         }
-      })
+      });
 
     if (!stock) {
       return res.status(404).json({
@@ -396,7 +405,7 @@ router.put("/:id", async (req, res) => {
           path: 'product_variants',
           select: 'slug name'
         }
-      })
+      });
 
     if (!stock) {
       return res.status(404).json({
@@ -450,7 +459,7 @@ router.patch("/:id/quantity", async (req, res) => {
           path: 'product_variants',
           select: 'slug name'
         }
-      })
+      });
 
     if (!stock) {
       return res.status(404).json({
@@ -506,8 +515,8 @@ router.delete("/:id", async (req, res) => {
             stock.productId,
             {
               $set: {
-                [`product_variants.${variantIndex}.stock`]: 0,
-                [`product_variants.${variantIndex}.status`]: 'out_of_stock',
+                [`product_variants.${variantIndex}.stock`]:     0,
+                [`product_variants.${variantIndex}.status`]:    'out_of_stock',
                 [`product_variants.${variantIndex}.published`]: true
               }
             }
@@ -552,7 +561,7 @@ router.post("/bulk-update", async (req, res) => {
       });
     }
 
-    const results = [];
+    const results    = [];
     const syncResults = [];
 
     for (const update of updates) {
@@ -576,7 +585,7 @@ router.post("/bulk-update", async (req, res) => {
           // Sync product with updated stock
           const syncResult = await syncProductWithStock(stock);
           syncResults.push({
-            stockId: stock._id,
+            stockId:   stock._id,
             productId: stock.productId,
             variantId: stock.variantId,
             ...syncResult
@@ -696,7 +705,7 @@ router.get("/export/csv", async (req, res) => {
 
       return [
         stock.productId?.name || 'Unknown',
-        stock.productId?.sku || 'N/A',
+        stock.productId?.sku  || 'N/A',
         stock.productId?.product_type || 'physical',
         variant ? variant.slug : 'Base Product',
         stock.quantity,
@@ -791,21 +800,21 @@ router.get("/alerts/low-stock", async (req, res) => {
       );
 
       return {
-        _id: stock._id,
-        productId: stock.productId?._id,
-        productName: stock.productId?.name,
-        productSku: stock.productId?.sku,
-        productType: stock.productId?.product_type,
-        variantId: stock.variantId,
-        variantName: variant?.name,
-        variantSlug: variant?.slug,
-        quantity: stock.quantity,
-        minStock: stock.minStock,
-        shortfall: stock.minStock - stock.quantity,
+        _id:           stock._id,
+        productId:     stock.productId?._id,
+        productName:   stock.productId?.name,
+        productSku:    stock.productId?.sku,
+        productType:   stock.productId?.product_type,
+        variantId:     stock.variantId,
+        variantName:   variant?.name,
+        variantSlug:   variant?.slug,
+        quantity:      stock.quantity,
+        minStock:      stock.minStock,
+        shortfall:     stock.minStock - stock.quantity,
         severity: stock.quantity <= 0 ? 'critical' :
           stock.quantity <= (stock.minStock * 0.5) ? 'high' : 'medium',
         isPublished: variant ? variant.published : stock.productId?.published,
-        status: variant ? variant.status : stock.productId?.status,
+        status:      variant ? variant.status    : stock.productId?.status,
         notes: stock.notes
       };
     });
@@ -815,8 +824,8 @@ router.get("/alerts/low-stock", async (req, res) => {
       data: alerts,
       count: alerts.length,
       criticalCount: alerts.filter(a => a.severity === 'critical').length,
-      highCount: alerts.filter(a => a.severity === 'high').length,
-      mediumCount: alerts.filter(a => a.severity === 'medium').length
+      highCount:     alerts.filter(a => a.severity === 'high').length,
+      mediumCount:   alerts.filter(a => a.severity === 'medium').length
     });
   } catch (err) {
     console.error('Low stock alerts error:', err);
@@ -827,7 +836,6 @@ router.get("/alerts/low-stock", async (req, res) => {
   }
 });
 
-// ✅ FIX: Export both the router AND the syncProductWithStock helper
-// so orders.js can import and use it without circular dependency issues
+// Export both the router AND the syncProductWithStock helper
 module.exports = router;
 module.exports.syncProductWithStock = syncProductWithStock;
