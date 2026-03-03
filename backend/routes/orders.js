@@ -5,9 +5,9 @@ const OrderItem = require("../models/OrderItem.js");
 const Cart = require("../models/Cart.js");
 const Stock = require("../models/Stock.js");
 const Product = require("../models/Product.js");
-const { authenticateToken } = require('../middleware/auth');
-const { authenticateFirebaseToken } = require('../middleware/firebaseAuth');
-const { authenticateHybridToken } = require('../middleware/hybridAuth');
+const { authenticateToken } = require("../middleware/auth");
+const { authenticateFirebaseToken } = require("../middleware/firebaseAuth");
+const { authenticateHybridToken } = require("../middleware/hybridAuth");
 const router = express.Router();
 const { syncProductWithStock } = require("./stock");
 
@@ -16,48 +16,52 @@ router.get("/test", (req, res) => {
   res.json({
     success: true,
     message: "Orders routes are working",
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
 });
 
 // Check if user has purchased a specific product
-router.get("/check-purchase/:productId", authenticateToken, async (req, res) => {
-  try {
-    const { productId } = req.params;
-    const Customer = require('../models/Customer');
+router.get(
+  "/check-purchase/:productId",
+  authenticateToken,
+  async (req, res) => {
+    try {
+      const { productId } = req.params;
+      const Customer = require("../models/Customer");
 
-    // Use authenticated user's ID
-    const customerId = req.user.id;
+      // Use authenticated user's ID
+      const customerId = req.user.id;
 
-    // For JWT auth, find customer by ID
-    const customer = await Customer.findById(customerId);
+      // For JWT auth, find customer by ID
+      const customer = await Customer.findById(customerId);
 
-    if (!customer) {
-      return res.json({
+      if (!customer) {
+        return res.json({
+          success: true,
+          hasPurchased: false,
+        });
+      }
+
+      // Check if customer has purchased this product using new embedded items schema
+      const hasPurchased = await Order.findOne({
+        customer_id: customer._id,
+        status: { $in: ["processing", "shipped", "delivered"] },
+        "items.product_id": productId,
+      });
+
+      res.json({
         success: true,
-        hasPurchased: false
+        hasPurchased: !!hasPurchased,
+      });
+    } catch (err) {
+      console.error("Error checking purchase status:", err);
+      res.status(500).json({
+        success: false,
+        error: err.message,
       });
     }
-
-    // Check if customer has purchased this product using new embedded items schema
-    const hasPurchased = await Order.findOne({
-      customer_id: customer._id,
-      status: { $in: ['processing', 'shipped', 'delivered'] },
-      'items.product_id': productId
-    });
-
-    res.json({
-      success: true,
-      hasPurchased: !!hasPurchased
-    });
-  } catch (err) {
-    console.error("Error checking purchase status:", err);
-    res.status(500).json({
-      success: false,
-      error: err.message
-    });
-  }
-});
+  },
+);
 
 // GET all orders with pagination and filtering
 router.get("/", async (req, res) => {
@@ -69,12 +73,12 @@ router.get("/", async (req, res) => {
       status,
       method,
       startDate,
-      endDate
+      endDate,
     } = req.query;
 
-    const pageNum  = parseInt(page);
+    const pageNum = parseInt(page);
     const limitNum = parseInt(limit);
-    const skip     = (pageNum - 1) * limitNum;
+    const skip = (pageNum - 1) * limitNum;
 
     // Build filter query
     let filter = {};
@@ -82,8 +86,8 @@ router.get("/", async (req, res) => {
     if (search) {
       filter.$or = [
         { invoice_no: { $regex: search, $options: "i" } },
-        { "shipping_address.name":  { $regex: search, $options: "i" } },
-        { "shipping_address.email": { $regex: search, $options: "i" } }
+        { "shipping_address.name": { $regex: search, $options: "i" } },
+        { "shipping_address.email": { $regex: search, $options: "i" } },
       ];
     }
 
@@ -98,7 +102,7 @@ router.get("/", async (req, res) => {
     if (startDate || endDate) {
       filter.order_time = {};
       if (startDate) filter.order_time.$gte = new Date(startDate);
-      if (endDate)   filter.order_time.$lte = new Date(endDate);
+      if (endDate) filter.order_time.$lte = new Date(endDate);
     }
 
     // Execute queries
@@ -108,31 +112,32 @@ router.get("/", async (req, res) => {
         select: "name email phone",
         model: "Customers",
       })
-      .select('-__v')
+      .select("-__v")
       .sort({ order_time: -1 })
       .skip(skip)
       .limit(limitNum);
 
-    const total      = await Order.countDocuments(filter);
+    const total = await Order.countDocuments(filter);
     const totalPages = Math.ceil(total / limitNum);
 
     // Transform orders to match frontend structure
-    const transformedOrders = orders.map(order => {
+    const transformedOrders = orders.map((order) => {
       const transformed = {
         ...order.toObject(),
         id: order._id.toString(),
         customers: {
           name: order.customer_id?.name || order.shipping_address?.name,
-          address: `${order.shipping_address?.street || ''}, ${order.shipping_address?.city || ''}, ${order.shipping_address?.state || ''} ${order.shipping_address?.zipCode || ''}`.trim(),
-          phone: order.shipping_address?.phone || order.customer_id?.phone
+          address:
+            `${order.shipping_address?.street || ""}, ${order.shipping_address?.city || ""}, ${order.shipping_address?.state || ""} ${order.shipping_address?.zipCode || ""}`.trim(),
+          phone: order.shipping_address?.phone || order.customer_id?.phone,
         },
-        customer: order.customer_id
+        customer: order.customer_id,
       };
 
-      console.log('🔍 Transformed order:', {
+      console.log("🔍 Transformed order:", {
         _id: order._id,
         id: transformed.id,
-        invoice_no: order.invoice_no
+        invoice_no: order.invoice_no,
       });
 
       return transformed;
@@ -144,178 +149,236 @@ router.get("/", async (req, res) => {
       pagination: {
         total,
         current: pageNum,
-        limit:   limitNum,
-        pages:   totalPages,
-        prev: pageNum > 1          ? pageNum - 1 : null,
+        limit: limitNum,
+        pages: totalPages,
+        prev: pageNum > 1 ? pageNum - 1 : null,
         next: pageNum < totalPages ? pageNum + 1 : null,
       },
     });
   } catch (err) {
-    console.error('Error fetching orders:', err);
+    console.error("Error fetching orders:", err);
     res.status(500).json({
       success: false,
-      error: err.message
+      error: err.message,
     });
   }
 });
 
 // GET orders by customer ID
-router.get("/customer/:customerId", authenticateHybridToken, async (req, res) => {
-  try {
-    const orders = await Order.find({ customer_id: req.params.customerId })
-      .sort({ order_time: -1 });
+router.get(
+  "/customer/:customerId",
+  authenticateHybridToken,
+  async (req, res) => {
+    try {
+      const orders = await Order.find({
+        customer_id: req.params.customerId,
+      }).sort({ order_time: -1 });
 
-    // Get order items for each order
-    const ordersWithItems = await Promise.all(
-      orders.map(async (order) => {
-        const items = await OrderItem.find({ order_id: order.invoice_no });
-        return {
-          ...order.toObject(),
-          items: items
-        };
-      })
-    );
+      // Get order items for each order
+      const ordersWithItems = await Promise.all(
+        orders.map(async (order) => {
+          const items = await OrderItem.find({ order_id: order.invoice_no });
+          return {
+            ...order.toObject(),
+            items: items,
+          };
+        }),
+      );
 
-    res.json(ordersWithItems);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
+      res.json(ordersWithItems);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  },
+);
 
 // GET orders by Firebase UID (for frontend compatibility)
-router.get("/customer/firebase/:firebaseUid", authenticateHybridToken, async (req, res) => {
-  console.log('Firebase orders route called with UID:', req.params.firebaseUid);
-  try {
-    const Customer = require('../models/Customer');
+router.get(
+  "/customer/firebase/:firebaseUid",
+  authenticateHybridToken,
+  async (req, res) => {
+    console.log(
+      "Firebase orders route called with UID:",
+      req.params.firebaseUid,
+    );
+    try {
+      const Customer = require("../models/Customer");
 
-    // Find customer by Firebase UID
-    const customer = await Customer.findOne({ firebase_uid: req.params.firebaseUid });
-    console.log('Customer found:', customer ? customer._id : 'Not found');
-    if (!customer) {
-      return res.status(404).json({ error: "Customer not found" });
-    }
+      // Find customer by Firebase UID
+      const customer = await Customer.findOne({
+        firebase_uid: req.params.firebaseUid,
+      });
+      console.log("Customer found:", customer ? customer._id : "Not found");
+      if (!customer) {
+        return res.status(404).json({ error: "Customer not found" });
+      }
 
-    const orders = await Order.find({ customer_id: customer._id.toString() })
-      .sort({ order_time: -1 });
+      const orders = await Order.find({
+        customer_id: customer._id.toString(),
+      }).sort({ order_time: -1 });
 
-    console.log('Orders found:', orders.length);
+      console.log("Orders found:", orders.length);
 
-    // Enhance items with product information (items are now embedded in order)
-    const ordersWithItems = await Promise.all(
-      orders.map(async (order) => {
-        const enhancedItems = await Promise.all(
-          order.items.map(async (item) => {
-            try {
-              const Product    = require('../models/Product');
-              const ComboOffer = require('../models/ComboOffer');
+      // Enhance items with product information (items are now embedded in order)
+      const ordersWithItems = await Promise.all(
+        orders.map(async (order) => {
+          const enhancedItems = await Promise.all(
+            order.items.map(async (item) => {
+              try {
+                const Product = require("../models/Product");
+                const ComboOffer = require("../models/ComboOffer");
 
-              let product = await Product.findById(item.product_id);
-              let isCombo = false;
+                let product = await Product.findById(item.product_id);
+                let isCombo = false;
 
-              if (!product) {
-                product = await ComboOffer.findById(item.product_id);
-                if (product) isCombo = true;
-              }
-
-              // DEBUG LOG
-              if (item.product_id.toString() === '694e3dcb954bc1a935ff0920' || !product) {
-                console.log(`[Order Debug] Item: ${item.name} (${item.product_id})`);
-                console.log(`[Order Debug] Product found: ${!!product} (isCombo: ${isCombo})`);
-                if (product) {
-                  console.log(`[Order Debug] product.${isCombo ? 'image' : 'image_url'}:`, isCombo ? product.image : product.image_url);
+                if (!product) {
+                  product = await ComboOffer.findById(item.product_id);
+                  if (product) isCombo = true;
                 }
-              }
 
-              let imageUrl = '/images/products/placeholder-product.svg';
-
-              if (product) {
-                if (isCombo) {
-                  imageUrl = product.image || '/images/products/placeholder-product.svg';
-                } else {
-                  // ✅ FIX: If order item has a variant_id, try to get variant image first
-                  if (item.variant_id && product.product_variants && product.product_variants.length > 0) {
-                    const matchedVariant = product.product_variants.find(
-                      v => v._id.toString() === item.variant_id.toString()
+                // DEBUG LOG
+                if (
+                  item.product_id.toString() === "694e3dcb954bc1a935ff0920" ||
+                  !product
+                ) {
+                  console.log(
+                    `[Order Debug] Item: ${item.name} (${item.product_id})`,
+                  );
+                  console.log(
+                    `[Order Debug] Product found: ${!!product} (isCombo: ${isCombo})`,
+                  );
+                  if (product) {
+                    console.log(
+                      `[Order Debug] product.${isCombo ? "image" : "image_url"}:`,
+                      isCombo ? product.image : product.image_url,
                     );
-                    if (matchedVariant && matchedVariant.images && matchedVariant.images.length > 0) {
-                      imageUrl = matchedVariant.images[0];
-                    }
                   }
+                }
 
-                  // Fall back to main product image if no variant image found
-                  if (imageUrl === '/images/products/placeholder-product.svg') {
-                    if (product.images && product.images.length > 0) {
-                      const img = product.images[0];
-                      imageUrl = typeof img === 'string' ? img : (img.url || img.secure_url);
-                    } else if (product.image_url) {
-                      if (Array.isArray(product.image_url) && product.image_url.length > 0) {
-                        const img = product.image_url[0];
-                        imageUrl = typeof img === 'string' ? img : (img.url || img.secure_url);
-                      } else if (typeof product.image_url === 'string') {
-                        imageUrl = product.image_url;
+                let imageUrl = "/images/products/placeholder-product.svg";
+
+                if (product) {
+                  if (isCombo) {
+                    imageUrl =
+                      product.image ||
+                      "/images/products/placeholder-product.svg";
+                  } else {
+                    // ✅ FIX: If order item has a variant_id, try to get variant image first
+                    if (
+                      item.variant_id &&
+                      product.product_variants &&
+                      product.product_variants.length > 0
+                    ) {
+                      const matchedVariant = product.product_variants.find(
+                        (v) => v._id.toString() === item.variant_id.toString(),
+                      );
+                      if (
+                        matchedVariant &&
+                        matchedVariant.images &&
+                        matchedVariant.images.length > 0
+                      ) {
+                        imageUrl = matchedVariant.images[0];
                       }
                     }
 
-                    // Legacy "image" property
-                    if (imageUrl === '/images/products/placeholder-product.svg' && product.image) {
-                      imageUrl = product.image;
+                    // Fall back to main product image if no variant image found
+                    if (
+                      imageUrl === "/images/products/placeholder-product.svg"
+                    ) {
+                      if (product.images && product.images.length > 0) {
+                        const img = product.images[0];
+                        imageUrl =
+                          typeof img === "string"
+                            ? img
+                            : img.url || img.secure_url;
+                      } else if (product.image_url) {
+                        if (
+                          Array.isArray(product.image_url) &&
+                          product.image_url.length > 0
+                        ) {
+                          const img = product.image_url[0];
+                          imageUrl =
+                            typeof img === "string"
+                              ? img
+                              : img.url || img.secure_url;
+                        } else if (typeof product.image_url === "string") {
+                          imageUrl = product.image_url;
+                        }
+                      }
+
+                      // Legacy "image" property
+                      if (
+                        imageUrl ===
+                          "/images/products/placeholder-product.svg" &&
+                        product.image
+                      ) {
+                        imageUrl = product.image;
+                      }
                     }
                   }
                 }
-              }
 
-              // ✅ FIX: Resolve correct product name for variants
-              let productName = 'Product Not Found';
-              if (product) {
-                if (isCombo) {
-                  productName = product.title;
-                } else if (item.variant_id && product.product_variants && product.product_variants.length > 0) {
-                  const matchedVariant = product.product_variants.find(
-                    v => v._id.toString() === item.variant_id.toString()
-                  );
-                  productName = matchedVariant
-                    ? `${product.name} - ${matchedVariant.name || matchedVariant.slug}`
-                    : product.name;
-                } else {
-                  productName = product.name;
+                // ✅ FIX: Resolve correct product name for variants
+                let productName = "Product Not Found";
+                if (product) {
+                  if (isCombo) {
+                    productName = product.title;
+                  } else if (
+                    item.variant_id &&
+                    product.product_variants &&
+                    product.product_variants.length > 0
+                  ) {
+                    const matchedVariant = product.product_variants.find(
+                      (v) => v._id.toString() === item.variant_id.toString(),
+                    );
+                    productName = matchedVariant
+                      ? `${product.name} - ${matchedVariant.name || matchedVariant.slug}`
+                      : product.name;
+                  } else {
+                    productName = product.name;
+                  }
                 }
+
+                return {
+                  ...item.toObject(),
+                  id: item._id,
+                  name: productName,
+                  image: imageUrl,
+                  sku: product
+                    ? isCombo
+                      ? "COMBO"
+                      : product.sku || "N/A"
+                    : "N/A",
+                  price: item.price || 0,
+                };
+              } catch (error) {
+                return {
+                  ...item.toObject(),
+                  id: item._id,
+                  name: "Product Not Found",
+                  image: "/images/products/placeholder-product.svg",
+                  sku: "N/A",
+                  price: item.price || 0,
+                };
               }
+            }),
+          );
 
-              return {
-                ...item.toObject(),
-                id:    item._id,
-                name:  productName,
-                image: imageUrl,
-                sku:   product ? (isCombo ? 'COMBO' : (product.sku || 'N/A')) : 'N/A',
-                price: item.price || 0
-              };
-            } catch (error) {
-              return {
-                ...item.toObject(),
-                id:    item._id,
-                name:  'Product Not Found',
-                image: '/images/products/placeholder-product.svg',
-                sku:   'N/A',
-                price: item.price || 0
-              };
-            }
-          })
-        );
+          return {
+            ...order.toObject(),
+            items: enhancedItems,
+            shipping_address: order.shipping_address || {},
+          };
+        }),
+      );
 
-        return {
-          ...order.toObject(),
-          items: enhancedItems,
-          shipping_address: order.shipping_address || {}
-        };
-      })
-    );
-
-    res.json(ordersWithItems);
-  } catch (err) {
-    console.error('Error fetching orders by Firebase UID:', err);
-    res.status(500).json({ error: err.message });
-  }
-});
+      res.json(ordersWithItems);
+    } catch (err) {
+      console.error("Error fetching orders by Firebase UID:", err);
+      res.status(500).json({ error: err.message });
+    }
+  },
+);
 
 // Export orders to CSV
 router.get("/export/csv", async (req, res) => {
@@ -328,18 +391,18 @@ router.get("/export/csv", async (req, res) => {
     if (search) {
       filter.$or = [
         { invoice_no: { $regex: search, $options: "i" } },
-        { "shipping_address.name":  { $regex: search, $options: "i" } },
-        { "shipping_address.email": { $regex: search, $options: "i" } }
+        { "shipping_address.name": { $regex: search, $options: "i" } },
+        { "shipping_address.email": { $regex: search, $options: "i" } },
       ];
     }
 
-    if (status)  filter.status         = status;
-    if (method)  filter.payment_method = method;
+    if (status) filter.status = status;
+    if (method) filter.payment_method = method;
 
     if (startDate || endDate) {
       filter.order_time = {};
       if (startDate) filter.order_time.$gte = new Date(startDate);
-      if (endDate)   filter.order_time.$lte = new Date(endDate);
+      if (endDate) filter.order_time.$lte = new Date(endDate);
     }
 
     // Fetch orders with customer data
@@ -352,59 +415,74 @@ router.get("/export/csv", async (req, res) => {
       .sort({ order_time: -1 });
 
     // Transform orders for CSV
-    const csvOrders = orders.map(order => ({
-      'Invoice No':       order.invoice_no,
-      'Order Date':       new Date(order.order_time).toLocaleDateString(),
-      'Customer Name':    order.customer_id?.name  || order.shipping_address?.name  || 'N/A',
-      'Customer Email':   order.shipping_address?.email || order.customer_id?.email || 'N/A',
-      'Customer Phone':   order.shipping_address?.phone || order.customer_id?.phone || 'N/A',
-      'Payment Method':   order.payment_method,
-      'Order Status':     order.status,
-      'Shipping Cost':    order.shipping_cost || 0,
-      'Total Amount':     order.total_amount,
-      'Shipping Address': `${order.shipping_address?.street || ''}, ${order.shipping_address?.city || ''}, ${order.shipping_address?.state || ''} ${order.shipping_address?.zipCode || ''}`.trim()
+    const csvOrders = orders.map((order) => ({
+      "Invoice No": order.invoice_no,
+      "Order Date": new Date(order.order_time).toLocaleDateString(),
+      "Customer Name":
+        order.customer_id?.name || order.shipping_address?.name || "N/A",
+      "Customer Email":
+        order.shipping_address?.email || order.customer_id?.email || "N/A",
+      "Customer Phone":
+        order.shipping_address?.phone || order.customer_id?.phone || "N/A",
+      "Payment Method": order.payment_method,
+      "Order Status": order.status,
+      "Shipping Cost": order.shipping_cost || 0,
+      "Total Amount": order.total_amount,
+      "Shipping Address":
+        `${order.shipping_address?.street || ""}, ${order.shipping_address?.city || ""}, ${order.shipping_address?.state || ""} ${order.shipping_address?.zipCode || ""}`.trim(),
     }));
 
     // Convert to CSV
     const csv = convertToCSV(csvOrders);
 
-    res.setHeader('Content-Type', 'text/csv');
-    res.setHeader('Content-Disposition', `attachment; filename=orders_export_${new Date().toISOString().split('T')[0]}.csv`);
+    res.setHeader("Content-Type", "text/csv");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename=orders_export_${new Date().toISOString().split("T")[0]}.csv`,
+    );
     res.send(csv);
   } catch (err) {
-    console.error('Error exporting orders:', err);
+    console.error("Error exporting orders:", err);
     res.status(500).json({
       success: false,
-      error: err.message
+      error: err.message,
     });
   }
 });
 
 // Helper function to convert array of objects to CSV
 function convertToCSV(data) {
-  if (!data || data.length === 0) return '';
+  if (!data || data.length === 0) return "";
 
-  const headers    = Object.keys(data[0]);
-  const csvHeaders = headers.join(',');
+  const headers = Object.keys(data[0]);
+  const csvHeaders = headers.join(",");
 
-  const csvRows = data.map(row => {
-    return headers.map(header => {
-      const value = row[header];
-      if (typeof value === 'string' && (value.includes(',') || value.includes('"'))) {
-        return `"${value.replace(/"/g, '""')}"`;
-      }
-      return value || '';
-    }).join(',');
+  const csvRows = data.map((row) => {
+    return headers
+      .map((header) => {
+        const value = row[header];
+        if (
+          typeof value === "string" &&
+          (value.includes(",") || value.includes('"'))
+        ) {
+          return `"${value.replace(/"/g, '""')}"`;
+        }
+        return value || "";
+      })
+      .join(",");
   });
 
-  return csvHeaders + '\n' + csvRows.join('\n');
+  return csvHeaders + "\n" + csvRows.join("\n");
 }
 
 // GET a single order by id
+// GET a single order by id
+// ✅ FIX: When OrderItem collection returns empty (new embedded-schema orders),
+//         fall back to order.items and build the same products:{name} shape.
 router.get("/:id", async (req, res) => {
   try {
     const orderId = req.params.id;
-    console.log('🔍 Fetching order with ID:', orderId);
+    console.log("🔍 Fetching order with ID:", orderId);
 
     const order = await Order.findOne({ _id: orderId })
       .populate({
@@ -412,98 +490,232 @@ router.get("/:id", async (req, res) => {
         select: "name email phone",
         model: "Customers",
       })
-      .select('-__v');
+      .select("-__v");
 
     if (!order) {
-      console.log('❌ Order not found with ID:', orderId);
+      console.log("❌ Order not found with ID:", orderId);
       return res.status(404).json({ error: "Order not found" });
     }
 
-    console.log('✅ Found order:', {
-      _id:        order._id,
+    console.log("✅ Found order:", {
+      _id: order._id,
       invoice_no: order.invoice_no,
-      status:     order.status
+      status: order.status,
     });
 
-    // Get order items with product details
-    const items = await OrderItem.find({ order_id: order.invoice_no });
+    // ── Try legacy OrderItem collection first ───────────────────────────────
+    let legacyItems = await OrderItem.find({ order_id: order.invoice_no });
 
-    // Enhance items with product information
-    const enhancedItems = await Promise.all(
-      items.map(async (item) => {
-        try {
-          const Product    = require('../models/Product');
-          const ComboOffer = require('../models/ComboOffer');
+    let enhancedItems = [];
 
-          let product = await Product.findById(item.product_id);
-          let isCombo = false;
+    if (legacyItems.length > 0) {
+      // ── Shape A: legacy OrderItem rows ─────────────────────────────────────
+      enhancedItems = await Promise.all(
+        legacyItems.map(async (item) => {
+          try {
+            const Product = require("../models/Product");
+            const ComboOffer = require("../models/ComboOffer");
 
-          if (!product) {
-            product = await ComboOffer.findById(item.product_id);
-            if (product) isCombo = true;
-          }
+            let product = await Product.findById(item.product_id);
+            let isCombo = false;
 
-          let imageUrl = '/images/products/placeholder-product.svg';
-          if (product && isCombo) {
-            imageUrl = product.image || '/images/products/placeholder-product.svg';
-          } else if (product) {
-            imageUrl = product.images?.[0]?.url || product.image_url?.[0] || product.image || '/images/products/placeholder-product.svg';
-          }
-
-          return {
-            ...item.toObject(),
-            id:         item._id,
-            unit_price: item.unit_price || item.price || 0,
-            quantity:   item.quantity || 1,
-            products: {
-              name:  product ? (isCombo ? product.title : product.name) : 'Product Not Found',
-              image: imageUrl,
-              sku:   product ? (isCombo ? 'COMBO' : (product.sku || 'N/A')) : 'N/A'
+            if (!product) {
+              product = await ComboOffer.findById(item.product_id);
+              if (product) isCombo = true;
             }
-          };
-        } catch (error) {
-          return {
-            ...item.toObject(),
-            id:         item._id,
-            unit_price: item.unit_price || item.price || 0,
-            quantity:   item.quantity || 1,
-            products: {
-              name:  'Product Not Found',
-              image: '/images/products/placeholder-product.svg',
-              sku:   'N/A'
+
+            let imageUrl = "/images/products/placeholder-product.svg";
+            if (product && isCombo) {
+              imageUrl = product.image || imageUrl;
+            } else if (product) {
+              imageUrl =
+                product.images?.[0]?.url ||
+                product.image_url?.[0] ||
+                product.image ||
+                imageUrl;
             }
-          };
-        }
-      })
-    );
+
+            return {
+              ...item.toObject(),
+              id: item._id,
+              unit_price: item.unit_price || item.price || 0,
+              quantity: item.quantity || 1,
+              products: {
+                name: product
+                  ? isCombo
+                    ? product.title
+                    : product.name
+                  : "Product Not Found",
+                image: imageUrl,
+                sku: product
+                  ? isCombo
+                    ? "COMBO"
+                    : product.sku || "N/A"
+                  : "N/A",
+              },
+            };
+          } catch (error) {
+            return {
+              ...item.toObject(),
+              id: item._id,
+              unit_price: item.unit_price || item.price || 0,
+              quantity: item.quantity || 1,
+              products: {
+                name: "Product Not Found",
+                image: "/images/products/placeholder-product.svg",
+                sku: "N/A",
+              },
+            };
+          }
+        }),
+      );
+    } else {
+      // ── Shape B: embedded order.items (new schema) ─────────────────────────
+      // OrderItem collection is empty for new orders — use order.items directly
+      // and build the same products:{name,image,sku} wrapper so the invoice
+      // template renders without any changes.
+      console.log(
+        `📦 No OrderItem rows found for ${order.invoice_no} — using embedded order.items`,
+      );
+
+      enhancedItems = await Promise.all(
+        (order.items || []).map(async (item) => {
+          try {
+            const Product = require("../models/Product");
+            const ComboOffer = require("../models/ComboOffer");
+
+            let product = await Product.findById(item.product_id);
+            let isCombo = false;
+
+            if (!product) {
+              product = await ComboOffer.findById(item.product_id);
+              if (product) isCombo = true;
+            }
+
+            // Resolve image — variant first, then product fallbacks
+            let imageUrl = "/images/products/placeholder-product.svg";
+            if (product && isCombo) {
+              imageUrl = product.image || imageUrl;
+            } else if (product) {
+              // Variant image
+              if (item.variant_id && product.product_variants?.length > 0) {
+                const v = product.product_variants.find(
+                  (v) => v._id.toString() === item.variant_id.toString(),
+                );
+                if (v?.images?.length > 0) imageUrl = v.images[0];
+              }
+              // Product-level image fallbacks
+              if (imageUrl === "/images/products/placeholder-product.svg") {
+                if (product.images?.length > 0) {
+                  const img = product.images[0];
+                  imageUrl =
+                    typeof img === "string"
+                      ? img
+                      : img.url || img.secure_url || imageUrl;
+                } else if (product.image_url) {
+                  if (
+                    Array.isArray(product.image_url) &&
+                    product.image_url.length > 0
+                  ) {
+                    const img = product.image_url[0];
+                    imageUrl =
+                      typeof img === "string"
+                        ? img
+                        : img.url || img.secure_url || imageUrl;
+                  } else if (typeof product.image_url === "string") {
+                    imageUrl = product.image_url;
+                  }
+                } else if (product.image) {
+                  imageUrl = product.image;
+                }
+              }
+            }
+
+            // Resolve name — variant-aware
+            let productName = "Product Not Found";
+            if (product) {
+              if (isCombo) {
+                productName = product.title;
+              } else if (
+                item.variant_id &&
+                product.product_variants?.length > 0
+              ) {
+                const v = product.product_variants.find(
+                  (v) => v._id.toString() === item.variant_id.toString(),
+                );
+                productName = v
+                  ? `${product.name} - ${v.name || v.slug}`
+                  : product.name;
+              } else {
+                productName = product.name;
+              }
+            }
+
+            return {
+              ...item.toObject(),
+              id: item._id,
+              // ✅ unit_price mapped from item.price (embedded schema field name)
+              unit_price: item.price || item.unit_price || 0,
+              quantity: item.quantity || 1,
+              // ✅ Same products:{} wrapper that the invoice template expects
+              products: {
+                name: productName,
+                image: imageUrl,
+                sku: product
+                  ? isCombo
+                    ? "COMBO"
+                    : product.sku || "N/A"
+                  : "N/A",
+              },
+            };
+          } catch (error) {
+            console.error("Error enhancing embedded item:", error);
+            return {
+              ...item.toObject(),
+              id: item._id,
+              unit_price: item.price || item.unit_price || 0,
+              quantity: item.quantity || 1,
+              products: {
+                name: "Product Not Found",
+                image: "/images/products/placeholder-product.svg",
+                sku: "N/A",
+              },
+            };
+          }
+        }),
+      );
+    }
 
     // Transform order to match frontend structure
     const transformedOrder = {
       ...order.toObject(),
       id: order._id.toString(),
       customers: {
-        name:    order.customer_id?.name  || order.shipping_address?.name  || 'N/A',
-        email:   order.shipping_address?.email || order.customer_id?.email || 'N/A',
-        address: `${order.shipping_address?.street || ''}, ${order.shipping_address?.city || ''}, ${order.shipping_address?.state || ''} ${order.shipping_address?.zipCode || ''}`.trim(),
-        phone:   order.shipping_address?.phone || order.customer_id?.phone
+        name: order.customer_id?.name || order.shipping_address?.name || "N/A",
+        email:
+          order.shipping_address?.email || order.customer_id?.email || "N/A",
+        address:
+          `${order.shipping_address?.street || ""}, ${order.shipping_address?.city || ""}, ${order.shipping_address?.state || ""} ${order.shipping_address?.zipCode || ""}`.trim(),
+        phone: order.shipping_address?.phone || order.customer_id?.phone,
       },
-      customer:    order.customer_id,
-      order_items: enhancedItems,
-      coupons:     order.coupons || null
+      customer: order.customer_id,
+      order_items: enhancedItems, // ✅ always populated now
+      coupons: order.coupons || null,
     };
 
-    console.log('🔍 Transformed single order:', {
-      _id:        order._id,
-      id:         transformedOrder.id,
-      invoice_no: order.invoice_no
+    console.log("🔍 Transformed single order:", {
+      _id: order._id,
+      id: transformedOrder.id,
+      invoice_no: order.invoice_no,
+      order_items_count: enhancedItems.length,
     });
 
     res.json({
       success: true,
-      data: transformedOrder
+      data: transformedOrder,
     });
   } catch (err) {
-    console.error('Error fetching order:', err);
+    console.error("Error fetching order:", err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -516,23 +728,30 @@ router.post("/place-order", authenticateHybridToken, async (req, res) => {
       shipping_address,
       items,
       shipping_cost = 0,
-      coupon_id = null
+      coupon_id = null,
     } = req.body;
 
     // Get customer_id from authenticated user
     const customer_id = req.user.id;
 
     // Validate required fields
-    if (!customer_id || !payment_method || !shipping_address || !items || items.length === 0) {
+    if (
+      !customer_id ||
+      !payment_method ||
+      !shipping_address ||
+      !items ||
+      items.length === 0
+    ) {
       return res.status(400).json({
-        error: "Missing required fields: payment_method, shipping_address, items"
+        error:
+          "Missing required fields: payment_method, shipping_address, items",
       });
     }
 
     // Only allow cash on delivery for now
-    if (payment_method !== 'cash') {
+    if (payment_method !== "cash") {
       return res.status(400).json({
-        error: "Only Cash on Delivery payment method is supported"
+        error: "Only Cash on Delivery payment method is supported",
       });
     }
 
@@ -540,29 +759,29 @@ router.post("/place-order", authenticateHybridToken, async (req, res) => {
     for (const item of items) {
       if (!item.product_id) {
         return res.status(400).json({
-          error: "Each item must have a valid product_id"
+          error: "Each item must have a valid product_id",
         });
       }
       if (!item.quantity || item.quantity <= 0) {
         return res.status(400).json({
-          error: "Each item must have a valid quantity"
+          error: "Each item must have a valid quantity",
         });
       }
       if (item.unit_price === undefined || item.unit_price === null) {
         return res.status(400).json({
-          error: "Each item must have a valid unit_price"
+          error: "Each item must have a valid unit_price",
         });
       }
     }
 
     // ✅ NEW: Validate stock availability before creating order
-    console.log('📦 Validating stock availability for order items...');
+    console.log("📦 Validating stock availability for order items...");
     for (const item of items) {
       // First, get the product to find the actual variant ID
       const product = await Product.findById(item.product_id);
       if (!product) {
         return res.status(400).json({
-          error: `Product not found: ${item.product_id}`
+          error: `Product not found: ${item.product_id}`,
         });
       }
 
@@ -570,23 +789,35 @@ router.post("/place-order", authenticateHybridToken, async (req, res) => {
       let actualVariantId = item.variant_id || null;
 
       // If no variant_id provided but product has variants, try to find matching variant
-      if (!actualVariantId && product.product_variants && product.product_variants.length > 0) {
+      if (
+        !actualVariantId &&
+        product.product_variants &&
+        product.product_variants.length > 0
+      ) {
         // Try to match by SKU first if provided
         if (item.variant_sku) {
-          const matchedVariant = product.product_variants.find(v => v.sku === item.variant_sku);
+          const matchedVariant = product.product_variants.find(
+            (v) => v.sku === item.variant_sku,
+          );
           if (matchedVariant) {
             actualVariantId = matchedVariant._id;
-            console.log(`📍 Found variant by SKU: ${item.variant_sku} -> ${actualVariantId}`);
+            console.log(
+              `📍 Found variant by SKU: ${item.variant_sku} -> ${actualVariantId}`,
+            );
           }
         }
-        
+
         // Fallback: if still not found and attributes provided, match by attributes
         if (!actualVariantId && item.variant_attributes) {
-          const matchedVariant = product.product_variants.find(v => {
+          const matchedVariant = product.product_variants.find((v) => {
             if (!v.attributes) return false;
-            const vAttrs = v.attributes instanceof Map ? Object.fromEntries(v.attributes) : v.attributes;
+            const vAttrs =
+              v.attributes instanceof Map
+                ? Object.fromEntries(v.attributes)
+                : v.attributes;
             return Object.keys(item.variant_attributes).every(
-              key => String(item.variant_attributes[key]) === String(vAttrs[key])
+              (key) =>
+                String(item.variant_attributes[key]) === String(vAttrs[key]),
             );
           });
           if (matchedVariant) {
@@ -598,7 +829,7 @@ router.post("/place-order", authenticateHybridToken, async (req, res) => {
 
       const stockQuery = {
         productId: item.product_id,
-        variantId: actualVariantId
+        variantId: actualVariantId,
       };
 
       console.log(`🔍 Checking stock with query:`, stockQuery);
@@ -606,45 +837,52 @@ router.post("/place-order", authenticateHybridToken, async (req, res) => {
 
       if (!stock) {
         return res.status(400).json({
-          error: `Stock not configured for this product variant. Please contact support.`
+          error: `Stock not configured for this product variant. Please contact support.`,
         });
       }
 
       if (stock.quantity === null || stock.quantity === undefined) {
         return res.status(400).json({
-          error: `Stock quantity not set for product`
+          error: `Stock quantity not set for product`,
         });
       }
 
       if (stock.quantity < item.quantity) {
         return res.status(400).json({
-          error: `Insufficient stock. Available: ${stock.quantity}, Required: ${item.quantity}`
+          error: `Insufficient stock. Available: ${stock.quantity}, Required: ${item.quantity}`,
         });
       }
     }
 
     // Calculate totals
-    const subtotal     = items.reduce((sum, item) => sum + (item.unit_price * item.quantity), 0);
-    const tax          = subtotal * 0.1; // 10% tax
+    const subtotal = items.reduce(
+      (sum, item) => sum + item.unit_price * item.quantity,
+      0,
+    );
+    const tax = subtotal * 0.1; // 10% tax
     const total_amount = subtotal + shipping_cost + tax;
 
     // Generate invoice number
-    const timestamp  = Date.now();
-    const randomNum  = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+    const timestamp = Date.now();
+    const randomNum = Math.floor(Math.random() * 1000)
+      .toString()
+      .padStart(3, "0");
     const invoice_no = `ORD-${timestamp}-${randomNum}`;
 
     // Calculate estimated delivery (7-14 days from order time)
     const estimatedDelivery = new Date();
-    estimatedDelivery.setDate(estimatedDelivery.getDate() + Math.floor(Math.random() * 7) + 7);
+    estimatedDelivery.setDate(
+      estimatedDelivery.getDate() + Math.floor(Math.random() * 7) + 7,
+    );
 
     // ✅ FIX: Prepare items array — explicitly map each field to avoid
     //         stale/wrong data coming through from the frontend payload
-    const orderItems = items.map(item => ({
-      product_id: item.product_id,                   // Must be the selected product
-      variant_id: item.variant_id || null,            // null for simple products
-      quantity:   item.quantity,
-      price:      item.unit_price,                    // selling price at time of order
-      subtotal:   item.unit_price * item.quantity
+    const orderItems = items.map((item) => ({
+      product_id: item.product_id, // Must be the selected product
+      variant_id: item.variant_id || null, // null for simple products
+      quantity: item.quantity,
+      price: item.unit_price, // selling price at time of order
+      subtotal: item.unit_price * item.quantity,
     }));
 
     // Create order with embedded items
@@ -657,40 +895,52 @@ router.post("/place-order", authenticateHybridToken, async (req, res) => {
       shipping_address,
       invoice_no,
       estimated_delivery: estimatedDelivery,
-      tracking_number:    null,
-      status: 'processing'
+      tracking_number: null,
+      status: "processing",
     });
 
     const savedOrder = await order.save();
 
     // ✅ NEW: Deduct stock for each item after successful order creation
-    console.log('📉 Deducting stock for order items...');
+    console.log("📉 Deducting stock for order items...");
     for (let index = 0; index < items.length; index++) {
       const item = items[index];
       const product = await Product.findById(item.product_id);
-      
+
       if (!product) {
-        console.error(`❌ Product not found for stock deduction: ${item.product_id}`);
+        console.error(
+          `❌ Product not found for stock deduction: ${item.product_id}`,
+        );
         continue;
       }
 
       // Resolve the actual variant ID (same logic as validation above)
       let actualVariantId = item.variant_id || null;
 
-      if (!actualVariantId && product.product_variants && product.product_variants.length > 0) {
+      if (
+        !actualVariantId &&
+        product.product_variants &&
+        product.product_variants.length > 0
+      ) {
         if (item.variant_sku) {
-          const matchedVariant = product.product_variants.find(v => v.sku === item.variant_sku);
+          const matchedVariant = product.product_variants.find(
+            (v) => v.sku === item.variant_sku,
+          );
           if (matchedVariant) {
             actualVariantId = matchedVariant._id;
           }
         }
-        
+
         if (!actualVariantId && item.variant_attributes) {
-          const matchedVariant = product.product_variants.find(v => {
+          const matchedVariant = product.product_variants.find((v) => {
             if (!v.attributes) return false;
-            const vAttrs = v.attributes instanceof Map ? Object.fromEntries(v.attributes) : v.attributes;
+            const vAttrs =
+              v.attributes instanceof Map
+                ? Object.fromEntries(v.attributes)
+                : v.attributes;
             return Object.keys(item.variant_attributes).every(
-              key => String(item.variant_attributes[key]) === String(vAttrs[key])
+              (key) =>
+                String(item.variant_attributes[key]) === String(vAttrs[key]),
             );
           });
           if (matchedVariant) {
@@ -701,7 +951,7 @@ router.post("/place-order", authenticateHybridToken, async (req, res) => {
 
       const stockQuery = {
         productId: item.product_id,
-        variantId: actualVariantId
+        variantId: actualVariantId,
       };
 
       const updatedStock = await Stock.findOneAndUpdate(
@@ -710,18 +960,22 @@ router.post("/place-order", authenticateHybridToken, async (req, res) => {
           $inc: { quantity: -item.quantity },
           $set: {
             updated_at: new Date(),
-            notes: `Stock reduced via order placement (${invoice_no}): -${item.quantity} units`
-          }
+            notes: `Stock reduced via order placement (${invoice_no}): -${item.quantity} units`,
+          },
         },
-        { new: true }
+        { new: true },
       );
 
       if (!updatedStock) {
-        console.error(`❌ Failed to update stock for product ${item.product_id}`);
+        console.error(
+          `❌ Failed to update stock for product ${item.product_id}`,
+        );
         // Continue with order but log the error
       } else {
-        console.log(`✅ Stock updated for product ${item.product_id}: -${item.quantity} (remaining: ${updatedStock.quantity})`);
-        
+        console.log(
+          `✅ Stock updated for product ${item.product_id}: -${item.quantity} (remaining: ${updatedStock.quantity})`,
+        );
+
         // ✅ NEW: Sync product status based on updated stock
         await syncProductWithStock(updatedStock);
       }
@@ -737,13 +991,14 @@ router.post("/place-order", authenticateHybridToken, async (req, res) => {
         ...savedOrder.toObject(),
         subtotal,
         tax,
-        total: total_amount
-      }
+        total: total_amount,
+      },
     });
-
   } catch (err) {
-    console.error('Order placement error:', err);
-    res.status(500).json({ error: "Failed to place order", details: err.message });
+    console.error("Order placement error:", err);
+    res
+      .status(500)
+      .json({ error: "Failed to place order", details: err.message });
   }
 });
 
@@ -764,7 +1019,7 @@ router.put("/:id", async (req, res) => {
     const order = await Order.findOneAndUpdate(
       { id: req.params.id },
       req.body,
-      { new: true }
+      { new: true },
     );
     if (!order) return res.status(404).json({ error: "Order not found" });
     res.json(order);
@@ -778,11 +1033,15 @@ router.put("/:id", async (req, res) => {
 router.put("/:id/status", async (req, res) => {
   try {
     const { status } = req.body;
-    const orderId    = req.params.id;
+    const orderId = req.params.id;
 
     const validStatuses = [
-      "delivered", "cancelled", "pending",
-      "processing", "shipped", "dispatched"
+      "delivered",
+      "cancelled",
+      "pending",
+      "processing",
+      "shipped",
+      "dispatched",
     ];
 
     if (!validStatuses.includes(status)) {
@@ -801,26 +1060,26 @@ router.put("/:id/status", async (req, res) => {
 
     // ✅ FIX: Deduct stock when transitioning to "dispatched" (only once)
     if (status === "dispatched" && previousStatus !== "dispatched") {
-
       for (const item of currentOrder.items) {
-
         // ✅ FIX: Use explicit null for simple products so DB query matches correctly
         const stockQuery = {
           productId: item.product_id,
-          variantId: item.variant_id ? item.variant_id : null
+          variantId: item.variant_id ? item.variant_id : null,
         };
 
         const stock = await Stock.findOne(stockQuery);
 
         if (!stock) {
-          console.log(`Stock not found for product ${item.product_id} variant ${item.variant_id || 'none'}`);
+          console.log(
+            `Stock not found for product ${item.product_id} variant ${item.variant_id || "none"}`,
+          );
           continue;
         }
 
         // Safety check
         if (stock.quantity < item.quantity) {
           return res.status(400).json({
-            error: `Insufficient stock for product ${item.product_id}. Available: ${stock.quantity}, Required: ${item.quantity}`
+            error: `Insufficient stock for product ${item.product_id}. Available: ${stock.quantity}, Required: ${item.quantity}`,
           });
         }
 
@@ -831,15 +1090,15 @@ router.put("/:id/status", async (req, res) => {
             $inc: { quantity: -item.quantity },
             $set: {
               updated_at: new Date(),
-              notes: `Reduced via order dispatch (${currentOrder.invoice_no}): ${stock.quantity} → ${stock.quantity - item.quantity}`
-            }
+              notes: `Reduced via order dispatch (${currentOrder.invoice_no}): ${stock.quantity} → ${stock.quantity - item.quantity}`,
+            },
           },
-          { new: true }
+          { new: true },
         );
 
         if (!updatedStock) {
           return res.status(400).json({
-            error: `Stock update failed due to concurrent modification for product ${item.product_id}`
+            error: `Stock update failed due to concurrent modification for product ${item.product_id}`,
           });
         }
 
@@ -847,25 +1106,26 @@ router.put("/:id/status", async (req, res) => {
         //         so minStock is always accurate for low-stock alert calculation
         await syncProductWithStock(updatedStock);
 
-        console.log(`Stock reduced for product ${item.product_id}: -${item.quantity} (remaining: ${updatedStock.quantity})`);
+        console.log(
+          `Stock reduced for product ${item.product_id}: -${item.quantity} (remaining: ${updatedStock.quantity})`,
+        );
       }
     }
 
     // Update order status
-    currentOrder.status     = status;
+    currentOrder.status = status;
     currentOrder.updated_at = new Date();
     await currentOrder.save();
 
     res.json({
       success: true,
       message: "Order status updated successfully",
-      order: currentOrder
+      order: currentOrder,
     });
-
   } catch (err) {
     console.error("Order status update error:", err);
     res.status(500).json({
-      error: "Failed to update order status"
+      error: "Failed to update order status",
     });
   }
 });
@@ -877,7 +1137,13 @@ router.patch("/:id/status", authenticateHybridToken, async (req, res) => {
     const { status, trackingNumber } = req.body;
 
     // Validate status
-    const validStatuses = ["delivered", "cancelled", "pending", "processing", "shipped"];
+    const validStatuses = [
+      "delivered",
+      "cancelled",
+      "pending",
+      "processing",
+      "shipped",
+    ];
     if (!validStatuses.includes(status)) {
       return res.status(400).json({ error: "Invalid status" });
     }
@@ -895,27 +1161,30 @@ router.patch("/:id/status", authenticateHybridToken, async (req, res) => {
 
     // ✅ FIX: Deduct stock when transitioning to "delivered" (only once)
     if (status === "delivered" && previousStatus !== "delivered") {
-      console.log(`🚚 Order ${currentOrder.invoice_no} marked as delivered — deducting stock...`);
+      console.log(
+        `🚚 Order ${currentOrder.invoice_no} marked as delivered — deducting stock...`,
+      );
 
       for (const item of currentOrder.items) {
-
         // ✅ FIX: Use explicit null for simple products so DB query matches correctly
         const stockQuery = {
           productId: item.product_id,
-          variantId: item.variant_id ? item.variant_id : null
+          variantId: item.variant_id ? item.variant_id : null,
         };
 
         const stock = await Stock.findOne(stockQuery);
 
         if (!stock) {
-          console.log(`⚠️ Stock not found for product ${item.product_id} variant ${item.variant_id || 'none'} — skipping`);
+          console.log(
+            `⚠️ Stock not found for product ${item.product_id} variant ${item.variant_id || "none"} — skipping`,
+          );
           continue;
         }
 
         // Safety check: ensure enough stock exists
         if (stock.quantity < item.quantity) {
           return res.status(400).json({
-            error: `Insufficient stock for product ${item.product_id}. Available: ${stock.quantity}, Required: ${item.quantity}`
+            error: `Insufficient stock for product ${item.product_id}. Available: ${stock.quantity}, Required: ${item.quantity}`,
           });
         }
 
@@ -926,15 +1195,15 @@ router.patch("/:id/status", authenticateHybridToken, async (req, res) => {
             $inc: { quantity: -item.quantity },
             $set: {
               updated_at: new Date(),
-              notes: `Reduced via order delivery (${currentOrder.invoice_no}): ${stock.quantity} → ${stock.quantity - item.quantity}`
-            }
+              notes: `Reduced via order delivery (${currentOrder.invoice_no}): ${stock.quantity} → ${stock.quantity - item.quantity}`,
+            },
           },
-          { new: true }
+          { new: true },
         );
 
         if (!updatedStock) {
           return res.status(400).json({
-            error: `Stock update failed due to concurrent modification for product ${item.product_id}`
+            error: `Stock update failed due to concurrent modification for product ${item.product_id}`,
           });
         }
 
@@ -942,13 +1211,15 @@ router.patch("/:id/status", authenticateHybridToken, async (req, res) => {
         //         so minStock is always accurate for low-stock alert calculation
         await syncProductWithStock(updatedStock);
 
-        console.log(`✅ Stock reduced for product ${item.product_id}: -${item.quantity} (remaining: ${updatedStock.quantity})`);
+        console.log(
+          `✅ Stock reduced for product ${item.product_id}: -${item.quantity} (remaining: ${updatedStock.quantity})`,
+        );
       }
     }
 
     const updateData = { status, updated_at: new Date() };
 
-    if (status === 'shipped' && trackingNumber) {
+    if (status === "shipped" && trackingNumber) {
       updateData.tracking_number = trackingNumber;
 
       if (!currentOrder.estimated_delivery) {
@@ -958,21 +1229,19 @@ router.patch("/:id/status", authenticateHybridToken, async (req, res) => {
       }
     }
 
-    const order = await Order.findByIdAndUpdate(
-      req.params.id,
-      updateData,
-      { new: true }
-    );
+    const order = await Order.findByIdAndUpdate(req.params.id, updateData, {
+      new: true,
+    });
 
     if (!order) return res.status(404).json({ error: "Order not found" });
 
     res.json({
       success: true,
       message: "Order status updated successfully",
-      order
+      order,
     });
   } catch (err) {
-    console.error('Order status update error:', err);
+    console.error("Order status update error:", err);
     res.status(500).json({ error: "Failed to update order status" });
   }
 });
@@ -980,20 +1249,23 @@ router.patch("/:id/status", authenticateHybridToken, async (req, res) => {
 // GET track order by tracking number
 router.get("/track/:trackingNumber", async (req, res) => {
   try {
-    const order = await Order.findOne({ tracking_number: req.params.trackingNumber });
-    if (!order) return res.status(404).json({ error: "Tracking number not found" });
+    const order = await Order.findOne({
+      tracking_number: req.params.trackingNumber,
+    });
+    if (!order)
+      return res.status(404).json({ error: "Tracking number not found" });
 
     // Get order items
     const items = await OrderItem.find({ order_id: order.invoice_no });
 
     res.json({
-      orderId:          order.invoice_no,
-      status:           order.status,
+      orderId: order.invoice_no,
+      status: order.status,
       estimatedDelivery: order.estimated_delivery,
-      trackingNumber:   order.tracking_number,
-      shippingAddress:  order.shipping_address,
-      items:            items,
-      orderTime:        order.order_time
+      trackingNumber: order.tracking_number,
+      shippingAddress: order.shipping_address,
+      items: items,
+      orderTime: order.order_time,
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -1003,10 +1275,10 @@ router.get("/track/:trackingNumber", async (req, res) => {
 // GET order invoice (HTML generation)
 router.get("/:id/invoice", authenticateHybridToken, async (req, res) => {
   try {
-    const Order     = require('../models/Order');
-    const OrderItem = require('../models/OrderItem');
-    const Customer  = require('../models/Customer');
-    const Product   = require('../models/Product');
+    const Order = require("../models/Order");
+    const OrderItem = require("../models/OrderItem");
+    const Customer = require("../models/Customer");
+    const Product = require("../models/Product");
 
     const order = await Order.findById(req.params.id);
     if (!order) return res.status(404).json({ error: "Order not found" });
@@ -1018,8 +1290,8 @@ router.get("/:id/invoice", authenticateHybridToken, async (req, res) => {
     const enhancedItems = await Promise.all(
       order.items.map(async (item) => {
         try {
-          const Product    = require('../models/Product');
-          const ComboOffer = require('../models/ComboOffer');
+          const Product = require("../models/Product");
+          const ComboOffer = require("../models/ComboOffer");
 
           let product = await Product.findById(item.product_id);
           let isCombo = false;
@@ -1031,26 +1303,33 @@ router.get("/:id/invoice", authenticateHybridToken, async (req, res) => {
 
           return {
             ...item.toObject(),
-            name:       product ? (isCombo ? product.title : product.name) : 'Product Not Found',
-            sku:        product ? (isCombo ? 'COMBO' : (product.sku || 'N/A')) : 'N/A',
-            unit_price: item.price || 0
+            name: product
+              ? isCombo
+                ? product.title
+                : product.name
+              : "Product Not Found",
+            sku: product ? (isCombo ? "COMBO" : product.sku || "N/A") : "N/A",
+            unit_price: item.price || 0,
           };
         } catch (error) {
           return {
             ...item.toObject(),
-            name:       'Product Not Found',
-            sku:        'N/A',
-            unit_price: item.price || 0
+            name: "Product Not Found",
+            sku: "N/A",
+            unit_price: item.price || 0,
           };
         }
-      })
+      }),
     );
 
     // Calculate totals
-    const subtotal = enhancedItems.reduce((sum, item) => sum + (item.unit_price * item.quantity), 0);
-    const tax      = subtotal * 0.1;
+    const subtotal = enhancedItems.reduce(
+      (sum, item) => sum + item.unit_price * item.quantity,
+      0,
+    );
+    const tax = subtotal * 0.1;
     const shipping = order.shipping_cost || 0;
-    const total    = order.total_amount;
+    const total = order.total_amount;
 
     // Generate HTML for invoice
     const htmlContent = `
@@ -1090,18 +1369,18 @@ router.get("/:id/invoice", authenticateHybridToken, async (req, res) => {
         
         <div class="section">
           <h3>Billing Address</h3>
-          <p><strong>Name:</strong> ${customer?.name || order.shipping_address?.name || 'N/A'}</p>
-          <p><strong>Email:</strong> ${customer?.email || order.shipping_address?.email || 'N/A'}</p>
-          <p><strong>Phone:</strong> ${customer?.phone || order.shipping_address?.phone || 'N/A'}</p>
+          <p><strong>Name:</strong> ${customer?.name || order.shipping_address?.name || "N/A"}</p>
+          <p><strong>Email:</strong> ${customer?.email || order.shipping_address?.email || "N/A"}</p>
+          <p><strong>Phone:</strong> ${customer?.phone || order.shipping_address?.phone || "N/A"}</p>
         </div>
       </div>
       
       <div class="section">
         <h3>Shipping Address</h3>
-        <p>${order.shipping_address?.name   || 'N/A'}</p>
-        <p>${order.shipping_address?.street || 'N/A'}</p>
-        <p>${order.shipping_address?.city   || 'N/A'}, ${order.shipping_address?.state || 'N/A'} ${order.shipping_address?.zipCode || ''}</p>
-        <p>${order.shipping_address?.country || 'N/A'}</p>
+        <p>${order.shipping_address?.name || "N/A"}</p>
+        <p>${order.shipping_address?.street || "N/A"}</p>
+        <p>${order.shipping_address?.city || "N/A"}, ${order.shipping_address?.state || "N/A"} ${order.shipping_address?.zipCode || ""}</p>
+        <p>${order.shipping_address?.country || "N/A"}</p>
       </div>
       
       <div class="section">
@@ -1117,7 +1396,9 @@ router.get("/:id/invoice", authenticateHybridToken, async (req, res) => {
             </tr>
           </thead>
           <tbody>
-            ${enhancedItems.map(item => `
+            ${enhancedItems
+              .map(
+                (item) => `
               <tr>
                 <td>${item.name}</td>
                 <td>${item.sku}</td>
@@ -1125,7 +1406,9 @@ router.get("/:id/invoice", authenticateHybridToken, async (req, res) => {
                 <td>₹${item.unit_price.toFixed(2)}</td>
                 <td>₹${(item.unit_price * item.quantity).toFixed(2)}</td>
               </tr>
-            `).join('')}
+            `,
+              )
+              .join("")}
             <tr class="total-row">
               <td colspan="4">Subtotal:</td>
               <td>₹${subtotal.toFixed(2)}</td>
@@ -1154,12 +1437,14 @@ router.get("/:id/invoice", authenticateHybridToken, async (req, res) => {
     </html>
     `;
 
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="invoice-${order.invoice_no}.pdf"`);
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="invoice-${order.invoice_no}.pdf"`,
+    );
     res.send(htmlContent);
-
   } catch (err) {
-    console.error('Error generating invoice:', err);
+    console.error("Error generating invoice:", err);
     res.status(500).json({ error: err.message });
   }
 });

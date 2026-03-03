@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { formatCurrency } from '../../utils/format';
+import { getFullImageUrl } from '../../utils/imageUtils';
 
 const OrderItem = ({ item, showQuantity = true, showPrice = true }) => {
   const defaultImage = '/images/products/placeholder-product.svg';
@@ -39,7 +40,7 @@ const OrderItem = ({ item, showQuantity = true, showPrice = true }) => {
     return defaultImage;
   };
 
-  const imageUrl = getImageUrl(item);
+  const imageUrl = getFullImageUrl(getImageUrl(item));
 
   return (
     <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg border border-gray-200">

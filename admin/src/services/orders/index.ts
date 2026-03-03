@@ -148,19 +148,46 @@ export async function fetchOrderDetails({ id }: { id: string }): Promise<{ order
   try {
     console.log('🚀 Fetching order details for:', id);
     
-    const { data } = await axiosInstance.get(`/api/orders/${id}`);
-    
-    console.log('📦 Order details response:', data);
-    
-    if (!data || !data.success) {
-      throw new Error(data?.error || "Failed to fetch order details");
-    }
+    // Primary attempt: use client axiosInstance
+    try {
+      const { data } = await axiosInstance.get(`/api/orders/${id}`);
 
-    if (!data.data) {
-      throw new Error("Order data not found in response");
-    }
+      console.log('📦 Order details response:', data);
 
-    return { order: data.data as OrderDetails };
+      if (!data || !data.success) {
+        throw new Error(data?.error || "Failed to fetch order details");
+      }
+
+      if (!data.data) {
+        throw new Error("Order data not found in response");
+      }
+
+      return { order: data.data as OrderDetails };
+    } catch (primaryError) {
+      console.warn('⚠️ Primary fetchOrderDetails failed, attempting fallback with absolute API URL', primaryError?.message || primaryError);
+
+      // Fallback: try the explicit API URL (use NEXT_PUBLIC_API_URL or server default)
+      const apiRoot = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:5000";
+      const fallbackUrl = `${apiRoot.replace(/\/$/, '')}/api/orders/${id}`;
+
+      try {
+        const { data } = await axiosInstance.get(fallbackUrl);
+        console.log('📦 Fallback order details response:', data);
+
+        if (!data || !data.success) {
+          throw new Error(data?.error || "Failed to fetch order details (fallback)");
+        }
+
+        if (!data.data) {
+          throw new Error("Order data not found in response (fallback)");
+        }
+
+        return { order: data.data as OrderDetails };
+      } catch (fallbackError) {
+        console.error('💥 Both primary and fallback fetchOrderDetails attempts failed:', { primaryError, fallbackError });
+        throw fallbackError;
+      }
+    }
 
   } catch (error: any) {
     console.error('💥 fetchOrderDetails error:', error);
