@@ -2,11 +2,14 @@ const Subcategory = require("../models/Subcategory.js");
 const Category = require("../models/Category.js");
 const path = require("path");
 const fs = require("fs");
-const multer = require("multer");
 const { ObjectId } = require("mongodb");
 const router = require("express").Router();
+
+// Use Firebase upload middleware for consistency with products
+const { upload } = require("../middleware/upload");
+
 // --------------------------
-// Ensure uploads folder exists
+// Ensure uploads folder exists (for fallback local storage)
 // --------------------------
 const uploadDir = path.join(__dirname, "../uploads/categories");
 if (!fs.existsSync(uploadDir)) {
@@ -15,21 +18,13 @@ if (!fs.existsSync(uploadDir)) {
 }
 
 // --------------------------
-// Multer storage config
-// --------------------------
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, uploadDir),
-  filename: (req, file, cb) => cb(null, Date.now() + path.extname(file.originalname)),
-});
-const upload = multer({ storage });
-
-// --------------------------
 // STATIC FILE SERVING
 // --------------------------
 router.get("/uploads/:filename", (req, res) => {
   const filename = req.params.filename;
   const filePath = path.join(uploadDir, filename);
-  if (!fs.existsSync(filePath)) return res.status(404).json({ success: false, error: "Image not found" });
+  if (!fs.existsSync(filePath))
+    return res.status(404).json({ success: false, error: "Image not found" });
 
   const ext = path.extname(filename).toLowerCase();
   const mimeTypes = {
@@ -50,11 +45,12 @@ router.get("/uploads/:filename", (req, res) => {
 router.get("/bulk", async (req, res) => {
   try {
     const { ids } = req.query; // CSV: "id1,id2,id3"
-    if (!ids) return res.status(400).json({ success: false, error: "No IDs provided" });
+    if (!ids)
+      return res.status(400).json({ success: false, error: "No IDs provided" });
 
     const idArray = ids
       .split(",")
-      .map(id => {
+      .map((id) => {
         try {
           return new ObjectId(id); // convert valid IDs only
         } catch {
@@ -64,13 +60,19 @@ router.get("/bulk", async (req, res) => {
       .filter(Boolean);
 
     if (idArray.length === 0)
-      return res.status(400).json({ success: false, error: "No valid IDs provided" });
+      return res
+        .status(400)
+        .json({ success: false, error: "No valid IDs provided" });
 
-    const categories = await Category.find({ _id: { $in: idArray } }).populate('subcategories');
+    const categories = await Category.find({ _id: { $in: idArray } }).populate(
+      "subcategories",
+    );
 
-    const categoriesWithFullImageUrls = categories.map(cat => ({
+    const categoriesWithFullImageUrls = categories.map((cat) => ({
       ...cat.toObject(),
-      image_url: cat.image_url ? `${req.protocol}://${req.get("host")}${cat.image_url}` : null,
+      image_url: cat.image_url
+        ? `${req.protocol}://${req.get("host")}${cat.image_url}`
+        : null,
     }));
 
     res.json({ success: true, data: categoriesWithFullImageUrls });
@@ -87,21 +89,28 @@ router.put("/bulk", async (req, res) => {
     const { ids, published } = req.body;
 
     if (!ids || !Array.isArray(ids) || ids.length === 0)
-      return res.status(400).json({ success: false, error: "No category IDs provided" });
+      return res
+        .status(400)
+        .json({ success: false, error: "No category IDs provided" });
 
     const objectIds = ids
-      .map(id => {
-        try { return new ObjectId(id); }
-        catch { return null; }
+      .map((id) => {
+        try {
+          return new ObjectId(id);
+        } catch {
+          return null;
+        }
       })
       .filter(Boolean);
 
     if (objectIds.length === 0)
-      return res.status(400).json({ success: false, error: "No valid IDs provided" });
+      return res
+        .status(400)
+        .json({ success: false, error: "No valid IDs provided" });
 
     const result = await Category.updateMany(
       { _id: { $in: objectIds } },
-      { $set: { published, updated_at: new Date() } }
+      { $set: { published, updated_at: new Date() } },
     );
 
     res.json({ success: true, modifiedCount: result.modifiedCount });
@@ -117,17 +126,24 @@ router.delete("/bulk", async (req, res) => {
   try {
     const { ids } = req.body; // array of IDs
     if (!ids || !Array.isArray(ids) || ids.length === 0)
-      return res.status(400).json({ success: false, error: "No category IDs provided" });
+      return res
+        .status(400)
+        .json({ success: false, error: "No category IDs provided" });
 
     const objectIds = ids
-      .map(id => {
-        try { return new ObjectId(id); }
-        catch { return null; }
+      .map((id) => {
+        try {
+          return new ObjectId(id);
+        } catch {
+          return null;
+        }
       })
       .filter(Boolean);
 
     if (objectIds.length === 0)
-      return res.status(400).json({ success: false, error: "No valid IDs provided" });
+      return res
+        .status(400)
+        .json({ success: false, error: "No valid IDs provided" });
 
     // Delete associated subcategories first
     await Subcategory.deleteMany({ category_id: { $in: objectIds } });
@@ -164,19 +180,23 @@ router.get("/", async (req, res) => {
     // Enhanced search across multiple fields including subcategories
     let filter = {};
     if (search) {
-      const searchRegex = new RegExp(search, 'i');
+      const searchRegex = new RegExp(search, "i");
 
       // First, find subcategories that match the search
       const matchingSubcategories = await Subcategory.find({
         $or: [
           { name: { $regex: searchRegex } },
           { description: { $regex: searchRegex } },
-          { slug: { $regex: searchRegex } }
-        ]
-      }).select('category_id');
+          { slug: { $regex: searchRegex } },
+        ],
+      }).select("category_id");
 
       // Get unique category IDs from matching subcategories
-      const categoryIdsFromSubcategories = [...new Set(matchingSubcategories.map(sub => sub.category_id.toString()))];
+      const categoryIdsFromSubcategories = [
+        ...new Set(
+          matchingSubcategories.map((sub) => sub.category_id.toString()),
+        ),
+      ];
 
       // Build filter to search in categories OR in their subcategories
       filter = {
@@ -188,10 +208,17 @@ router.get("/", async (req, res) => {
           { seo_description: { $regex: searchRegex } },
           // Include categories that have matching subcategories
           ...(categoryIdsFromSubcategories.length > 0
-            ? [{ _id: { $in: categoryIdsFromSubcategories.map(id => new ObjectId(id)) } }]
-            : []
-          )
-        ]
+            ? [
+                {
+                  _id: {
+                    $in: categoryIdsFromSubcategories.map(
+                      (id) => new ObjectId(id),
+                    ),
+                  },
+                },
+              ]
+            : []),
+        ],
       };
     }
 
@@ -199,11 +226,11 @@ router.get("/", async (req, res) => {
       .sort({ created_at: -1 })
       .skip(skip)
       .limit(parseInt(limit))
-      .populate('subcategories');
+      .populate("subcategories");
 
     const total = await Category.countDocuments(filter);
     // Return image_url as-is since it's already a full URL from Firebase
-    const categoriesWithFullImageUrls = categories.map(cat => ({
+    const categoriesWithFullImageUrls = categories.map((cat) => ({
       ...cat.toObject(),
       image_url: cat.image_url || null,
     }));
@@ -211,7 +238,12 @@ router.get("/", async (req, res) => {
     res.json({
       success: true,
       data: categoriesWithFullImageUrls,
-      meta: { page: parseInt(page), limit: parseInt(limit), total, totalPages: Math.ceil(total / parseInt(limit)) },
+      meta: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        totalPages: Math.ceil(total / parseInt(limit)),
+      },
     });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
@@ -228,34 +260,43 @@ router.post("/", async (req, res) => {
     let subcategoryIndex = 0;
 
     // First, try to parse subcategories as JSON string (fallback)
-    if (req.body.subcategories && typeof req.body.subcategories === 'string') {
+    if (req.body.subcategories && typeof req.body.subcategories === "string") {
       try {
         const parsedSubcategories = JSON.parse(req.body.subcategories);
-        console.log('POST Parsed subcategories from JSON:', parsedSubcategories);
-        parsedSubcategories.forEach(subcat => {
+        console.log(
+          "POST Parsed subcategories from JSON:",
+          parsedSubcategories,
+        );
+        parsedSubcategories.forEach((subcat) => {
           if (subcat.name && subcat.slug) {
             subcategories.push(subcat);
           }
         });
       } catch (err) {
-        console.log('POST Failed to parse subcategories JSON:', err.message);
+        console.log("POST Failed to parse subcategories JSON:", err.message);
       }
     }
 
     // If no subcategories from JSON, try the individual fields approach
     if (subcategories.length === 0) {
-      console.log('POST Trying individual fields approach...');
-      console.log('POST Request body keys:', Object.keys(req.body));
-      console.log('POST Sample subcategory data:', req.body['subcategories.0.name'], req.body['subcategories.0.slug']);
+      console.log("POST Trying individual fields approach...");
+      console.log("POST Request body keys:", Object.keys(req.body));
+      console.log(
+        "POST Sample subcategory data:",
+        req.body["subcategories.0.name"],
+        req.body["subcategories.0.slug"],
+      );
 
       // Check for subcategories in the request body
-      const subcatKeys = Object.keys(req.body).filter(key => key.startsWith('subcategories.'));
-      console.log('POST Subcategory keys found:', subcatKeys);
+      const subcatKeys = Object.keys(req.body).filter((key) =>
+        key.startsWith("subcategories."),
+      );
+      console.log("POST Subcategory keys found:", subcatKeys);
 
       if (subcatKeys.length > 0) {
         // Group by index
         const groupedSubcats = {};
-        subcatKeys.forEach(key => {
+        subcatKeys.forEach((key) => {
           const match = key.match(/subcategories\.(\d+)\.(\w+)/);
           if (match) {
             const index = match[1];
@@ -267,7 +308,7 @@ router.post("/", async (req, res) => {
           }
         });
 
-        console.log('POST Grouped subcategories:', groupedSubcats);
+        console.log("POST Grouped subcategories:", groupedSubcats);
 
         Object.values(groupedSubcats).forEach((subcat) => {
           if (subcat.name && subcat.slug) {
@@ -281,7 +322,7 @@ router.post("/", async (req, res) => {
       }
     }
 
-    console.log('POST Final parsed subcategories:', subcategories);
+    console.log("POST Final parsed subcategories:", subcategories);
 
     const category = new Category({
       name,
@@ -294,17 +335,19 @@ router.post("/", async (req, res) => {
 
     // Create subcategories if provided
     if (subcategories.length > 0) {
-      const subcategoriesToCreate = subcategories.map(subcat => ({
+      const subcategoriesToCreate = subcategories.map((subcat) => ({
         ...subcat,
         category_id: category._id,
         published: true,
       }));
 
-      const createdSubcategories = await Subcategory.insertMany(subcategoriesToCreate);
+      const createdSubcategories = await Subcategory.insertMany(
+        subcategoriesToCreate,
+      );
 
       // Update category with subcategory IDs using update query
       await Category.findByIdAndUpdate(category._id, {
-        subcategories: createdSubcategories.map(sub => sub._id)
+        subcategories: createdSubcategories.map((sub) => sub._id),
       });
     }
 
@@ -322,25 +365,27 @@ router.post("/", async (req, res) => {
 
 // UPDATE category
 router.put("/:id", async (req, res) => {
-  const fs = require('fs');
-  const path = require('path');
-  const logFile = path.join(__dirname, '../debug_categories.log');
+  const fs = require("fs");
+  const path = require("path");
+  const logFile = path.join(__dirname, "../debug_categories.log");
 
   const log = (msg) => {
     try {
       fs.appendFileSync(logFile, `${new Date().toISOString()} - ${msg}\n`);
-    } catch (e) { console.error(e); }
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   try {
     log(`PUT Request for Category ID: ${req.params.id}`);
 
     // Ensure req.body exists and is an object
-    if (!req.body || typeof req.body !== 'object') {
-      log('Invalid request body');
+    if (!req.body || typeof req.body !== "object") {
+      log("Invalid request body");
       return res.status(400).json({
         success: false,
-        error: "Invalid request body"
+        error: "Invalid request body",
       });
     }
 
@@ -354,8 +399,8 @@ router.put("/:id", async (req, res) => {
       ...(name && { name }),
       ...(description !== undefined && { description }),
       ...(slug && { slug }),
-      ...(published !== undefined && { published: published === 'true' }), // Convert string to boolean
-      ...(image !== undefined && { image_url: image }) // Set image_url from the image field
+      ...(published !== undefined && { published: published === "true" }), // Convert string to boolean
+      ...(image !== undefined && { image_url: image }), // Set image_url from the image field
     };
 
     log(`Update Data: ${JSON.stringify(updateData)}`);
@@ -364,25 +409,29 @@ router.put("/:id", async (req, res) => {
     const category = await Category.findByIdAndUpdate(
       req.params.id,
       { $set: updateData },
-      { new: true, runValidators: true }
+      { new: true, runValidators: true },
     );
 
     if (!category) {
-      log('Category not found');
-      return res.status(404).json({ success: false, error: "Category not found" });
+      log("Category not found");
+      return res
+        .status(404)
+        .json({ success: false, error: "Category not found" });
     }
 
     // Parse and handle subcategories from form data
     const subcategoriesArray = [];
 
     // Check for subcategories in the request body
-    const subcatKeys = Object.keys(req.body).filter(key => key.startsWith('subcategories.'));
+    const subcatKeys = Object.keys(req.body).filter((key) =>
+      key.startsWith("subcategories."),
+    );
     log(`Subcategory keys found: ${subcatKeys.length}`);
 
     if (subcatKeys.length > 0) {
       // Group by index
       const groupedSubcats = {};
-      subcatKeys.forEach(key => {
+      subcatKeys.forEach((key) => {
         const match = key.match(/subcategories\.(\d+)\.(\w+)/);
         if (match) {
           const index = match[1];
@@ -415,25 +464,27 @@ router.put("/:id", async (req, res) => {
 
       if (subcategoriesArray.length > 0) {
         // Create new subcategories
-        const subcategoriesToCreate = subcategoriesArray.map(subcat => ({
+        const subcategoriesToCreate = subcategoriesArray.map((subcat) => ({
           ...subcat,
           category_id: category._id,
           published: true,
         }));
 
-        const createdSubcategories = await Subcategory.insertMany(subcategoriesToCreate);
+        const createdSubcategories = await Subcategory.insertMany(
+          subcategoriesToCreate,
+        );
         log(`Created ${createdSubcategories.length} new subcategories`);
 
         // Update category with new subcategory IDs using a separate update
         await Category.findByIdAndUpdate(req.params.id, {
-          $set: { subcategories: createdSubcategories.map(sub => sub._id) }
+          $set: { subcategories: createdSubcategories.map((sub) => sub._id) },
         });
       } else {
         // Clear subcategories array if explicitly set to empty
         await Category.findByIdAndUpdate(req.params.id, {
-          $set: { subcategories: [] }
+          $set: { subcategories: [] },
         });
-        log('Cleared subcategories');
+        log("Cleared subcategories");
       }
     }
 
@@ -444,11 +495,13 @@ router.put("/:id", async (req, res) => {
       success: true,
       data: {
         ...updatedCategory.toObject(),
-        image_url: updatedCategory.image_url ? `${req.protocol}://${req.get("host")}${updatedCategory.image_url}` : null,
+        image_url: updatedCategory.image_url
+          ? `${req.protocol}://${req.get("host")}${updatedCategory.image_url}`
+          : null,
       },
     });
   } catch (err) {
-    console.error('PUT category error:', err);
+    console.error("PUT category error:", err);
     log(`ERROR: ${err.message}\n${err.stack}`);
     res.status(500).json({ success: false, error: err.message });
   }
@@ -458,7 +511,7 @@ router.put("/:id", async (req, res) => {
 router.get("/dropdown", async (req, res) => {
   try {
     const { all } = req.query;
-    const filter = all === 'true' ? {} : { published: true };
+    const filter = all === "true" ? {} : { published: true };
 
     const categories = await Category.find(filter)
       .select("name slug")
@@ -473,21 +526,31 @@ router.get("/dropdown", async (req, res) => {
 // GET category by ID
 router.get("/:id", async (req, res) => {
   try {
-    const category = await Category.findById(req.params.id).populate('subcategories');
-    if (!category) return res.status(404).json({ success: false, error: "Category not found" });
+    const category = await Category.findById(req.params.id).populate(
+      "subcategories",
+    );
+    if (!category)
+      return res
+        .status(404)
+        .json({ success: false, error: "Category not found" });
 
     // Also get the full subcategory details for display
-    const subcategories = await Subcategory.find({ category_id: req.params.id })
-      .sort({ name: 1 });
+    const subcategories = await Subcategory.find({
+      category_id: req.params.id,
+    }).sort({ name: 1 });
 
     res.json({
       success: true,
       data: {
         ...category.toObject(),
-        image_url: category.image_url ? `${req.protocol}://${req.get("host")}${category.image_url}` : null,
-        subcategories: subcategories.map(subcat => ({
+        image_url: category.image_url
+          ? `${req.protocol}://${req.get("host")}${category.image_url}`
+          : null,
+        subcategories: subcategories.map((subcat) => ({
           ...subcat.toObject(),
-          image_url: subcat.image_url ? `${req.protocol}://${req.get("host")}${subcat.image_url}` : null,
+          image_url: subcat.image_url
+            ? `${req.protocol}://${req.get("host")}${subcat.image_url}`
+            : null,
         })),
       },
     });
@@ -503,19 +566,24 @@ router.delete("/:id", async (req, res) => {
     await Subcategory.deleteMany({ category_id: req.params.id });
 
     const category = await Category.findByIdAndDelete(req.params.id);
-    if (!category) return res.status(404).json({ success: false, error: "Category not found" });
+    if (!category)
+      return res
+        .status(404)
+        .json({ success: false, error: "Category not found" });
 
     if (category.image_url) {
       const imagePath = path.join(uploadDir, path.basename(category.image_url));
       if (fs.existsSync(imagePath)) fs.unlinkSync(imagePath);
     }
 
-    res.json({ success: true, message: "Category and all its subcategories deleted successfully" });
+    res.json({
+      success: true,
+      message: "Category and all its subcategories deleted successfully",
+    });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
 });
-
 
 // Export categories to CSV
 router.get("/export/csv", async (req, res) => {
@@ -525,18 +593,22 @@ router.get("/export/csv", async (req, res) => {
     // Build filter with enhanced search including subcategories
     let filter = {};
     if (search) {
-      const searchRegex = new RegExp(search, 'i');
+      const searchRegex = new RegExp(search, "i");
 
       // Find subcategories that match the search
       const matchingSubcategories = await Subcategory.find({
         $or: [
           { name: { $regex: searchRegex } },
           { description: { $regex: searchRegex } },
-          { slug: { $regex: searchRegex } }
-        ]
-      }).select('category_id');
+          { slug: { $regex: searchRegex } },
+        ],
+      }).select("category_id");
 
-      const categoryIdsFromSubcategories = [...new Set(matchingSubcategories.map(sub => sub.category_id.toString()))];
+      const categoryIdsFromSubcategories = [
+        ...new Set(
+          matchingSubcategories.map((sub) => sub.category_id.toString()),
+        ),
+      ];
 
       filter.$or = [
         { name: { $regex: searchRegex } },
@@ -545,58 +617,72 @@ router.get("/export/csv", async (req, res) => {
         { seo_title: { $regex: searchRegex } },
         { seo_description: { $regex: searchRegex } },
         ...(categoryIdsFromSubcategories.length > 0
-          ? [{ _id: { $in: categoryIdsFromSubcategories.map(id => new ObjectId(id)) } }]
-          : []
-        )
+          ? [
+              {
+                _id: {
+                  $in: categoryIdsFromSubcategories.map(
+                    (id) => new ObjectId(id),
+                  ),
+                },
+              },
+            ]
+          : []),
       ];
     }
     if (published !== undefined) {
-      filter.published = published === 'true';
+      filter.published = published === "true";
     }
 
     const categories = await Category.find(filter)
-      .populate('subcategories')
+      .populate("subcategories")
       .sort({ created_at: -1 });
 
     if (categories.length === 0) {
-      return res.status(404).json({ success: false, error: "No categories found to export" });
+      return res
+        .status(404)
+        .json({ success: false, error: "No categories found to export" });
     }
 
     // Convert to CSV format
     const csvHeaders = [
-      'ID',
-      'Name',
-      'Description',
-      'Slug',
-      'Image URL',
-      'Subcategories Count',
-      'Subcategories',
-      'Created At',
-      'Updated At'
+      "ID",
+      "Name",
+      "Description",
+      "Slug",
+      "Image URL",
+      "Subcategories Count",
+      "Subcategories",
+      "Created At",
+      "Updated At",
     ];
 
-    const csvRows = categories.map(cat => [
+    const csvRows = categories.map((cat) => [
       cat._id,
       cat.name,
-      cat.description || '',
+      cat.description || "",
       cat.slug,
-      cat.image_url || '',
+      cat.image_url || "",
       cat.subcategories ? cat.subcategories.length : 0,
-      cat.subcategories ? cat.subcategories.map(sub => sub.name).join('; ') : '',
+      cat.subcategories
+        ? cat.subcategories.map((sub) => sub.name).join("; ")
+        : "",
       cat.createdAt || cat.created_at,
-      cat.updatedAt || cat.updated_at
+      cat.updatedAt || cat.updated_at,
     ]);
 
     const csvContent = [
-      csvHeaders.join(','),
-      ...csvRows.map(row => row.map(field => `"${field}"`).join(','))
-    ].join('\n');
+      csvHeaders.join(","),
+      ...csvRows.map((row) => row.map((field) => `"${field}"`).join(",")),
+    ].join("\n");
 
-    res.setHeader('Content-Type', 'text/csv');
-    res.setHeader('Content-Disposition', `attachment; filename="categories_${new Date().toISOString().split('T')[0]}.csv"`);
+    res.setHeader("Content-Type", "text/csv");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="categories_${new Date().toISOString().split("T")[0]}.csv"`,
+    );
     res.send(csvContent);
   } catch (err) {
-    console.error('CSV export error:', err);
+    console.error("CSV export error:", err);
     res.status(500).json({ success: false, error: err.message });
   }
 });
@@ -609,18 +695,22 @@ router.get("/export/json", async (req, res) => {
     // Build filter with enhanced search including subcategories
     let filter = {};
     if (search) {
-      const searchRegex = new RegExp(search, 'i');
+      const searchRegex = new RegExp(search, "i");
 
       // Find subcategories that match the search
       const matchingSubcategories = await Subcategory.find({
         $or: [
           { name: { $regex: searchRegex } },
           { description: { $regex: searchRegex } },
-          { slug: { $regex: searchRegex } }
-        ]
-      }).select('category_id');
+          { slug: { $regex: searchRegex } },
+        ],
+      }).select("category_id");
 
-      const categoryIdsFromSubcategories = [...new Set(matchingSubcategories.map(sub => sub.category_id.toString()))];
+      const categoryIdsFromSubcategories = [
+        ...new Set(
+          matchingSubcategories.map((sub) => sub.category_id.toString()),
+        ),
+      ];
 
       filter.$or = [
         { name: { $regex: searchRegex } },
@@ -629,24 +719,33 @@ router.get("/export/json", async (req, res) => {
         { seo_title: { $regex: searchRegex } },
         { seo_description: { $regex: searchRegex } },
         ...(categoryIdsFromSubcategories.length > 0
-          ? [{ _id: { $in: categoryIdsFromSubcategories.map(id => new ObjectId(id)) } }]
-          : []
-        )
+          ? [
+              {
+                _id: {
+                  $in: categoryIdsFromSubcategories.map(
+                    (id) => new ObjectId(id),
+                  ),
+                },
+              },
+            ]
+          : []),
       ];
     }
     if (published !== undefined) {
-      filter.published = published === 'true';
+      filter.published = published === "true";
     }
 
     const categories = await Category.find(filter)
-      .populate('subcategories')
+      .populate("subcategories")
       .sort({ created_at: -1 });
 
     if (categories.length === 0) {
-      return res.status(404).json({ success: false, error: "No categories found to export" });
+      return res
+        .status(404)
+        .json({ success: false, error: "No categories found to export" });
     }
 
-    const exportData = categories.map(cat => ({
+    const exportData = categories.map((cat) => ({
       id: cat._id,
       name: cat.name,
       description: cat.description,
@@ -654,137 +753,189 @@ router.get("/export/json", async (req, res) => {
       published: cat.published,
       imageUrl: cat.image_url,
       subcategoriesCount: cat.subcategories ? cat.subcategories.length : 0,
-      subcategories: cat.subcategories ? cat.subcategories.map(sub => ({
-        id: sub._id,
-        name: sub.name,
-        description: sub.description,
-        slug: sub.slug
-      })) : [],
+      subcategories: cat.subcategories
+        ? cat.subcategories.map((sub) => ({
+            id: sub._id,
+            name: sub.name,
+            description: sub.description,
+            slug: sub.slug,
+          }))
+        : [],
       createdAt: cat.createdAt || cat.created_at,
-      updatedAt: cat.updatedAt || cat.updated_at
+      updatedAt: cat.updatedAt || cat.updated_at,
     }));
 
-    res.setHeader('Content-Type', 'application/json');
-    res.setHeader('Content-Disposition', `attachment; filename="categories_${new Date().toISOString().split('T')[0]}.json"`);
+    res.setHeader("Content-Type", "application/json");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="categories_${new Date().toISOString().split("T")[0]}.json"`,
+    );
     res.json({
       exportedAt: new Date().toISOString(),
       totalRecords: exportData.length,
       filters: {
         search: search || null,
         published: published || null,
-        sort_order: sort_order || null
+        sort_order: sort_order || null,
       },
-      data: exportData
+      data: exportData,
     });
   } catch (err) {
-    console.error('JSON export error:', err);
+    console.error("JSON export error:", err);
     res.status(500).json({ success: false, error: err.message });
   }
 });
 
 // POST /api/categories/import/csv - Import categories from CSV
-router.post("/import/csv", upload.single('file'), async (req, res) => {
+router.post("/import/csv", upload.single("file"), async (req, res) => {
   try {
     if (!req.file) {
-      return res.status(400).json({ success: false, error: 'No file uploaded' });
+      return res
+        .status(400)
+        .json({ success: false, error: "No file uploaded" });
     }
 
-    const csv = require('csv-parser');
+    const csv = require("csv-parser");
+    const admin = require("../lib/firebase");
     const results = [];
     const errors = [];
 
-    // Read and parse CSV file
-    fs.createReadStream(req.file.path)
+    // Create read stream based on upload location (Firebase or Local)
+    let readStream;
+
+    if (req.file.firebaseUrl) {
+      // File was uploaded to Firebase
+      console.log(`📖 Reading CSV from Firebase: ${req.file.path}`);
+      const bucket = admin.storage().bucket();
+      const firebaseFile = bucket.file(req.file.path);
+      readStream = firebaseFile.createReadStream();
+    } else {
+      // File was saved locally
+      console.log(`📖 Reading CSV from local storage: ${req.file.path}`);
+      readStream = fs.createReadStream(req.file.path);
+    }
+
+    readStream
       .pipe(csv())
-      .on('data', (data) => results.push(data))
-      .on('end', async () => {
+      .on("data", (data) => results.push(data))
+      .on("end", async () => {
         let imported = 0;
+        let updated = 0;
         let skipped = 0;
 
         for (let i = 0; i < results.length; i++) {
           const row = results[i];
           try {
             // Validate required fields
-            if (!row['Name'] || !row['Slug']) {
-              errors.push({ row: i + 2, error: 'Missing required fields: Name or Slug' });
-              skipped++;
-              continue;
-            }
-
-            // Check if category with same slug exists
-            const existingCategory = await Category.findOne({ slug: row['Slug'] });
-            if (existingCategory) {
-              errors.push({ row: i + 2, error: `Category with slug ${row['Slug']} already exists` });
+            if (!row["Name"] || !row["Slug"]) {
+              errors.push({
+                row: i + 2,
+                error: "Missing required fields: Name or Slug",
+              });
               skipped++;
               continue;
             }
 
             // Prepare category data
             const categoryData = {
-              name: row['Name'],
-              slug: row['Slug'],
-              description: row['Description'] || '',
-              image_url: row['Image URL'] || null,
-              published: true
+              name: row["Name"],
+              slug: row["Slug"],
+              description: row["Description"] || "",
+              image_url: row["Image URL"] || null,
+              published: row["Published"]?.toLowerCase() !== "no",
             };
 
-            // Create category
-            const category = await Category.create(categoryData);
+            // Check if category with same slug exists
+            const existingCategory = await Category.findOne({
+              slug: row["Slug"],
+            });
+
+            let category;
+
+            if (existingCategory) {
+              // UPDATE existing category
+              console.log(`📝 Updating category: ${row["Slug"]}`);
+              category = await Category.findByIdAndUpdate(
+                existingCategory._id,
+                categoryData,
+                { new: true },
+              );
+              updated++;
+            } else {
+              // CREATE new category
+              console.log(`✨ Creating new category: ${row["Slug"]}`);
+              category = await Category.create(categoryData);
+              imported++;
+            }
 
             // Handle subcategories if provided
-            if (row['Subcategories']) {
-              const subcategoryNames = row['Subcategories'].split(';').map(s => s.trim()).filter(Boolean);
+            if (row["Subcategories"]) {
+              const subcategoryNames = row["Subcategories"]
+                .split(";")
+                .map((s) => s.trim())
+                .filter(Boolean);
 
               if (subcategoryNames.length > 0) {
-                const subcategoriesToCreate = subcategoryNames.map(name => ({
+                // Delete existing subcategories for this category (if updating)
+                if (existingCategory) {
+                  await Subcategory.deleteMany({
+                    category_id: category._id,
+                  });
+                }
+
+                const subcategoriesToCreate = subcategoryNames.map((name) => ({
                   name: name,
-                  slug: name.toLowerCase().replace(/\s+/g, '-'),
+                  slug: name.toLowerCase().replace(/\s+/g, "-"),
                   category_id: category._id,
-                  published: true
+                  published: true,
                 }));
 
-                const createdSubcategories = await Subcategory.insertMany(subcategoriesToCreate);
+                const createdSubcategories = await Subcategory.insertMany(
+                  subcategoriesToCreate,
+                );
 
                 // Update category with subcategory IDs
                 await Category.findByIdAndUpdate(category._id, {
-                  subcategories: createdSubcategories.map(sub => sub._id)
+                  subcategories: createdSubcategories.map((sub) => sub._id),
                 });
               }
             }
-
-            imported++;
-
           } catch (error) {
             errors.push({ row: i + 2, error: error.message });
             skipped++;
           }
         }
 
-        // Delete uploaded file
-        fs.unlinkSync(req.file.path);
-
         res.json({
           success: true,
-          message: `Import completed. ${imported} categories imported, ${skipped} skipped.`,
+          message: `CSV import completed: ${imported} categories created, ${updated} categories updated, ${skipped} errors`,
           imported,
+          updated,
           skipped,
-          errors: errors.length > 0 ? errors : undefined
+          errors: errors.length > 0 ? errors : undefined,
         });
       })
-      .on('error', (error) => {
-        console.error('CSV parsing error:', error);
-        if (req.file && fs.existsSync(req.file.path)) {
-          fs.unlinkSync(req.file.path);
-        }
-        res.status(500).json({ success: false, error: 'Failed to parse CSV file' });
+      .on("error", (error) => {
+        console.error("CSV parsing error:", error);
+        res
+          .status(500)
+          .json({ success: false, error: "Failed to parse CSV file" });
       });
 
+    readStream.on("error", (error) => {
+      console.error("CSV file read error:", error);
+      res
+        .status(500)
+        .json({
+          success: false,
+          error: `Failed to read CSV file: ${error.message}`,
+        });
+    });
   } catch (error) {
-    console.error('CSV import error:', error);
-    if (req.file && fs.existsSync(req.file.path)) {
-      fs.unlinkSync(req.file.path);
-    }
-    res.status(500).json({ success: false, error: 'Failed to import categories from CSV' });
+    console.error("CSV import error:", error);
+    res
+      .status(500)
+      .json({ success: false, error: "Failed to import categories from CSV" });
   }
 });
 

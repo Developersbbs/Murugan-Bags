@@ -41,18 +41,39 @@ const resolveImage = (img) => {
 // FIX 2: Pull best image from item — checks all possible fields
 const getItemImage = (item) => {
   if (!item) return PLACEHOLDER;
-  if (item.image && item.image !== PLACEHOLDER) return resolveImage(item.image);
-  if (item.variant_image) return resolveImage(item.variant_image);
+
+  //  direct image
+  if (item.image && item.image !== PLACEHOLDER)
+    return resolveImage(item.image);
+
+  //  variant image
+  if (item.variant_image)
+    return resolveImage(item.variant_image);
+
   if (Array.isArray(item.variant_images) && item.variant_images.length > 0)
     return resolveImage(item.variant_images[0]);
+
+  //  image from backend order API
+  if (item.products?.image)
+    return resolveImage(item.products.image);
+
+  // 4️⃣ product images
   if (item.product) {
     const p = item.product;
-    const imgUrl = p.image_url;
-    if (Array.isArray(imgUrl) && imgUrl.length > 0) return resolveImage(imgUrl[0]);
-    if (typeof imgUrl === 'string' && imgUrl) return resolveImage(imgUrl);
-    if (Array.isArray(p.images) && p.images.length > 0) return resolveImage(p.images[0]);
-    if (p.image) return resolveImage(p.image);
+
+    if (Array.isArray(p.image_url) && p.image_url.length > 0)
+      return resolveImage(p.image_url[0]);
+
+    if (typeof p.image_url === "string")
+      return resolveImage(p.image_url);
+
+    if (Array.isArray(p.images) && p.images.length > 0)
+      return resolveImage(p.images[0]);
+
+    if (p.image)
+      return resolveImage(p.image);
   }
+
   return PLACEHOLDER;
 };
 

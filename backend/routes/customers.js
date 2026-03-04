@@ -6,7 +6,7 @@ const Order = require("../models/Order.js");
 const Wishlist = require("../models/Wishlist.js");
 const Cart = require("../models/Cart.js");
 const Address = require("../models/Address.js");
-const admin = require('firebase-admin');
+const admin = require('../lib/firebase');
 const router = express.Router();
 
 // Check if user exists by email

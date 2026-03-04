@@ -152,6 +152,7 @@ export function EditProductSheet({ product, children }: Props) {
   // ... (logs can remain or be removed, keeping them for now but maybe reduced)
 
   const initialData = useMemo(() => ({
+    _id: product._id,
     name: product.name,
     description: product.description ?? "",
     images: [],

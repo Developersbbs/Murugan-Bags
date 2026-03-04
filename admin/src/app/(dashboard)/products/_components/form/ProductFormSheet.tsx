@@ -496,126 +496,131 @@ export default function ProductFormSheet({
     console.log('Form field values:', { fileSize, downloadFormat });
   }, [fileSize, downloadFormat]);
 
-const onSubmit = async (data: ProductFormData) => {
-  try {
-    console.log("=== FORM SUBMISSION STARTED ===");
+  const onSubmit = async (data: ProductFormData) => {
+    try {
+      console.log("=== FORM SUBMISSION STARTED ===");
 
-    const currentFormData = form.getValues();
-    const finalData: any = { ...data, ...currentFormData };
+      const currentFormData = form.getValues();
+      const finalData: any = { ...data, ...currentFormData };
 
-    // Handle existing images
-    if (existingImages && existingImages.length > 0) {
-      finalData.existing_images = JSON.stringify(existingImages);
-    } else {
-      finalData.existing_images = "";
-    }
-
-    // Canonical URL
-    if (finalData.slug) {
-      const baseUrl =
-        process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
-      finalData.seoCanonical = `${baseUrl}/products/${finalData.slug}`;
-    }
-
-    // Robots logic
-    const isBaseInStock =
-      (finalData.stock || 0) > (finalData.minStockThreshold || 0);
-
-    const hasVariantsInStock =
-      finalData.product_variants?.combinations?.some(
-        (variant: any) =>
-          variant.stock !== undefined &&
-          variant.minStock !== undefined &&
-          variant.stock > variant.minStock
-      ) || false;
-
-    const isInStock = isBaseInStock || hasVariantsInStock;
-
-    finalData.seoRobots = isInStock
-      ? "index,follow"
-      : "noindex,follow";
-
-    // Convert to FormData
-    const formData = objectToFormData(finalData);
-
-    console.log("🚀 Sending request to backend...");
-
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/api/products`,
-      {
-        method: "POST",
-        body: formData,
+      // Handle existing images
+      if (existingImages && existingImages.length > 0) {
+        finalData.existing_images = JSON.stringify(existingImages);
+      } else {
+        finalData.existing_images = "";
       }
-    );
 
-    const result = await response.json();
+      // Canonical URL
+      if (finalData.slug) {
+        const baseUrl =
+          process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+        finalData.seoCanonical = `${baseUrl}/products/${finalData.slug}`;
+      }
 
-    if (!response.ok) {
-      toast.error(result.error || "Failed to save product");
-      return;
+      // Robots logic
+      const isBaseInStock =
+        (finalData.stock || 0) > (finalData.minStockThreshold || 0);
+
+      const hasVariantsInStock =
+        finalData.product_variants?.combinations?.some(
+          (variant: any) =>
+            variant.stock !== undefined &&
+            variant.minStock !== undefined &&
+            variant.stock > variant.minStock
+        ) || false;
+
+      const isInStock = isBaseInStock || hasVariantsInStock;
+
+      finalData.seoRobots = isInStock
+        ? "index,follow"
+        : "noindex,follow";
+
+      // Convert to FormData
+      const formData = objectToFormData(finalData);
+
+      console.log("🚀 Sending request to backend...");
+
+      const isEdit = initialData?._id; // check if editing
+
+      const url = isEdit
+        ? `${process.env.NEXT_PUBLIC_API_URL}/api/products/${initialData._id}`
+        : `${process.env.NEXT_PUBLIC_API_URL}/api/products`;
+
+      const method = isEdit ? "PUT" : "POST";
+
+      const response = await fetch(url, {
+        method,
+        body: formData,
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        toast.error(result.error || "Failed to save product");
+        return;
+      }
+
+      toast.success(
+        `Product "${result.data?.name || "Product"}" ${actionVerb} successfully!`,
+        { position: "top-center" }
+      );
+
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+
+      form.reset({
+        productType: "physical",
+        productStructure: "simple",
+        name: "",
+        description: "",
+        images: [],
+        sku: "",
+        categories: [],
+        costPrice: undefined,
+        salesPrice: undefined,
+        stock: undefined,
+        minStockThreshold: undefined,
+        weight: undefined,
+        color: "",
+        size: "",
+        material: "",
+        brand: "",
+        warranty: "",
+        isCodAvailable: true,
+        isFreeShipping: false,
+        showRatings: true,
+        fileUpload: undefined,
+        fileSize: undefined,
+        downloadFormat: "",
+        licenseType: "",
+        downloadLimit: undefined,
+        tags: [],
+        seoTitle: "",
+        seoDescription: "",
+        seoKeywords: [],
+        seoCanonical: "",
+        seoRobots: "index,follow",
+        seoOgTitle: "",
+        seoOgDescription: "",
+        seoOgImage: "",
+        slug: "",
+        product_variants: {
+          attributes: [
+            { id: "attr-size", name: "size", values: [] },
+            { id: "attr-color", name: "color", values: [] },
+            { id: "attr-material", name: "material", values: [] },
+          ],
+          combinations: [],
+          autoGenerateSKU: true,
+        },
+      });
+
+      setIsSheetOpen(false);
+
+    } catch (error) {
+      console.error("UPLOAD ERROR:", error);
+      toast.error("An error occurred while saving the product");
     }
-
-    toast.success(
-      `Product "${result.data?.name || "Product"}" ${actionVerb} successfully!`,
-      { position: "top-center" }
-    );
-
-    queryClient.invalidateQueries({ queryKey: ["products"] });
-
-    form.reset({
-      productType: "physical",
-      productStructure: "simple",
-      name: "",
-      description: "",
-      images: [],
-      sku: "",
-      categories: [],
-      costPrice: undefined,
-      salesPrice: undefined,
-      stock: undefined,
-      minStockThreshold: undefined,
-      weight: undefined,
-      color: "",
-      size: "",
-      material: "",
-      brand: "",
-      warranty: "",
-      isCodAvailable: true,
-      isFreeShipping: false,
-      showRatings: true,
-      fileUpload: undefined,
-      fileSize: undefined,
-      downloadFormat: "",
-      licenseType: "",
-      downloadLimit: undefined,
-      tags: [],
-      seoTitle: "",
-      seoDescription: "",
-      seoKeywords: [],
-      seoCanonical: "",
-      seoRobots: "index,follow",
-      seoOgTitle: "",
-      seoOgDescription: "",
-      seoOgImage: "",
-      slug: "",
-      product_variants: {
-        attributes: [
-          { id: "attr-size", name: "size", values: [] },
-          { id: "attr-color", name: "color", values: [] },
-          { id: "attr-material", name: "material", values: [] },
-        ],
-        combinations: [],
-        autoGenerateSKU: true,
-      },
-    });
-
-    setIsSheetOpen(false);
-
-  } catch (error) {
-    console.error("UPLOAD ERROR:", error);
-    toast.error("An error occurred while saving the product");
-  }
-};
+  };
 
   const onInvalid = (errors: FieldErrors<ProductFormData>) => {
     console.log('=== FORM VALIDATION FAILED ===');

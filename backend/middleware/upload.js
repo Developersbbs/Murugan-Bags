@@ -110,7 +110,7 @@ class FirebaseStorage {
       console.log('✅ LOCAL UPLOAD FINISHED for', localFilePath);
       cb(null, {
         filename: filename,
-        path: `/${folder}${filename}`,
+        path: localFilePath, // Return absolute path instead of relative path
         size: outStream.bytesWritten,
         firebaseUrl: null // Signal no Firebase URL
       });

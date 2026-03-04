@@ -263,15 +263,49 @@ router.get(
                       product.image ||
                       "/images/products/placeholder-product.svg";
                   } else {
-                    // ✅ FIX: If order item has a variant_id, try to get variant image first
+                    //  Resolve variant image properly
+                    let matchedVariant = null;
+
                     if (
-                      item.variant_id &&
                       product.product_variants &&
                       product.product_variants.length > 0
                     ) {
-                      const matchedVariant = product.product_variants.find(
-                        (v) => v._id.toString() === item.variant_id.toString(),
-                      );
+                      //Match using variant_id
+                      if (item.variant_id) {
+                        matchedVariant = product.product_variants.find(
+                          (v) =>
+                            v._id.toString() === item.variant_id.toString(),
+                        );
+                      }
+
+                      // Match using SKU
+                      if (!matchedVariant && item.variant_sku) {
+                        matchedVariant = product.product_variants.find(
+                          (v) => v.sku === item.variant_sku,
+                        );
+                      }
+
+                      // Match using attributes
+                      if (!matchedVariant && item.variant_attributes) {
+                        matchedVariant = product.product_variants.find(
+                          (variant) => {
+                            if (!variant.attributes) return false;
+
+                            const vAttrs =
+                              variant.attributes instanceof Map
+                                ? Object.fromEntries(variant.attributes)
+                                : variant.attributes;
+
+                            return Object.keys(item.variant_attributes).every(
+                              (key) =>
+                                String(item.variant_attributes[key]) ===
+                                String(vAttrs[key]),
+                            );
+                          },
+                        );
+                      }
+
+                      //  If variant found, use its image
                       if (
                         matchedVariant &&
                         matchedVariant.images &&
@@ -958,6 +992,7 @@ router.post("/place-order", authenticateHybridToken, async (req, res) => {
         const product = await Product.findById(item.product_id);
 
         let variantName = product?.name || "Product";
+        let resolvedVariantId = item.variant_id || null;
 
         if (
           product &&
@@ -966,7 +1001,7 @@ router.post("/place-order", authenticateHybridToken, async (req, res) => {
         ) {
           let matchedVariant = null;
 
-          // Match by variant_id
+          //  Match by variant_id
           if (item.variant_id) {
             matchedVariant = product.product_variants.find(
               (v) => v._id.toString() === item.variant_id.toString(),
@@ -980,7 +1015,7 @@ router.post("/place-order", authenticateHybridToken, async (req, res) => {
             );
           }
 
-          // Match by attributes
+          //  Match by attributes
           if (!matchedVariant && item.variant_attributes) {
             matchedVariant = product.product_variants.find((variant) => {
               if (!variant.attributes) return false;
@@ -997,21 +1032,21 @@ router.post("/place-order", authenticateHybridToken, async (req, res) => {
             });
           }
 
+          //  IMPORTANT FIX
           if (matchedVariant) {
+            resolvedVariantId = matchedVariant._id; // ← STORE VARIANT ID
             variantName = `${product.name} - ${matchedVariant.name || matchedVariant.slug}`;
           }
         }
 
         return {
           product_id: item.product_id,
-          variant_id: item.variant_id || null,
+          variant_id: resolvedVariantId, //  FIXED
           variant_sku: item.variant_sku || null,
           variant_attributes: item.variant_attributes || {},
           quantity: item.quantity,
           price: item.unit_price,
           subtotal: item.unit_price * item.quantity,
-
-          // ⭐ NEW FIELD
           name: variantName,
         };
       }),
@@ -1137,6 +1172,7 @@ router.post("/place-order", authenticateHybridToken, async (req, res) => {
 router.post("/", async (req, res) => {
   try {
     const order = new Order(req.body);
+    console.log("order", order);
     await order.save();
     res.json(order);
   } catch (err) {

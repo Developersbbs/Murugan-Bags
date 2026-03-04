@@ -313,10 +313,14 @@ const CheckoutPage = () => {
           country: formData.country,
         },
         items: cartItems.map((item) => ({
-          name: getCartItemName(item), // important
+          name: getCartItemName(item),
           product_id: item.id || item.product_id,
           quantity: item.quantity,
           unit_price: item.price,
+
+          // ADD THIS
+          variant_id: item.variant_id || null,
+
           variant_sku: item.variant_sku,
           variant_attributes: item.variant || {},
         })),

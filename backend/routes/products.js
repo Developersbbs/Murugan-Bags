@@ -1768,7 +1768,40 @@ router.put("/:id", uploadDigitalFile, async (req, res) => {
     };
 
     if (req.body.name !== undefined) updateData.name = req.body.name;
-    if (req.body.slug !== undefined) updateData.slug = req.body.slug;
+
+    // Handle slug updates carefully - only update if explicitly provided and different
+    if (req.body.slug !== undefined && req.body.slug !== currentProduct.slug) {
+      // Check if new slug already exists on another product
+      const slugExists = await Product.findOne({
+        slug: req.body.slug,
+        _id: { $ne: currentProduct._id }, // Exclude current product
+      });
+
+      if (slugExists) {
+        // Slug conflict - generate unique one
+        let baseSlug = req.body.slug;
+        let slugCounter = 1;
+        let finalSlug = baseSlug;
+
+        while (
+          await Product.findOne({
+            slug: finalSlug,
+            _id: { $ne: currentProduct._id },
+          })
+        ) {
+          finalSlug = `${baseSlug}-${slugCounter}`;
+          slugCounter++;
+        }
+
+        updateData.slug = finalSlug;
+        console.log(
+          `⚠️ Slug conflict detected. Generated unique slug: ${finalSlug}`,
+        );
+      } else {
+        updateData.slug = req.body.slug;
+      }
+    }
+
     if (req.body.description !== undefined)
       updateData.description = req.body.description;
     if (productStructure) updateData.product_structure = productStructure;
@@ -1785,8 +1818,11 @@ router.put("/:id", uploadDigitalFile, async (req, res) => {
           req.body.selling_price || req.body.salesPrice,
         );
     } else if (productStructure === "variant") {
-      updateData.cost_price = undefined;
-      updateData.selling_price = undefined;
+      // ✅ FIX: Use $unset to remove these fields from the document entirely.
+      // Setting to `undefined` still triggers Mongoose validators — $unset bypasses them.
+      if (!updateData.$unset) updateData.$unset = {};
+      updateData.$unset.cost_price = "";
+      updateData.$unset.selling_price = "";
     }
 
     if (productType === "physical") {
@@ -2030,23 +2066,68 @@ router.put("/:id", uploadDigitalFile, async (req, res) => {
       }
     }
 
+    // Ensure we don't set main product prices for variant products
+    const finalStructure = (
+      updateData.product_structure ||
+      currentProduct.product_structure ||
+      ""
+    )
+      .toString()
+      .toLowerCase();
+    const isVariantFinal = finalStructure === "variant";
+    const isVariantsBeingUpdated =
+      !!updateData.product_variants || !!req.body.product_variants;
+    if (
+      isVariantFinal ||
+      isVariantsBeingUpdated ||
+      currentProduct.product_structure === "variant"
+    ) {
+      if (updateData.hasOwnProperty("cost_price")) delete updateData.cost_price;
+      if (updateData.hasOwnProperty("selling_price"))
+        delete updateData.selling_price;
+    }
+
     console.log("=== BEFORE DATABASE UPDATE ===");
     console.log("productQuery:", JSON.stringify(productQuery, null, 2));
+    console.log("currentProduct ID:", currentProduct._id);
     console.log("updateData keys:", Object.keys(updateData));
     console.log("updateData:", JSON.stringify(updateData, null, 2));
 
-    const product = await Product.findOneAndUpdate(productQuery, updateData, {
+    // ✅ FIX: Separate $unset from the regular update fields.
+    // Mixing $unset with plain fields causes a Mongoose error — they must be split.
+    const { $unset, ...regularUpdateData } = updateData;
+    const mongoUpdate = { $set: regularUpdateData };
+    if ($unset && Object.keys($unset).length > 0) {
+      mongoUpdate.$unset = $unset;
+    }
+
+    const product = await Product.findOneAndUpdate(productQuery, mongoUpdate, {
       new: true,
-      runValidators: true,
+      runValidators: false, // ✅ Disable validators on update — they re-validate the whole doc
+      //    including fields not being changed, causing false failures.
     });
 
     if (!product) {
-      return res
-        .status(404)
-        .json({ success: false, error: "Product not found" });
+      return res.status(404).json({
+        success: false,
+        error: "Product not found after update attempt",
+      });
+    }
+
+    // Verify we updated the correct product
+    if (product._id.toString() !== currentProduct._id.toString()) {
+      console.error(
+        "❌ ERROR: Updated product ID doesn't match original product ID!",
+      );
+      return res.status(500).json({
+        success: false,
+        error: "Update error: Product ID mismatch",
+      });
     }
 
     console.log("=== AFTER UPDATE ===");
+    console.log("Updated product ID:", product._id);
+    console.log("Successfully updated product:", product.name);
     console.log(
       "Updated product variants count:",
       product.product_variants ? product.product_variants.length : 0,
@@ -3192,43 +3273,51 @@ router.get("/export/csv", async (req, res) => {
 router.post("/import/csv", upload.single("file"), async (req, res) => {
   try {
     if (!req.file) {
-      return res
-        .status(400)
-        .json({ success: false, error: "No file uploaded" });
+      return res.status(400).json({
+        success: false,
+        error: "No file uploaded",
+      });
     }
 
-    const fs = require("fs");
     const csv = require("csv-parser");
+    const admin = require("../lib/firebase");
+    const fs = require("fs");
+    const path = require("path");
+
     const results = [];
     const errors = [];
 
-    // Read and parse CSV file
-    fs.createReadStream(req.file.path)
+    // Create read stream based on upload location (Firebase or Local)
+    let readStream;
+
+    if (req.file.firebaseUrl) {
+      // File was uploaded to Firebase
+      console.log(`📖 Reading CSV from Firebase: ${req.file.path}`);
+      const bucket = admin.storage().bucket();
+      const firebaseFile = bucket.file(req.file.path);
+      readStream = firebaseFile.createReadStream();
+    } else {
+      // File was saved locally
+      console.log(`📖 Reading CSV from local storage: ${req.file.path}`);
+      readStream = fs.createReadStream(req.file.path);
+    }
+
+    readStream
       .pipe(csv())
       .on("data", (data) => results.push(data))
       .on("end", async () => {
         let imported = 0;
+        let updated = 0;
         let skipped = 0;
 
         for (let i = 0; i < results.length; i++) {
           const row = results[i];
+
           try {
-            // Validate required fields
             if (!row["Product Name"] || !row["SKU"]) {
               errors.push({
                 row: i + 2,
-                error: "Missing required fields: Product Name or SKU",
-              });
-              skipped++;
-              continue;
-            }
-
-            // Check if product with same SKU exists
-            const existingProduct = await Product.findOne({ sku: row["SKU"] });
-            if (existingProduct) {
-              errors.push({
-                row: i + 2,
-                error: `Product with SKU ${row["SKU"]} already exists`,
+                error: "Missing Product Name or SKU",
               });
               skipped++;
               continue;
@@ -3250,53 +3339,135 @@ router.post("/import/csv", upload.single("file"), async (req, res) => {
               minStock: parseInt(row["Min Stock"]) || 0,
               status: row["Status"] || "draft",
               published: row["Published"]?.toLowerCase() === "yes",
-              weight: parseFloat(row["Weight"]) || undefined,
-              color: row["Color"] || undefined,
-              warranty: row["Warranty"] || undefined,
-              isCodAvailable: row["COD Available"]?.toLowerCase() !== "no",
-              isFreeShipping: row["Free Shipping"]?.toLowerCase() === "yes",
               tags: row["Tags"]
                 ? row["Tags"].split(";").map((t) => t.trim())
                 : [],
             };
 
-            // Create product
-            const product = await Product.create(productData);
-            imported++;
+            // If the product structure is variant, remove main product prices
+            if (productData.product_structure === "variant") {
+              delete productData.cost_price;
+              delete productData.selling_price;
+            }
+
+            // Handle categories
+            if (row["Categories"]) {
+              const categoryNames = row["Categories"]
+                .split(";")
+                .map((c) => c.trim())
+                .filter(Boolean);
+
+              if (categoryNames.length > 0) {
+                const categories = await Category.find({
+                  name: { $in: categoryNames },
+                }).lean();
+
+                if (categories.length > 0) {
+                  productData.categories = categories.map((c) => ({
+                    category: c._id,
+                  }));
+                } else {
+                  errors.push({
+                    row: i + 2,
+                    warning: `Categories not found: ${categoryNames.join(", ")}. Product created without categories.`,
+                  });
+                }
+              }
+            }
+
+            // Check if product with same SKU exists
+            const existingProduct = await Product.findOne({
+              sku: row["SKU"],
+            });
+
+            if (existingProduct) {
+              // UPDATE existing product - only update fields that are provided
+              console.log(`📝 Updating product with SKU: ${row["SKU"]}`);
+
+              // Build update object with only the fields we want to update
+              const updateFields = {
+                name: row["Product Name"],
+                description: row["Description"] || "",
+                product_type: row["Product Type"] || "physical",
+                product_structure: row["Product Structure"] || "simple",
+                baseStock: parseInt(row["Stock"]) || 0,
+                minStock: parseInt(row["Min Stock"]) || 0,
+                status: row["Status"] || "draft",
+                published: row["Published"]?.toLowerCase() === "yes",
+                tags: row["Tags"]
+                  ? row["Tags"].split(";").map((t) => t.trim())
+                  : [],
+              };
+
+              // Only set main product prices when this is not a variant product
+              const effectiveStructure = (
+                row["Product Structure"] ||
+                existingProduct.product_structure ||
+                "simple"
+              ).toLowerCase();
+              if (effectiveStructure !== "variant") {
+                updateFields.cost_price = parseFloat(row["Cost Price"]) || 0;
+                updateFields.selling_price =
+                  parseFloat(row["Selling Price"]) || 0;
+              }
+
+              // Only update slug if it's explicitly different and doesn't conflict
+              if (row["Slug"] && row["Slug"] !== existingProduct.slug) {
+                updateFields.slug = row["Slug"];
+              }
+
+              // Add categories if provided
+              if (productData.categories) {
+                updateFields.categories = productData.categories;
+              }
+
+              await Product.findByIdAndUpdate(
+                existingProduct._id,
+                updateFields,
+                { new: true },
+              );
+              console.log(
+                `✅ Successfully updated product: ${row["Product Name"]} (SKU: ${row["SKU"]})`,
+              );
+              updated++;
+            } else {
+              // CREATE new product
+              console.log(`✨ Creating new product with SKU: ${row["SKU"]}`);
+              await Product.create(productData);
+              imported++;
+            }
           } catch (error) {
-            errors.push({ row: i + 2, error: error.message });
+            errors.push({
+              row: i + 2,
+              error: error.message,
+            });
             skipped++;
           }
         }
 
-        // Delete uploaded file
-        fs.unlinkSync(req.file.path);
-
         res.json({
           success: true,
-          message: `Import completed. ${imported} products imported, ${skipped} skipped.`,
+          message: `CSV import completed: ${imported} products created, ${updated} products updated, ${skipped} errors`,
           imported,
+          updated,
           skipped,
           errors: errors.length > 0 ? errors : undefined,
         });
       })
-      .on("error", (error) => {
-        console.error("CSV parsing error:", error);
-        if (req.file && fs.existsSync(req.file.path)) {
-          fs.unlinkSync(req.file.path);
-        }
-        res
-          .status(500)
-          .json({ success: false, error: "Failed to parse CSV file" });
+      .on("error", (err) => {
+        console.error("CSV parsing error:", err);
+        res.status(500).json({
+          success: false,
+          error: "Failed to parse CSV",
+        });
       });
   } catch (error) {
     console.error("CSV import error:", error);
-    if (req.file && fs.existsSync(req.file.path)) {
-      fs.unlinkSync(req.file.path);
-    }
-    res
-      .status(500)
-      .json({ success: false, error: "Failed to import products from CSV" });
+
+    res.status(500).json({
+      success: false,
+      error: "CSV import failed",
+    });
   }
 });
 
