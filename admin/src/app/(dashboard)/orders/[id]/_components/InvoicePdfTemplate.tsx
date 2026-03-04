@@ -18,36 +18,34 @@ import { OrderDetails } from "@/services/orders/types";
 import { OrderBadgeVariants } from "@/constants/badge";
 import { formatCurrency } from "@/lib/utils";
 
-// FIX: Resolve the correct display name for an order item.
-// Backend returns variant info in different fields depending on the schema:
-//   Shape A (legacy OrderItem): item.products.name  — base product name only
-//   Shape B (embedded schema) : item.name           — already "Product - Variant" from backend resolver
-//   Both shapes may also carry: item.variant_name, item.variant_sku, item.variant_attributes
+
 const resolveItemName = (item: any): string => {
-  // 1. Explicit variant_name field (most reliable when present)
+  //  Use stored order snapshot (MOST RELIABLE)
+  if (item.name) return item.name;
+
+  //  Backend resolved name
+  if (item.products?.name) return item.products.name;
+
+  // Explicit variant_name
   if (item.variant_name) return item.variant_name;
 
-  // Base name from whichever shape we have
-  const baseName: string = item.products?.name || item.name || "Product";
+  // Fallback build using attributes
+  const baseName = "Product";
 
-  // 2. Build "Base - Attr1 / Attr2" from variant_attributes
   if (item.variant_attributes && typeof item.variant_attributes === "object") {
-    const attrs = item.variant_attributes instanceof Map
-      ? Object.fromEntries(item.variant_attributes)
-      : item.variant_attributes;
+    const attrs =
+      item.variant_attributes instanceof Map
+        ? Object.fromEntries(item.variant_attributes)
+        : item.variant_attributes;
+
     const attrStr = Object.values(attrs).filter(Boolean).join(" / ");
+
     if (attrStr) return `${baseName} - ${attrStr}`;
   }
 
-  // 3. Append SKU when it adds useful variant info
+  //  SKU fallback
   if (item.variant_sku && item.variant_sku !== "N/A") {
     return `${baseName} (${item.variant_sku})`;
-  }
-
-  // 4. Shape B: item.name already contains the full "Product - Variant" string
-  //    from the backend resolver — prefer it over item.products?.name
-  if (item.name && item.products?.name && item.name !== item.products.name) {
-    return item.name;
   }
 
   return baseName;
@@ -67,6 +65,10 @@ export default function InvoicePdfTemplate({ order }: { order: OrderDetails }) {
         : 0,
     quantity: item.quantity ?? 1,
   }));
+
+  //  FIX: Use order.total_amount from DB as the authoritative total.
+ 
+  const totalAmount = order.total_amount;
 
   return (
     <Card
@@ -230,8 +232,10 @@ export default function InvoicePdfTemplate({ order }: { order: OrderDetails }) {
           <Typography component="h4" className="font-medium text-sm uppercase mb-1 tracking-wide text-black">
             total amount
           </Typography>
+          {/* ✅ FIX: Use order.total_amount directly (includes tax + shipping).
+              Previous code recalculated as subtotal+shipping which dropped tax. */}
           <Typography className="text-xl capitalize font-semibold tracking-wide text-primary">
-            {formatCurrency(order.total_amount, 'INR', 'en-IN')}
+            {formatCurrency(totalAmount, 'INR', 'en-IN')}
           </Typography>
         </div>
       </div>

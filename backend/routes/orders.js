@@ -475,7 +475,56 @@ function convertToCSV(data) {
   return csvHeaders + "\n" + csvRows.join("\n");
 }
 
-// GET a single order by id
+// ── Helper: resolve variant name from a product + embedded order item ────────
+// The checkout frontend sends variant_sku and variant_attributes but does NOT
+// send variant_id (it has no way to know the DB _id of the variant).
+// So item.variant_id is often null for new orders. We fall back to matching
+// by SKU → attributes to get the correct variant display name.
+function resolveVariantName(product, item) {
+  if (
+    !product ||
+    !product.product_variants ||
+    product.product_variants.length === 0
+  ) {
+    return product ? product.name : "Product Not Found";
+  }
+
+  // 1. Match by variant_id if present
+  if (item.variant_id) {
+    const v = product.product_variants.find(
+      (v) => v._id.toString() === item.variant_id.toString(),
+    );
+    if (v) return `${product.name} - ${v.name || v.slug}`;
+  }
+
+  // 2. Match by variant_sku
+  if (item.variant_sku) {
+    const v = product.product_variants.find((v) => v.sku === item.variant_sku);
+    if (v) return `${product.name} - ${v.name || v.slug}`;
+  }
+
+  // 3. Match by variant_attributes
+  if (
+    item.variant_attributes &&
+    Object.keys(item.variant_attributes).length > 0
+  ) {
+    const v = product.product_variants.find((variant) => {
+      if (!variant.attributes) return false;
+      const vAttrs =
+        variant.attributes instanceof Map
+          ? Object.fromEntries(variant.attributes)
+          : variant.attributes;
+      return Object.keys(item.variant_attributes).every(
+        (key) => String(item.variant_attributes[key]) === String(vAttrs[key]),
+      );
+    });
+    if (v) return `${product.name} - ${v.name || v.slug}`;
+  }
+
+  // 4. Fallback to base product name
+  return product.name;
+}
+
 // GET a single order by id
 // ✅ FIX: When OrderItem collection returns empty (new embedded-schema orders),
 //         fall back to order.items and build the same products:{name} shape.
@@ -571,9 +620,7 @@ router.get("/:id", async (req, res) => {
       );
     } else {
       // ── Shape B: embedded order.items (new schema) ─────────────────────────
-      // OrderItem collection is empty for new orders — use order.items directly
-      // and build the same products:{name,image,sku} wrapper so the invoice
-      // template renders without any changes.
+
       console.log(
         `📦 No OrderItem rows found for ${order.invoice_no} — using embedded order.items`,
       );
@@ -597,13 +644,47 @@ router.get("/:id", async (req, res) => {
             if (product && isCombo) {
               imageUrl = product.image || imageUrl;
             } else if (product) {
-              // Variant image
+              // Variant image — try variant_id first, then variant_sku match
+              let matchedVariant = null;
               if (item.variant_id && product.product_variants?.length > 0) {
-                const v = product.product_variants.find(
+                matchedVariant = product.product_variants.find(
                   (v) => v._id.toString() === item.variant_id.toString(),
                 );
-                if (v?.images?.length > 0) imageUrl = v.images[0];
               }
+              // Fallback: match by SKU if variant_id didn't resolve
+              if (
+                !matchedVariant &&
+                item.variant_sku &&
+                product.product_variants?.length > 0
+              ) {
+                matchedVariant = product.product_variants.find(
+                  (v) => v.sku === item.variant_sku,
+                );
+              }
+              // Fallback: match by attributes
+              if (
+                !matchedVariant &&
+                item.variant_attributes &&
+                product.product_variants?.length > 0
+              ) {
+                matchedVariant = product.product_variants.find((variant) => {
+                  if (!variant.attributes) return false;
+                  const vAttrs =
+                    variant.attributes instanceof Map
+                      ? Object.fromEntries(variant.attributes)
+                      : variant.attributes;
+                  return Object.keys(item.variant_attributes).every(
+                    (key) =>
+                      String(item.variant_attributes[key]) ===
+                      String(vAttrs[key]),
+                  );
+                });
+              }
+
+              if (matchedVariant?.images?.length > 0) {
+                imageUrl = matchedVariant.images[0];
+              }
+
               // Product-level image fallbacks
               if (imageUrl === "/images/products/placeholder-product.svg") {
                 if (product.images?.length > 0) {
@@ -631,25 +712,20 @@ router.get("/:id", async (req, res) => {
               }
             }
 
-            // Resolve name — variant-aware
+            // ✅ FIX: Resolve variant name using SKU/attributes fallback
+            // when variant_id is null (new orders from checkout don't send variant_id)
             let productName = "Product Not Found";
             if (product) {
               if (isCombo) {
                 productName = product.title;
-              } else if (
-                item.variant_id &&
-                product.product_variants?.length > 0
-              ) {
-                const v = product.product_variants.find(
-                  (v) => v._id.toString() === item.variant_id.toString(),
-                );
-                productName = v
-                  ? `${product.name} - ${v.name || v.slug}`
-                  : product.name;
               } else {
-                productName = product.name;
+                productName = item.name || resolveVariantName(product, item);
               }
             }
+
+            console.log(
+              `📝 Resolved name for item [${item.product_id}]: "${productName}" (variant_id: ${item.variant_id}, variant_sku: ${item.variant_sku})`,
+            );
 
             return {
               ...item.toObject(),
@@ -699,7 +775,7 @@ router.get("/:id", async (req, res) => {
         phone: order.shipping_address?.phone || order.customer_id?.phone,
       },
       customer: order.customer_id,
-      order_items: enhancedItems, // ✅ always populated now
+      order_items: enhancedItems, //  always populated now
       coupons: order.coupons || null,
     };
 
@@ -859,8 +935,8 @@ router.post("/place-order", authenticateHybridToken, async (req, res) => {
       (sum, item) => sum + item.unit_price * item.quantity,
       0,
     );
-    const tax = subtotal * 0.1; // 10% tax
-    const total_amount = subtotal + shipping_cost + tax;
+    // ✅ FIX: Remove tax calculation — total is just subtotal + shipping
+    const total_amount = subtotal + shipping_cost;
 
     // Generate invoice number
     const timestamp = Date.now();
@@ -877,13 +953,69 @@ router.post("/place-order", authenticateHybridToken, async (req, res) => {
 
     // ✅ FIX: Prepare items array — explicitly map each field to avoid
     //         stale/wrong data coming through from the frontend payload
-    const orderItems = items.map((item) => ({
-      product_id: item.product_id, // Must be the selected product
-      variant_id: item.variant_id || null, // null for simple products
-      quantity: item.quantity,
-      price: item.unit_price, // selling price at time of order
-      subtotal: item.unit_price * item.quantity,
-    }));
+    const orderItems = await Promise.all(
+      items.map(async (item) => {
+        const product = await Product.findById(item.product_id);
+
+        let variantName = product?.name || "Product";
+
+        if (
+          product &&
+          product.product_variants &&
+          product.product_variants.length > 0
+        ) {
+          let matchedVariant = null;
+
+          // Match by variant_id
+          if (item.variant_id) {
+            matchedVariant = product.product_variants.find(
+              (v) => v._id.toString() === item.variant_id.toString(),
+            );
+          }
+
+          // Match by SKU
+          if (!matchedVariant && item.variant_sku) {
+            matchedVariant = product.product_variants.find(
+              (v) => v.sku === item.variant_sku,
+            );
+          }
+
+          // Match by attributes
+          if (!matchedVariant && item.variant_attributes) {
+            matchedVariant = product.product_variants.find((variant) => {
+              if (!variant.attributes) return false;
+
+              const vAttrs =
+                variant.attributes instanceof Map
+                  ? Object.fromEntries(variant.attributes)
+                  : variant.attributes;
+
+              return Object.keys(item.variant_attributes).every(
+                (key) =>
+                  String(item.variant_attributes[key]) === String(vAttrs[key]),
+              );
+            });
+          }
+
+          if (matchedVariant) {
+            variantName = `${product.name} - ${matchedVariant.name || matchedVariant.slug}`;
+          }
+        }
+
+        return {
+          product_id: item.product_id,
+          variant_id: item.variant_id || null,
+          variant_sku: item.variant_sku || null,
+          variant_attributes: item.variant_attributes || {},
+          quantity: item.quantity,
+          price: item.unit_price,
+          subtotal: item.unit_price * item.quantity,
+
+          // ⭐ NEW FIELD
+          name: variantName,
+        };
+      }),
+    );
 
     // Create order with embedded items
     const order = new Order({
@@ -990,7 +1122,6 @@ router.post("/place-order", authenticateHybridToken, async (req, res) => {
       order: {
         ...savedOrder.toObject(),
         subtotal,
-        tax,
         total: total_amount,
       },
     });
@@ -1301,13 +1432,17 @@ router.get("/:id/invoice", authenticateHybridToken, async (req, res) => {
             if (product) isCombo = true;
           }
 
+          // ✅ FIX: use resolveVariantName for correct variant display
+          let productName = "Product Not Found";
+          if (product) {
+            productName = isCombo
+              ? product.title
+              : resolveVariantName(product, item);
+          }
+
           return {
             ...item.toObject(),
-            name: product
-              ? isCombo
-                ? product.title
-                : product.name
-              : "Product Not Found",
+            name: productName,
             sku: product ? (isCombo ? "COMBO" : product.sku || "N/A") : "N/A",
             unit_price: item.price || 0,
           };
@@ -1327,7 +1462,7 @@ router.get("/:id/invoice", authenticateHybridToken, async (req, res) => {
       (sum, item) => sum + item.unit_price * item.quantity,
       0,
     );
-    const tax = subtotal * 0.1;
+    // ✅ FIX: Remove tax calculation
     const shipping = order.shipping_cost || 0;
     const total = order.total_amount;
 
@@ -1412,10 +1547,6 @@ router.get("/:id/invoice", authenticateHybridToken, async (req, res) => {
             <tr class="total-row">
               <td colspan="4">Subtotal:</td>
               <td>₹${subtotal.toFixed(2)}</td>
-            </tr>
-            <tr class="total-row">
-              <td colspan="4">Tax (10%):</td>
-              <td>₹${tax.toFixed(2)}</td>
             </tr>
             <tr class="total-row">
               <td colspan="4">Shipping:</td>

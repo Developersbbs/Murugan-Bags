@@ -168,7 +168,6 @@ const OrderDetailsModal = ({
                 <div className="bg-gray-50 rounded-lg p-4 space-y-2">
                   <div className="flex justify-between text-gray-600"><span>Subtotal</span><span>{formatCurrency(order.subtotal)}</span></div>
                   <div className="flex justify-between text-gray-600"><span>Shipping</span><span>{order.shipping === 0 ? 'Free' : formatCurrency(order.shipping)}</span></div>
-                  <div className="flex justify-between text-gray-600"><span>Tax</span><span>{formatCurrency(order.tax)}</span></div>
                   <div className="border-t border-gray-300 pt-2">
                     <div className="flex justify-between text-lg font-semibold text-gray-900"><span>Total</span><span>{formatCurrency(order.total)}</span></div>
                   </div>

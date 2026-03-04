@@ -6,19 +6,25 @@ import {
   HiOutlineRefresh,
   HiOutlineCheck,
 } from "react-icons/hi";
+import { HiOutlineExclamationTriangle } from "react-icons/hi2";
 import { BsTruck } from "react-icons/bs";
 
 import { cn } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
 import Typography from "@/components/ui/typography";
 import { DashboardCard } from "@/types/card";
-import { getDashboardSummary } from "@/services/analytics";
+import { getDashboardSummary, getInventoryAnalytics } from "@/services/analytics";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function StatusOverview() {
   const { data: summary, isLoading } = useQuery({
     queryKey: ["dashboard-summary"],
     queryFn: getDashboardSummary,
+  });
+
+  const { data: inventory } = useQuery({
+    queryKey: ["inventory-analytics"],
+    queryFn: getInventoryAnalytics,
   });
 
   const cards: DashboardCard[] = [
@@ -50,12 +56,19 @@ export default function StatusOverview() {
       className:
         "text-emerald-600 dark:text-emerald-100 bg-emerald-100 dark:bg-emerald-500",
     },
+    {
+      icon: <HiOutlineExclamationTriangle />,
+      title: "Low Stock Items",
+      value: isLoading ? "..." : (inventory?.summary?.lowStockProducts || 0).toString(),
+      className:
+        "text-red-600 dark:text-red-100 bg-red-100 dark:bg-red-500",
+    },
   ];
 
   if (isLoading) {
     return (
-      <div className="grid md:grid-cols-2 xl:grid-cols-4 gap-4">
-        {[...Array(4)].map((_, index) => (
+      <div className="grid md:grid-cols-2 xl:grid-cols-5 gap-4">
+        {[...Array(5)].map((_, index) => (
           <Skeleton key={index} className="h-24 w-full rounded-lg" />
         ))}
       </div>
@@ -63,7 +76,7 @@ export default function StatusOverview() {
   }
 
   return (
-    <div className="grid md:grid-cols-2 xl:grid-cols-4 gap-4">
+    <div className="grid md:grid-cols-2 xl:grid-cols-5 gap-4">
       {cards.map((card) => (
         <Card key={card.title}>
           <CardContent className="flex items-center gap-3 p-0">

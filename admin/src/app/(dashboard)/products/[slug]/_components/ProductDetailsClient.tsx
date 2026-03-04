@@ -9,37 +9,78 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Progress } from "@/components/ui/progress";
-import Typography from "@/components/ui/typography";
 import { 
   ArrowLeft, 
   Edit3, 
   Package, 
-  TrendingUp, 
   FileText, 
   Layers, 
   Search,
-  Calendar,
   Tag,
   BarChart3,
   AlertCircle,
   CheckCircle2,
   DollarSign,
   Archive,
-  Download
+  Download,
+  AlertTriangle,
 } from "lucide-react";
 import { EditProductSheet } from "./EditProductSheet";
 import { ProductDetails } from "@/types/api";
-import { getStockStatus, getStockDisplayText, shouldShowProduct, canPurchaseProduct } from "@/utils/stockStatus";
+import { getStockStatus, getStockDisplayText } from "@/utils/stockStatus";
 
 type ProductDetailsClientProps = {
   product: ProductDetails;
 };
 
-const ProductImageGallery = memo(({ product, displayImages, displayName }: { product: any; displayImages: string[]; displayName: string }) => {
-  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+// ─── Stock data shape injected by the backend API ────────────────────────────
+// The product API route should merge Stock collection data before responding:
+//
+  // Simple product:
+  //   product.stock_data = { quantity, minStock, reserved?, location? }
 
-  // Use displayImages if provided, otherwise fall back to product.image_url
+  // Variant product (each variant):
+  //   product.product_variants[n].stock_data = { quantity, minStock, ... }
+//
+// Fallback chain (freshest → stale):
+//   1. stock_data.quantity  ← injected by API from Stock collection  ✅ primary
+//   2. variant.stock / product.baseStock ← synced by syncProductWithStock
+//   3. 0
+type StockData = {
+  quantity: number;
+  minStock: number;
+  reserved?: number;
+  location?: string;
+};
+
+function resolveStock(
+  product: any,
+  activeVariant: any | null
+): { stock: number; minStock: number; stockData: StockData | null } {
+  // ✅ Your backend (routes/products.js GET /:id and GET /slug/:slug) already
+  //    fetches live stock from the Stock collection and writes it directly onto:
+  //      - variant.stock + variant.minStock   (for variant products)
+  //      - product.baseStock + product.minStock (for simple products)
+  //    So we read those fields directly — no stock_data wrapper needed.
+  if (activeVariant) {
+    return {
+      stock:     activeVariant.stock    ?? 0,
+      minStock:  activeVariant.minStock ?? 0,
+      stockData: null,
+    };
+  }
+  return {
+    stock:     (product as any).baseStock ?? 0,
+    minStock:  (product as any).minStock  ?? 0,
+    stockData: null,
+  };
+}
+
+// ─── Image gallery (unchanged) ───────────────────────────────────────────────
+const ProductImageGallery = memo(({ product, displayImages, displayName }: {
+  product: any; displayImages: string[]; displayName: string;
+}) => {
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const images = displayImages.length > 0 ? displayImages : product.image_url || [];
 
   return (
@@ -49,15 +90,12 @@ const ProductImageGallery = memo(({ product, displayImages, displayName }: { pro
           <div className="aspect-square w-full bg-white rounded-lg border border-gray-200 overflow-hidden">
             <Image
               src={images[selectedImageIndex]}
-              alt={`${displayName || 'Product'} - Main`}
-              width={400}
-              height={400}
+              alt={`${displayName || "Product"} - Main`}
+              width={400} height={400}
               className="w-full h-full object-cover cursor-pointer hover:scale-105 transition-transform duration-300"
-              onClick={() => console.log("Image clicked")}
               priority={selectedImageIndex === 0}
             />
           </div>
-
           {images.length > 1 && (
             <div className="flex gap-2 overflow-x-auto">
               {images.map((image: string, index: number) => (
@@ -65,18 +103,12 @@ const ProductImageGallery = memo(({ product, displayImages, displayName }: { pro
                   key={index}
                   className={`flex-shrink-0 w-16 h-16 rounded border-2 overflow-hidden transition-all ${
                     selectedImageIndex === index
-                      ? 'border-blue-600 ring-2 ring-blue-100'
-                      : 'border-gray-200 hover:border-gray-300'
+                      ? "border-blue-600 ring-2 ring-blue-100"
+                      : "border-gray-200 hover:border-gray-300"
                   }`}
                   onClick={() => setSelectedImageIndex(index)}
                 >
-                  <Image
-                    src={image}
-                    alt={`Thumbnail ${index + 1}`}
-                    width={64}
-                    height={64}
-                    className="w-full h-full object-cover"
-                  />
+                  <Image src={image} alt={`Thumbnail ${index + 1}`} width={64} height={64} className="w-full h-full object-cover" />
                 </button>
               ))}
             </div>
@@ -90,17 +122,144 @@ const ProductImageGallery = memo(({ product, displayImages, displayName }: { pro
     </div>
   );
 });
-
 ProductImageGallery.displayName = "ProductImageGallery";
 
-export default function ProductDetailsClient({ product }: ProductDetailsClientProps) {
-  console.log('🔍 Client: Component received product prop:', product);
-  console.log('🔍 Client: Product prop type:', typeof product);
-  console.log('🔍 Client: Product prop keys:', product ? Object.keys(product) : 'null');
+// ─── Stock Banner ─────────────────────────────────────────────────────────────
+// Shown at the top of the page so stock status is immediately visible.
+function StockBanner({ stock, minStock, productName }: {
+  stock: number; minStock: number; productName: string;
+}) {
+  if (stock <= 0) {
+    return (
+      <div className="flex items-center gap-4 bg-red-50 border border-red-200 rounded-lg px-5 py-4 mb-6">
+        <AlertCircle className="w-6 h-6 text-red-500 flex-shrink-0" />
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-red-800">Out of Stock</p>
+          <p className="text-xs text-red-600 mt-0.5">
+            <span className="font-bold">{productName}</span> has 0 units remaining. Restock immediately to resume sales.
+          </p>
+        </div>
+        <div className="text-right flex-shrink-0">
+          <span className="text-3xl font-bold text-red-700">0</span>
+          <p className="text-xs text-red-400">units</p>
+        </div>
+      </div>
+    );
+  }
 
-  // Early return if product is not available
+  if (stock <= minStock) {
+    return (
+      <div className="flex items-center gap-4 bg-amber-50 border border-amber-200 rounded-lg px-5 py-4 mb-6">
+        <AlertTriangle className="w-6 h-6 text-amber-500 flex-shrink-0" />
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-amber-800">Low Stock Warning</p>
+          <p className="text-xs text-amber-600 mt-0.5">
+            Only <span className="font-bold">{stock} units</span> remaining — below the minimum threshold of {minStock}.
+          </p>
+        </div>
+        <div className="text-right flex-shrink-0">
+          <span className="text-3xl font-bold text-amber-700">{stock}</span>
+          <p className="text-xs text-amber-400">units left</p>
+        </div>
+      </div>
+    );
+  }
+
+  // return (
+  //   <div className="flex items-center gap-4 bg-green-50 border border-green-200 rounded-lg px-5 py-4 mb-6">
+  //     <CheckCircle2 className="w-6 h-6 text-green-500 flex-shrink-0" />
+  //     <div className="flex-1 min-w-0">
+  //       <p className="text-sm font-semibold text-green-800">In Stock</p>
+  //       <p className="text-xs text-green-600 mt-0.5">
+  //         <span className="font-bold">{stock} units</span> available
+  //         {minStock > 0 && ` · Minimum threshold: ${minStock} units`}
+  //       </p>
+  //     </div>
+  //     <div className="text-right flex-shrink-0">
+  //       <span className="text-3xl font-bold text-green-700">{stock}</span>
+  //       <p className="text-xs text-green-400">units</p>
+  //     </div>
+  //   </div>
+  // );
+}
+
+// ─── Shared Inventory Card Content ───────────────────────────────────────────
+// Reused in both Overview and Details tabs.
+function InventoryCardContent({ stock, minStock, stockData, stockStatusInfo }: {
+  stock: number;
+  minStock: number;
+  stockData: StockData | null;
+  stockStatusInfo: ReturnType<typeof getStockStatus>;
+}) {
+  const pct =
+    minStock > 0
+      ? Math.min((stock / (minStock * 2)) * 100, 100)
+      : stock > 0 ? 50 : 0;
+
+  const isOut  = stock <= 0;
+  const isLow  = !isOut && stock <= minStock;
+
+  const barColor = isOut ? "bg-red-500" : isLow ? "bg-amber-500" : "bg-green-500";
+  const barBg    = isOut ? "bg-red-100"  : isLow ? "bg-amber-100"  : "bg-green-100";
+  const textCls  = isOut ? "text-red-600" : isLow ? "text-amber-600" : "text-gray-900";
+
+  return (
+    <div className="space-y-3">
+      <div className="flex justify-between items-baseline">
+        <span className="text-sm text-gray-600">Current Stock</span>
+        <span className={`text-xl font-bold ${textCls}`}>
+          {stock}
+          <span className="text-sm font-normal text-gray-400 ml-1">units</span>
+        </span>
+      </div>
+
+      <div className="flex justify-between items-baseline">
+        <span className="text-sm text-gray-600">Min. Threshold</span>
+        <span className="text-base text-gray-700">{minStock} units</span>
+      </div>
+
+      {stockData?.reserved !== undefined && (
+        <div className="flex justify-between items-baseline">
+          <span className="text-sm text-gray-600">Reserved</span>
+          <span className="text-base text-gray-700">{stockData.reserved} units</span>
+        </div>
+      )}
+
+      {stockData?.location && (
+        <div className="flex justify-between items-baseline">
+          <span className="text-sm text-gray-600">Location</span>
+          <span className="text-base text-gray-700">{stockData.location}</span>
+        </div>
+      )}
+
+      <Separator />
+
+      <div className="space-y-1.5">
+        <div className="flex justify-between items-center text-sm">
+          <span className="text-gray-600">Status</span>
+          <span className={`font-semibold ${textCls}`}>
+            {isOut ? "Out of Stock" : isLow ? `Low Stock · ${stock} left` : stockStatusInfo.label}
+          </span>
+        </div>
+        <div className={`h-2.5 rounded-full ${barBg}`}>
+          <div
+            className={`h-full rounded-full transition-all duration-500 ${barColor}`}
+            style={{ width: `${Math.max(pct, stock > 0 ? 3 : 0)}%` }}
+          />
+        </div>
+        <div className="flex justify-between text-xs text-gray-400">
+          <span>0</span>
+          {minStock > 0 && <span>Min: {minStock}</span>}
+          {minStock > 0 && <span>Target: {minStock * 2}+</span>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Main Component ───────────────────────────────────────────────────────────
+export default function ProductDetailsClient({ product }: ProductDetailsClientProps) {
   if (!product) {
-    console.error('❌ Client: Product data is null/undefined');
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -111,255 +270,231 @@ export default function ProductDetailsClient({ product }: ProductDetailsClientPr
     );
   }
 
-  console.log('✅ Client: Product data received:', product.name);
-
-  const router = useRouter();
+  const router      = useRouter();
   const searchParams = useSearchParams();
-  const variantSlug = searchParams.get('variant');
+  const variantSlug  = searchParams.get("variant");
 
-  // Find the selected variant based on the URL parameter, or use first variant for variant products
-  const selectedVariant = variantSlug && product.product_variants
-    ? product.product_variants.find((v: any) => v.slug === variantSlug)
-    : null;
+  const selectedVariant =
+    variantSlug && product.product_variants
+      ? product.product_variants.find((v: any) => v.slug === variantSlug)
+      : null;
 
-  // For variant products, use the first variant as the main display if no specific variant is selected
-  const defaultVariant = !selectedVariant && product.product_structure === 'variant' && product.product_variants && product.product_variants.length > 0
-    ? product.product_variants[0]
-    : null;
+  const defaultVariant =
+    !selectedVariant &&
+    product.product_structure === "variant" &&
+    product.product_variants?.length > 0
+      ? product.product_variants[0]
+      : null;
 
-  // Use variant data if selected, otherwise use default variant for variant products, otherwise use main product data
-  const currentProduct = selectedVariant || defaultVariant || product;
+  const activeVariant     = selectedVariant || defaultVariant || null;
+  const safeCurrentProduct = activeVariant   || product;
 
-  // Ensure currentProduct is defined
-  const safeCurrentProduct = currentProduct || product || {};
+  const displayImages =
+    safeCurrentProduct.image_url?.length > 0
+      ? safeCurrentProduct.image_url
+      : product?.image_url ?? [];
 
-  // Determine which images to use - variant images take priority
-  const displayImages = safeCurrentProduct.image_url && Array.isArray(safeCurrentProduct.image_url) && safeCurrentProduct.image_url.length > 0
-    ? safeCurrentProduct.image_url
-    : (product?.image_url && Array.isArray(product.image_url) ? product.image_url : []);
+  const displayName = safeCurrentProduct.name || product?.name || "Unnamed Product";
 
-  const displayName = safeCurrentProduct.name || product?.name || 'Unnamed Product';
+  // ✅ THE FIX: resolve live stock.
+  //    Reads from stock_data (injected by API) → falls back to synced product fields
+  const { stock: currentStock, minStock: currentMinStock, stockData } =
+    resolveStock(product, activeVariant);
 
-  // Determine inventory values - use variant inventory if available, otherwise use main product
-  const currentStock = selectedVariant
-    ? (selectedVariant.stock !== undefined ? selectedVariant.stock : (product?.baseStock || 0))
-    : (product?.baseStock || 0);
+  const stockStatusInfo = getStockStatus(currentStock, product?.published, false);
 
-  const currentMinStock = selectedVariant
-    ? (selectedVariant.minStock !== undefined ? selectedVariant.minStock : (product?.minStock || 0))
-    : (product?.minStock || 0);
+  const profitMargin =
+    safeCurrentProduct.cost_price && safeCurrentProduct.selling_price
+      ? (
+          ((safeCurrentProduct.selling_price - safeCurrentProduct.cost_price) /
+            safeCurrentProduct.selling_price) * 100
+        ).toFixed(1)
+      : "0";
 
-  // Get stock status for the current product/variant
-  const stockStatusInfo = getStockStatus(currentStock, product?.published, false); // Assuming not archived for now
-
-  const stockPercentage = currentStock && currentMinStock
-    ? Math.min((currentStock / (currentMinStock * 2)) * 100, 100)
-    : 0;
-
-  const profitMargin = safeCurrentProduct.cost_price && safeCurrentProduct.selling_price
-    ? (((safeCurrentProduct.selling_price - safeCurrentProduct.cost_price) / safeCurrentProduct.selling_price) * 100).toFixed(1)
-    : "0";
-
-  // Use the new stock status system instead of old isLowStock logic
-  const isLowStock = stockStatusInfo.status === 'out_of_stock';
-
-  const handleBack = () => {
-    router.push('/products');
-  };
+  const isPhysical = product.product_type !== "digital";
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
+      {/* ── Page Header ── */}
       <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="gap-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100"
-                onClick={handleBack}
-              >
-                <ArrowLeft className="w-4 h-4" />
-                Back
-              </Button>
-              <div className="h-4 w-px bg-gray-300" />
-              <span className="text-sm text-gray-500">Product Details</span>
-            </div>
-            <EditProductSheet product={product}>
-              <Button className="gap-2 bg-blue-600 hover:bg-blue-700 text-white">
-                <Edit3 className="w-4 h-4" />
-                Edit Product
-              </Button>
-            </EditProductSheet>
+        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Button
+              variant="ghost" size="sm"
+              className="gap-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+              onClick={() => router.push("/products")}
+            >
+              <ArrowLeft className="w-4 h-4" />Back
+            </Button>
+            <div className="h-4 w-px bg-gray-300" />
+            <span className="text-sm text-gray-500">Product Details</span>
           </div>
+          <EditProductSheet product={product}>
+            <Button className="gap-2 bg-blue-600 hover:bg-blue-700 text-white">
+              <Edit3 className="w-4 h-4" />Edit Product
+            </Button>
+          </EditProductSheet>
         </div>
       </div>
 
-      {/* Main Content */}
+      {/* ── Body ── */}
       <div className="max-w-7xl mx-auto px-6 py-8">
-          {/* Product Header */}
-          <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
-            <div className="flex items-start justify-between mb-4">
-              <div>
-                <h1 className="text-2xl font-semibold text-gray-900 mb-2">
-                  <Link
-                    href={`/products/${product.slug}`}
-                    className="hover:text-black-600 transition-colors cursor-pointer"
-                  >
-                    {currentProduct === product ? product.name : `${product.name} > ${currentProduct.slug || currentProduct.name}`}
-                  </Link>
-                </h1>
-                
-                <div className="flex items-center gap-2">
-                  <Badge
-                    variant={stockStatusInfo.visibility === 'visible' ? "default" : "secondary"}
-                    className={`${
-                      stockStatusInfo.color === 'green'
-                        ? 'bg-green-100 text-green-800 border-green-200'
-                        : stockStatusInfo.color === 'yellow'
-                        ? 'bg-yellow-100 text-yellow-800 border-yellow-200'
-                        : 'bg-gray-100 text-gray-600 border-gray-200'
-                    } border`}
-                  >
-                    {stockStatusInfo.status === 'published' ? (
-                      <><CheckCircle2 className="w-3 h-3 mr-1" /> {stockStatusInfo.label}</>
-                    ) : stockStatusInfo.status === 'out_of_stock' ? (
-                      <><AlertCircle className="w-3 h-3 mr-1" /> {stockStatusInfo.label}</>
-                    ) : (
-                      <><AlertCircle className="w-3 h-3 mr-1" /> {stockStatusInfo.label}</>
-                    )}
-                  </Badge>
-                  <Badge variant="outline" className="bg-white">
-                    {product.product_type || "Physical"}
-                  </Badge>
-                </div>
-              </div>
-            </div>
-          </div>
 
-        {/* Content Grid */}
+        {/* ✅ Stock Banner — visible instantly, shows live unit count */}
+        {isPhysical && (
+          <StockBanner
+            stock={currentStock}
+            minStock={currentMinStock}
+            productName={displayName}
+          />
+        )}
+
+        {/* ── Product title + badge row ── */}
+        <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
+          <h1 className="text-2xl font-semibold text-gray-900 mb-3">
+            <Link href={`/products/${product.slug}`} className="hover:text-blue-600 transition-colors">
+              {activeVariant
+                ? `${product.name} › ${activeVariant.slug || activeVariant.name}`
+                : product.name}
+            </Link>
+          </h1>
+
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* Publish / stock status */}
+            <Badge
+              variant={stockStatusInfo.visibility === "visible" ? "default" : "secondary"}
+              className={`border ${
+                stockStatusInfo.color === "green"
+                  ? "bg-green-100 text-green-800 border-green-200"
+                  : stockStatusInfo.color === "yellow"
+                  ? "bg-yellow-100 text-yellow-800 border-yellow-200"
+                  : "bg-gray-100 text-gray-600 border-gray-200"
+              }`}
+            >
+              {stockStatusInfo.status === "published"
+                ? <><CheckCircle2 className="w-3 h-3 mr-1" />{stockStatusInfo.label}</>
+                : <><AlertCircle  className="w-3 h-3 mr-1" />{stockStatusInfo.label}</>}
+            </Badge>
+
+            {/* Product type */}
+            <Badge variant="outline" className="bg-white">{product.product_type || "Physical"}</Badge>
+
+            {/* ✅ Inline stock badge in header */}
+            {isPhysical && (
+              <Badge
+                variant="outline"
+                className={`font-semibold ${
+                  currentStock <= 0
+                    ? "border-red-300 text-red-700 bg-red-50"
+                    : currentStock <= currentMinStock
+                    ? "border-amber-300 text-amber-700 bg-amber-50"
+                    : "border-green-300 text-green-700 bg-green-50"
+                }`}
+              >
+                <Archive className="w-3 h-3 mr-1" />
+                {currentStock <= 0 ? "Out of Stock" : `${currentStock} units in stock`}
+              </Badge>
+            )}
+          </div>
+        </div>
+
+        {/* ── Content Grid ── */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Column - Image */}
+
+          {/* Image */}
           <div className="lg:col-span-1">
             <ProductImageGallery product={safeCurrentProduct} displayImages={displayImages} displayName={displayName} />
           </div>
 
-          {/* Right Column - Tabs */}
+          {/* Tabs */}
           <div className="lg:col-span-2">
             <Tabs defaultValue="overview" className="space-y-6">
               <TabsList className="bg-white border border-gray-200 p-1">
                 <TabsTrigger value="overview" className="gap-2 data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700">
-                  <BarChart3 className="w-4 h-4" />
-                  Overview
+                  <BarChart3 className="w-4 h-4" />Overview
                 </TabsTrigger>
-                <TabsTrigger value="details" className="gap-2 data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700">
-                  <FileText className="w-4 h-4" />
-                  Details
+                <TabsTrigger value="details"  className="gap-2 data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700">
+                  <FileText className="w-4 h-4" />Details
                 </TabsTrigger>
                 <TabsTrigger value="variants" className="gap-2 data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700">
-                  <Layers className="w-4 h-4" />
-                  Variants
+                  <Layers className="w-4 h-4" />Variants
                 </TabsTrigger>
-                <TabsTrigger value="seo" className="gap-2 data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700">
-                  <Search className="w-4 h-4" />
-                  SEO
+                <TabsTrigger value="seo"      className="gap-2 data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700">
+                  <Search className="w-4 h-4" />SEO
                 </TabsTrigger>
               </TabsList>
 
-              {/* Overview Tab */}
+              {/* ── Overview ── */}
               <TabsContent value="overview" className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Pricing Card */}
+
+                  {/* Pricing */}
                   <Card className="border-gray-200">
                     <CardHeader className="pb-3">
                       <CardTitle className="text-base font-medium flex items-center gap-2 text-gray-700">
-                        <DollarSign className="w-4 h-4" />
-                        Pricing
+                        <DollarSign className="w-4 h-4" />Pricing
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-3">
                       <div className="flex justify-between items-baseline">
                         <span className="text-sm text-gray-600">Selling Price</span>
-                        <span className="text-xl font-semibold text-gray-900">₹{safeCurrentProduct.selling_price?.toLocaleString('en-IN')}</span>
+                        <span className="text-xl font-semibold text-gray-900">
+                          ₹{safeCurrentProduct.selling_price?.toLocaleString("en-IN")}
+                        </span>
                       </div>
                       <div className="flex justify-between items-baseline">
                         <span className="text-sm text-gray-600">Cost Price</span>
-                        <span className="text-base text-gray-700">₹{safeCurrentProduct.cost_price?.toLocaleString('en-IN')}</span>
+                        <span className="text-base text-gray-700">
+                          ₹{safeCurrentProduct.cost_price?.toLocaleString("en-IN")}
+                        </span>
                       </div>
                       <Separator />
                       <div className="flex justify-between items-baseline">
                         <span className="text-sm font-medium text-gray-700">Profit Margin</span>
-                        <span className={`text-base font-semibold ${parseFloat(profitMargin) > 20 ? 'text-green-600' : 'text-orange-600'}`}>
+                        <span className={`text-base font-semibold ${parseFloat(profitMargin) > 20 ? "text-green-600" : "text-orange-600"}`}>
                           {profitMargin}%
                         </span>
                       </div>
                     </CardContent>
                   </Card>
 
-                  {/* Inventory Card - Only for Physical Products */}
-                  {product.product_type !== 'digital' && (
+                  {/* ✅ Inventory Card (physical only) */}
+                  {isPhysical && (
                     <Card className="border-gray-200">
                       <CardHeader className="pb-3">
                         <CardTitle className="text-base font-medium flex items-center gap-2 text-gray-700">
                           <Archive className="w-4 h-4" />
                           Inventory
+                          <span className="ml-auto flex items-center gap-1 text-xs font-normal text-gray-400">
+                            <span className={`w-2 h-2 rounded-full animate-pulse ${currentStock > 0 ? "bg-green-400" : "bg-red-400"}`} />
+                            Live
+                          </span>
                         </CardTitle>
                       </CardHeader>
-                      <CardContent className="space-y-3">
-                        <div className="flex justify-between items-baseline">
-                          <span className="text-sm text-gray-600">Current Stock</span>
-                          <span className="text-xl font-semibold text-gray-900">{getStockDisplayText(currentStock)}</span>
-                        </div>
-                        <div className="flex justify-between items-baseline">
-                          <span className="text-sm text-gray-600">Min. Threshold</span>
-                          <span className="text-base text-gray-700">{currentMinStock || 0}</span>
-                        </div>
-                        <Separator />
-                        <div className="space-y-1.5">
-                          <div className="flex justify-between items-center text-sm">
-                            <span className="text-gray-600">Status</span>
-                            <span className={`font-medium ${
-                              stockStatusInfo.color === 'green' ? 'text-green-600' :
-                              stockStatusInfo.color === 'yellow' ? 'text-yellow-600' :
-                              'text-gray-600'
-                            }`}>
-                              {stockStatusInfo.label}
-                            </span>
-                          </div>
-                          <div className={`h-2 rounded-full ${
-                            stockStatusInfo.color === 'green' ? 'bg-green-100' :
-                            stockStatusInfo.color === 'yellow' ? 'bg-yellow-100' :
-                            'bg-gray-100'
-                          }`}>
-                            <div
-                              className={`h-full rounded-full transition-all ${
-                                stockStatusInfo.color === 'green' ? 'bg-green-600' :
-                                stockStatusInfo.color === 'yellow' ? 'bg-yellow-600' :
-                                'bg-gray-400'
-                              }`}
-                              style={{ width: `${stockPercentage}%` }}
-                            />
-                          </div>
-                        </div>
+                      <CardContent>
+                        <InventoryCardContent
+                          stock={currentStock}
+                          minStock={currentMinStock}
+                          stockData={stockData}
+                          stockStatusInfo={stockStatusInfo}
+                        />
                       </CardContent>
                     </Card>
                   )}
 
                   {/* Digital Product Card */}
-                  {product.product_type === 'digital' && (
+                  {!isPhysical && (
                     <Card className="border-gray-200">
                       <CardHeader className="pb-3">
                         <CardTitle className="text-base font-medium flex items-center gap-2 text-gray-700">
-                          <FileText className="w-4 h-4" />
-                          Digital Product
+                          <FileText className="w-4 h-4" />Digital Product
                         </CardTitle>
                       </CardHeader>
                       <CardContent className="space-y-3">
                         <div className="flex justify-between items-baseline">
                           <span className="text-sm text-gray-600">File Type</span>
                           <span className="text-base font-semibold text-gray-900 uppercase">
-                            {(product as any).download_format || 'N/A'}
+                            {(product as any).download_format || "N/A"}
                           </span>
                         </div>
                         {(product as any).file_size && (
@@ -370,79 +505,28 @@ export default function ProductDetailsClient({ product }: ProductDetailsClientPr
                             </span>
                           </div>
                         )}
-                        {(product as any).license_type && (
-                          <div className="flex justify-between items-baseline">
-                            <span className="text-sm text-gray-600">License</span>
-                            <span className="text-base text-gray-700 capitalize">
-                              {(product as any).license_type}
-                            </span>
-                          </div>
-                        )}
-                        {(product as any).download_limit && (
-                          <div className="flex justify-between items-baseline">
-                            <span className="text-sm text-gray-600">Download Limit</span>
-                            <span className="text-base text-gray-700">
-                              {(product as any).download_limit} downloads
-                            </span>
-                          </div>
-                        )}
-
-                        {/* Download Button for Digital Products */}
                         {(product as any).file_path && (
                           <div className="pt-4 border-t border-gray-200">
                             <Button
                               onClick={async () => {
-                                const filePath = (product as any).file_path;
-                                if (filePath) {
-                                  try {
-                                    const filename = filePath.split('/').pop();
-                                    const downloadUrl = `/uploads/products/${filename}`;
-                                    
-                                    // Use fetch to get the file and trigger download
-                                    const response = await fetch(downloadUrl);
-                                    if (!response.ok) {
-                                      throw new Error(`HTTP error! status: ${response.status}`);
-                                    }
-                                    
-                                    const blob = await response.blob();
-                                    const url = window.URL.createObjectURL(blob);
-                                    const a = document.createElement('a');
-                                    a.style.display = 'none';
-                                    a.href = url;
-                                    a.download = filename || 'digital-file';
-                                    document.body.appendChild(a);
-                                    a.click();
-                                    window.URL.revokeObjectURL(url);
-                                    document.body.removeChild(a);
-                                  } catch (error) {
-                                    console.error('Download failed:', error);
-                                    // Fallback: try direct link approach
-                                    try {
-                                      const link = document.createElement('a');
-                                      const filename = filePath.split('/').pop();
-                                      const downloadUrl = `/uploads/products/${filename}`;
-                                      
-                                      link.href = downloadUrl;
-                                      link.download = filename || 'digital-file';
-                                      link.target = '_blank';
-                                      document.body.appendChild(link);
-                                      link.click();
-                                      document.body.removeChild(link);
-                                    } catch (fallbackError) {
-                                      console.error('Fallback download also failed:', fallbackError);
-                                      // Final fallback: open in new tab
-                                      const filename = filePath.split('/').pop();
-                                      const downloadUrl = `/uploads/products/${filename}`;
-                                      window.open(downloadUrl, '_blank');
-                                    }
-                                  }
+                                const filename = (product as any).file_path.split("/").pop();
+                                try {
+                                  const res = await fetch(`/uploads/products/${filename}`);
+                                  const blob = await res.blob();
+                                  const url = window.URL.createObjectURL(blob);
+                                  const a = document.createElement("a");
+                                  a.href = url; a.download = filename;
+                                  document.body.appendChild(a); a.click();
+                                  window.URL.revokeObjectURL(url);
+                                  document.body.removeChild(a);
+                                } catch {
+                                  window.open(`/uploads/products/${filename}`, "_blank");
                                 }
                               }}
                               className="w-full gap-2 bg-blue-600 hover:bg-blue-700 text-white"
                               size="sm"
                             >
-                              <Download className="w-4 h-4" />
-                              Download Digital File
+                              <Download className="w-4 h-4" />Download Digital File
                             </Button>
                           </div>
                         )}
@@ -463,20 +547,19 @@ export default function ProductDetailsClient({ product }: ProductDetailsClientPr
                   </CardContent>
                 </Card>
 
-                {/* Categories */}
+                {/* Categories & Tags */}
                 <Card className="border-gray-200">
                   <CardHeader>
                     <CardTitle className="text-base font-medium flex items-center gap-2 text-gray-700">
-                      <Tag className="w-4 h-4" />
-                      Categories & Tags
+                      <Tag className="w-4 h-4" />Categories & Tags
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div>
                       <p className="text-sm font-medium text-gray-700 mb-2">Categories</p>
                       <div className="flex flex-wrap gap-2">
-                        {product.categories && product.categories.length > 0 ? (
-                          product.categories.map((cat, idx) => (
+                        {product.categories?.length > 0 ? (
+                          product.categories.map((cat: any, idx: number) => (
                             <Badge key={idx} variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
                               {cat.category.name}
                             </Badge>
@@ -486,30 +569,12 @@ export default function ProductDetailsClient({ product }: ProductDetailsClientPr
                         )}
                       </div>
                     </div>
-
-                    {product.categories && product.categories.some(cat => cat.subcategories?.length > 0) && (
-                      <div>
-                        <p className="text-sm font-medium text-gray-700 mb-2">Subcategories</p>
-                        <div className="flex flex-wrap gap-2">
-                          {product.categories
-                            .flatMap(cat => cat.subcategories || [])
-                            .map((sub, idx) => (
-                              <Badge key={idx} variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
-                                {sub.name}
-                              </Badge>
-                            ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {product.tags && product.tags.length > 0 && (
+                    {product.tags?.length > 0 && (
                       <div>
                         <p className="text-sm font-medium text-gray-700 mb-2">Tags</p>
                         <div className="flex flex-wrap gap-2">
-                          {product.tags.map((tag, idx) => (
-                            <Badge key={idx} variant="outline" className="bg-gray-50 text-gray-700 border-gray-200">
-                              {tag}
-                            </Badge>
+                          {product.tags.map((tag: string, idx: number) => (
+                            <Badge key={idx} variant="outline" className="bg-gray-50 text-gray-700 border-gray-200">{tag}</Badge>
                           ))}
                         </div>
                       </div>
@@ -518,10 +583,8 @@ export default function ProductDetailsClient({ product }: ProductDetailsClientPr
                 </Card>
               </TabsContent>
 
-              {/* Details Tab */}
+              {/* ── Details ── */}
               <TabsContent value="details" className="space-y-4">
-                
-
                 <Card className="border-gray-200">
                   <CardHeader>
                     <CardTitle className="text-base font-medium text-gray-700">Product Information</CardTitle>
@@ -531,7 +594,7 @@ export default function ProductDetailsClient({ product }: ProductDetailsClientPr
                       <div>
                         <dt className="text-sm font-medium text-gray-500">SKU</dt>
                         <dd className="mt-1 text-sm text-gray-900 font-mono bg-gray-50 px-2 py-1 rounded inline-block">
-                          {safeCurrentProduct.sku || 'N/A'}
+                          {safeCurrentProduct.sku || "N/A"}
                         </dd>
                       </div>
                       <div>
@@ -541,286 +604,135 @@ export default function ProductDetailsClient({ product }: ProductDetailsClientPr
                       <div>
                         <dt className="text-sm font-medium text-gray-500">Created</dt>
                         <dd className="mt-1 text-sm text-gray-900">
-                          {new Date(product.created_at).toLocaleDateString('en-IN', { 
-                            year: 'numeric', 
-                            month: 'long', 
-                            day: 'numeric' 
-                          })}
+                          {new Date(product.created_at).toLocaleDateString("en-IN", { year: "numeric", month: "long", day: "numeric" })}
                         </dd>
                       </div>
                       <div>
                         <dt className="text-sm font-medium text-gray-500">Last Updated</dt>
                         <dd className="mt-1 text-sm text-gray-900">
-                          {new Date(product.updated_at).toLocaleDateString('en-IN', { 
-                            year: 'numeric', 
-                            month: 'long', 
-                            day: 'numeric' 
-                          })}
+                          {new Date(product.updated_at).toLocaleDateString("en-IN", { year: "numeric", month: "long", day: "numeric" })}
                         </dd>
                       </div>
                     </dl>
                   </CardContent>
                 </Card>
 
-                {/* Inventory Details - Only for Physical Products */}
-                {product.product_type !== 'digital' && (
+                {/* ✅ FIX: Inventory Details in Details tab */}
+                {isPhysical && (
                   <Card className="border-gray-200">
                     <CardHeader>
-                      <CardTitle className="text-base font-medium text-gray-700">Inventory Details</CardTitle>
+                      <CardTitle className="text-base font-medium text-gray-700 flex items-center gap-2">
+                        Inventory Details
+                        <span className="ml-auto flex items-center gap-1 text-xs font-normal text-gray-400">
+                          <span className={`w-2 h-2 rounded-full animate-pulse ${currentStock > 0 ? "bg-green-400" : "bg-red-400"}`} />
+                          Live Stock
+                        </span>
+                      </CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <dl className="space-y-3">
-                        <div className="flex justify-between">
-                          <dt className="text-sm text-gray-600">Current Stock</dt>
-                          <dd className="text-sm font-semibold text-gray-900">{getStockDisplayText(currentStock)} units</dd>
-                        </div>
-                        <div className="flex justify-between">
-                          <dt className="text-sm text-gray-600">Minimum Stock</dt>
-                          <dd className="text-sm font-semibold text-gray-900">{currentMinStock || 0} units</dd>
-                        </div>
-                        <Separator />
-                        <div>
-                          <div className="flex justify-between items-center mb-2">
-                            <span className="text-sm text-gray-600">Stock Health</span>
-                            <span className={`text-sm font-medium ${
-                              stockStatusInfo.color === 'green' ? 'text-green-600' :
-                              stockStatusInfo.color === 'yellow' ? 'text-yellow-600' :
-                              'text-gray-600'
-                            }`}>
-                              {stockStatusInfo.label}
-                            </span>
-                          </div>
-                          <div className={`h-2.5 rounded-full ${
-                            stockStatusInfo.color === 'green' ? 'bg-green-100' :
-                            stockStatusInfo.color === 'yellow' ? 'bg-yellow-100' :
-                            'bg-gray-100'
-                          }`}>
-                            <div
-                              className={`h-full rounded-full transition-all ${
-                                stockStatusInfo.color === 'green' ? 'bg-green-600' :
-                                stockStatusInfo.color === 'yellow' ? 'bg-yellow-600' :
-                                'bg-gray-400'
-                              }`}
-                              style={{ width: `${stockPercentage}%` }}
-                            />
-                          </div>
-                        </div>
-                      </dl>
-                    </CardContent>
-                  </Card>
-                )}
-
-                {/* Digital Product Details */}
-                {product.product_type === 'digital' && (
-                  <Card className="border-gray-200">
-                    <CardHeader>
-                      <CardTitle className="text-base font-medium text-gray-700">Digital Product Details</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <dl className="space-y-3">
-                        <div className="flex justify-between">
-                          <dt className="text-sm text-gray-600">File Path</dt>
-                          <dd className="text-sm font-mono text-gray-900 bg-gray-50 px-2 py-1 rounded">
-                            {(product as any).file_path ? (product as any).file_path.split('/').pop() : 'No file uploaded'}
-                          </dd>
-                        </div>
-                        {(product as any).file_size && (
-                          <div className="flex justify-between">
-                            <dt className="text-sm text-gray-600">File Size</dt>
-                            <dd className="text-sm font-semibold text-gray-900">
-                              {((product as any).file_size / (1024 * 1024)).toFixed(2)} MB
-                            </dd>
-                          </div>
-                        )}
-                        {(product as any).download_format && (
-                          <div className="flex justify-between">
-                            <dt className="text-sm text-gray-600">Format</dt>
-                            <dd className="text-sm font-semibold text-gray-900 uppercase">
-                              {(product as any).download_format}
-                            </dd>
-                          </div>
-                        )}
-                        {(product as any).license_type && (
-                          <div className="flex justify-between">
-                            <dt className="text-sm text-gray-600">License Type</dt>
-                            <dd className="text-sm font-semibold text-gray-900 capitalize">
-                              {(product as any).license_type}
-                            </dd>
-                          </div>
-                        )}
-                        {(product as any).download_limit && (
-                          <div className="flex justify-between">
-                            <dt className="text-sm text-gray-600">Download Limit</dt>
-                            <dd className="text-sm font-semibold text-gray-900">
-                              {(product as any).download_limit} downloads
-                            </dd>
-                          </div>
-                        )}
-
-                        {/* Download Button for Digital Products */}
-                        {(product as any).file_path && (
-                          <div className="pt-4 border-t border-gray-200">
-                            <Button
-                              onClick={async () => {
-                                const filePath = (product as any).file_path;
-                                if (filePath) {
-                                  try {
-                                    const filename = filePath.split('/').pop();
-                                    const downloadUrl = `/api/products/uploads/${filename}`;
-                                    
-                                    // Use fetch to get the file and trigger download
-                                    const response = await fetch(downloadUrl);
-                                    if (!response.ok) {
-                                      throw new Error(`HTTP error! status: ${response.status}`);
-                                    }
-                                    
-                                    const blob = await response.blob();
-                                    const url = window.URL.createObjectURL(blob);
-                                    const a = document.createElement('a');
-                                    a.style.display = 'none';
-                                    a.href = url;
-                                    a.download = filename || 'digital-file';
-                                    document.body.appendChild(a);
-                                    a.click();
-                                    window.URL.revokeObjectURL(url);
-                                    document.body.removeChild(a);
-                                  } catch (error) {
-                                    console.error('Download failed:', error);
-                                    // Fallback: try direct link approach
-                                    try {
-                                      const link = document.createElement('a');
-                                      const filename = filePath.split('/').pop();
-                                      const downloadUrl = `/api/products/uploads/${filename}`;
-                                      
-                                      link.href = downloadUrl;
-                                      link.download = filename || 'digital-file';
-                                      link.target = '_blank';
-                                      document.body.appendChild(link);
-                                      link.click();
-                                      document.body.removeChild(link);
-                                    } catch (fallbackError) {
-                                      console.error('Fallback download also failed:', fallbackError);
-                                      // Final fallback: open in new tab
-                                      const filename = filePath.split('/').pop();
-                                      const downloadUrl = `/api/products/uploads/${filename}`;
-                                      window.open(downloadUrl, '_blank');
-                                    }
-                                  }
-                                }
-                              }}
-                              className="w-full gap-2 bg-blue-600 hover:bg-blue-700 text-white"
-                              size="sm"
-                            >
-                              <Download className="w-4 h-4" />
-                              Download Digital File
-                            </Button>
-                          </div>
-                        )}
-                      </dl>
+                      <InventoryCardContent
+                        stock={currentStock}
+                        minStock={currentMinStock}
+                        stockData={stockData}
+                        stockStatusInfo={stockStatusInfo}
+                      />
                     </CardContent>
                   </Card>
                 )}
               </TabsContent>
 
-              {/* Variants Tab */}
+              {/* ── Variants ── */}
               <TabsContent value="variants" className="space-y-4">
-                {product.product_type === 'digital' ? (
+                {!isPhysical ? (
                   <Card className="border-gray-200">
                     <CardContent className="pt-6">
                       <div className="text-center py-12">
                         <FileText className="w-12 h-12 text-gray-300 mx-auto mb-3" />
                         <p className="text-sm text-gray-500">Digital products don't have variants</p>
-                        <p className="text-xs text-gray-400 mt-1">Variants are only available for physical products</p>
                       </div>
                     </CardContent>
                   </Card>
-                ) : product.product_variants &&
-                 Array.isArray(product.product_variants) &&
-                 product.product_variants.length > 0 ? (
+                ) : product.product_variants?.length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {product.product_variants.map((variant: any, idx: number) => (
-                      <Card key={idx} className={`border-gray-200 ${selectedVariant && selectedVariant.slug === variant.slug ? 'ring-2 ring-blue-500 bg-blue-50/30' : ''}`}>
-                        <CardContent className="pt-6">
-                          <div className="space-y-3">
-                            <div className="flex items-start justify-between">
-                              <Link
-                                href={`/products/${product.slug}?variant=${variant.slug}`}
-                                className="font-medium text-gray-900 hover:text-blue-600 transition-colors cursor-pointer"
-                              >
-                                {variant.slug}
-                              </Link>
-                              <div className="flex items-center gap-2">
-                                {selectedVariant && selectedVariant.slug === variant.slug && (
-                                  <Badge variant="default" className="text-xs bg-blue-100 text-blue-800">Selected</Badge>
-                                )}
-                                <Badge variant="outline" className="text-xs">Variant</Badge>
+                    {product.product_variants.map((variant: any, idx: number) => {
+                      // ✅ FIX: each variant reads its own stock_data injected by API
+                      const { stock: vStock, minStock: vMin } = resolveStock(product, variant);
+                      const isOut = vStock <= 0;
+                      const isLow = !isOut && vStock <= vMin;
+                      const vPct  = vMin > 0 ? Math.min((vStock / (vMin * 2)) * 100, 100) : vStock > 0 ? 50 : 0;
+
+                      return (
+                        <Card
+                          key={idx}
+                          className='border-gray-200 '
+                        >
+                          <CardContent className="pt-6">
+                            <div className="space-y-3">
+                              <div className="flex items-start justify-between">
+                                <Link
+                                  href={`/products/${product.slug}?variant=${variant.slug}`}
+                                  className="font-medium text-gray-900 hover:text-blue-600 transition-colors"
+                                >
+                                  {variant.slug}
+                                </Link>
+                                <div className="flex items-center gap-2">
+                                  {/* {activeVariant?.slug === variant.slug && (
+                                    <Badge className="text-xs bg-blue-100 text-blue-800">Selected</Badge>
+                                  )} */}
+                                  {/* ✅ Per-variant stock badge */}
+                                  <Badge
+                                    variant="outline"
+                                    className={`text-xs font-semibold ${
+                                      isOut ? "border-red-300 text-red-700 bg-red-50"
+                                      : isLow ? "border-amber-300 text-amber-700 bg-amber-50"
+                                      : "border-green-300 text-green-700 bg-green-50"
+                                    }`}
+                                  >
+                                    {isOut ? "Out of Stock" : `${vStock} units`}
+                                  </Badge>
+                                </div>
                               </div>
-                            </div>
-                            <dl className="space-y-2 text-sm">
-                              {variant.sku && (
-                                <div className="flex justify-between">
-                                  <dt className="text-gray-600">SKU</dt>
-                                  <dd className="font-mono text-gray-900">{variant.sku}</dd>
-                                </div>
-                              )}
-                              {variant.cost_price && (
-                                <div className="flex justify-between">
-                                  <dt className="text-gray-600">Cost Price</dt>
-                                  <dd className="font-semibold text-gray-900">₹{variant.cost_price.toLocaleString('en-IN')}</dd>
-                                </div>
-                              )}
-                              {variant.selling_price && (
-                                <div className="flex justify-between">
-                                  <dt className="text-gray-600">Selling Price</dt>
-                                  <dd className="font-semibold text-green-600">₹{variant.selling_price.toLocaleString('en-IN')}</dd>
-                                </div>
-                              )}
-                              {variant.stock !== undefined && (
+
+                              <dl className="space-y-2 text-sm">
+                                {variant.sku && (
+                                  <div className="flex justify-between">
+                                    <dt className="text-gray-600">SKU</dt>
+                                    <dd className="font-mono text-gray-900">{variant.sku}</dd>
+                                  </div>
+                                )}
+                                {variant.selling_price && (
+                                  <div className="flex justify-between">
+                                    <dt className="text-gray-600">Price</dt>
+                                    <dd className="font-semibold text-green-600">₹{variant.selling_price.toLocaleString("en-IN")}</dd>
+                                  </div>
+                                )}
+                                {/* ✅ Live stock per variant */}
                                 <div className="flex justify-between">
                                   <dt className="text-gray-600">Stock</dt>
-                                  <dd className="font-semibold text-gray-900">{getStockDisplayText(variant.stock)} units</dd>
-                                </div>
-                              )}
-                              {variant.minStock !== undefined && (
-                                <div className="flex justify-between">
-                                  <dt className="text-gray-600">Min. Stock</dt>
-                                  <dd className="font-semibold text-gray-900">{variant.minStock} units</dd>
-                                </div>
-                              )}
-                              {variant.stock !== undefined && (
-                                <div className="flex justify-between">
-                                  <dt className="text-gray-600">Status</dt>
-                                  <dd>
-                                    {(() => {
-                                      const variantStatus = getStockStatus(variant.stock, variant.published, false);
-                                      return (
-                                        <Badge
-                                          variant={variantStatus.visibility === 'visible' ? "default" : "secondary"}
-                                          className={`text-xs ${
-                                            variantStatus.color === 'green' ? 'bg-green-100 text-green-800' :
-                                            variantStatus.color === 'yellow' ? 'bg-yellow-100 text-yellow-800' :
-                                            'bg-gray-100 text-gray-600'
-                                          }`}
-                                        >
-                                          {variantStatus.label}
-                                        </Badge>
-                                      );
-                                    })()}
+                                  <dd className={`font-semibold ${isOut ? "text-red-600" : isLow ? "text-amber-600" : "text-gray-900"}`}>
+                                    {vStock} units
                                   </dd>
                                 </div>
-                              )}
-                              {variant.images && variant.images.length > 0 && (
-                                <div>
-                                  <dt className="text-gray-600 mb-2 block">Images</dt>
-                                  <dd>
-                                    <div className="flex gap-2 overflow-x-auto">
-                                      {variant.images.slice(0, 5).map((image: string, imgIdx: number) => (
-                                        <div key={imgIdx} className="w-12 h-12 rounded border border-gray-200 overflow-hidden flex-shrink-0">
-                                          <img
-                                            src={image}
-                                            alt={`Variant image ${imgIdx + 1}`}
-                                            className="w-full h-full object-cover"
-                                          />
+                                <div className="flex justify-between">
+                                  <dt className="text-gray-600">Min. Stock</dt>
+                                  <dd className="font-semibold text-gray-900">{vMin} units</dd>
+                                </div>
+
+                                {/* Mini stock bar */}
+                                <div className={`h-1.5 rounded-full mt-1 ${isOut ? "bg-red-100" : isLow ? "bg-amber-100" : "bg-green-100"}`}>
+                                  <div
+                                    className={`h-full rounded-full ${isOut ? "bg-red-500" : isLow ? "bg-amber-500" : "bg-green-500"}`}
+                                    style={{ width: `${Math.max(vPct, vStock > 0 ? 3 : 0)}%` }}
+                                  />
+                                </div>
+
+                                {variant.images?.length > 0 && (
+                                  <div>
+                                    <dt className="text-gray-600 mb-2 block">Images</dt>
+                                    <dd className="flex gap-2 overflow-x-auto">
+                                      {variant.images.slice(0, 5).map((img: string, i: number) => (
+                                        <div key={i} className="w-12 h-12 rounded border border-gray-200 overflow-hidden flex-shrink-0">
+                                          <img src={img} alt={`Variant img ${i + 1}`} className="w-full h-full object-cover" />
                                         </div>
                                       ))}
                                       {variant.images.length > 5 && (
@@ -828,25 +740,26 @@ export default function ProductDetailsClient({ product }: ProductDetailsClientPr
                                           +{variant.images.length - 5}
                                         </div>
                                       )}
-                                    </div>
-                                  </dd>
-                                </div>
-                              )}
-                              {variant.published !== undefined && (
-                                <div className="flex justify-between">
-                                  <dt className="text-gray-600">Status</dt>
-                                  <dd>
-                                    <Badge variant={variant.published ? "default" : "secondary"} className="text-xs">
-                                      {variant.published ? "Published" : "Draft"}
-                                    </Badge>
-                                  </dd>
-                                </div>
-                              )}
-                            </dl>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
+                                    </dd>
+                                  </div>
+                                )}
+
+                                {variant.published !== undefined && (
+                                  <div className="flex justify-between">
+                                    <dt className="text-gray-600">Published</dt>
+                                    <dd>
+                                      <Badge variant={variant.published ? "default" : "secondary"} className="text-xs">
+                                        {variant.published ? "Published" : "Draft"}
+                                      </Badge>
+                                    </dd>
+                                  </div>
+                                )}
+                              </dl>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
                   </div>
                 ) : (
                   <Card className="border-gray-200">
@@ -860,9 +773,9 @@ export default function ProductDetailsClient({ product }: ProductDetailsClientPr
                 )}
               </TabsContent>
 
-              {/* SEO Tab */}
+              {/* ── SEO ── */}
               <TabsContent value="seo" className="space-y-4">
-                {product.seo && (product.seo.title || product.seo.description || (product.seo.keywords && product.seo.keywords.length > 0)) ? (
+                {product.seo?.title || product.seo?.description || product.seo?.keywords?.length ? (
                   <Card className="border-gray-200">
                     <CardHeader>
                       <CardTitle className="text-base font-medium text-gray-700">SEO Configuration</CardTitle>
@@ -876,7 +789,6 @@ export default function ProductDetailsClient({ product }: ProductDetailsClientPr
                           </div>
                         </div>
                       )}
-
                       {product.seo.description && (
                         <div>
                           <label className="text-sm font-medium text-gray-700 mb-1.5 block">Meta Description</label>
@@ -885,15 +797,12 @@ export default function ProductDetailsClient({ product }: ProductDetailsClientPr
                           </div>
                         </div>
                       )}
-
-                      {product.seo.keywords && product.seo.keywords.length > 0 && (
+                      {product.seo.keywords?.length > 0 && (
                         <div>
                           <label className="text-sm font-medium text-gray-700 mb-2 block">Keywords</label>
                           <div className="flex flex-wrap gap-2">
-                            {product.seo.keywords.map((keyword: string, idx: number) => (
-                              <Badge key={idx} variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
-                                {keyword}
-                              </Badge>
+                            {product.seo.keywords.map((kw: string, idx: number) => (
+                              <Badge key={idx} variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">{kw}</Badge>
                             ))}
                           </div>
                         </div>

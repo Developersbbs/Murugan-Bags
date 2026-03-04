@@ -47,35 +47,39 @@ const inr = (amount: number) =>
   `₹${(isNaN(amount) ? 0 : amount).toFixed(2)}`;
 
 // FIX: Resolve the correct display name for an order item.
-// Backend returns variant info in different fields depending on the schema:
-//   Shape A (legacy OrderItem): item.products.name  — base product name only
-//   Shape B (embedded schema) : item.name           — already "Product - Variant" from backend resolver
-//   Both shapes may also carry: item.variant_name, item.variant_sku, item.variant_attributes
+// Backend GET /:id already resolves the full variant name into products.name
+// (e.g. "Galaxy - Large / Teal") via resolveVariantName on the backend.
+// We must return products.name directly — do NOT re-append attributes.
+//
+// Priority:
+//   1. item.variant_name          — explicit field, most reliable
+//   2. item.products?.name        — backend-resolved full variant name (Shape A & B)
+//   3. item.name + attributes     — Shape B embedded items fallback
+//   4. item.variant_sku           — last resort SKU append
 const resolveItemName = (item: any): string => {
   // 1. Explicit variant_name field (most reliable when present)
   if (item.variant_name) return item.variant_name;
 
-  // Base name from whichever shape we have
-  const baseName: string = item.products?.name || item.name || "Product";
+  // 2. products.name from backend GET /:id — already contains "Product - Variant"
+  //    Do NOT treat this as a base name and re-append attributes;
+  //    the backend resolver already built the full display name.
+  if (item.products?.name) return item.products.name;
 
-  // 2. Build "Base - Attr1 / Attr2" from variant_attributes
+  // 3. Fallback for Shape B (embedded order.items): build from item.name + variant_attributes
+  const baseName: string = item.name || "Product";
+
   if (item.variant_attributes && typeof item.variant_attributes === "object") {
-    const attrs = item.variant_attributes instanceof Map
-      ? Object.fromEntries(item.variant_attributes)
-      : item.variant_attributes;
+    const attrs =
+      item.variant_attributes instanceof Map
+        ? Object.fromEntries(item.variant_attributes)
+        : item.variant_attributes;
     const attrStr = Object.values(attrs).filter(Boolean).join(" / ");
     if (attrStr) return `${baseName} - ${attrStr}`;
   }
 
-  // 3. Append SKU when it adds useful variant info
+  // 4. Append SKU when it adds useful variant info
   if (item.variant_sku && item.variant_sku !== "N/A") {
     return `${baseName} (${item.variant_sku})`;
-  }
-
-  // 4. Shape B: item.name already contains the full "Product - Variant" string
-  //    from the backend resolver — prefer it over item.products?.name
-  if (item.name && item.products?.name && item.name !== item.products.name) {
-    return item.name;
   }
 
   return baseName;
@@ -96,7 +100,6 @@ export default async function Order({ params }: PageParams) {
       [];
 
     const normalisedItems = rawItems.map((item: any) => ({
-      // FIX: use resolveItemName instead of item.products?.name || item.name
       name:       resolveItemName(item),
       unit_price: typeof item.unit_price === "number" ? item.unit_price
                   : typeof item.price    === "number" ? item.price
@@ -104,13 +107,11 @@ export default async function Order({ params }: PageParams) {
       quantity:   item.quantity ?? 1,
     }));
 
-    // ── Subtotal (items only, no tax) ─────────────────────────────────────
-    const subtotal = normalisedItems.reduce(
-      (sum, i) => sum + i.unit_price * i.quantity, 0
-    );
-
-    // ── Total = subtotal + shipping (tax excluded) ────────────────────────
-    const totalWithoutTax = subtotal + (order.shipping_cost || 0);
+    // ✅ FIX: Always use order.total_amount from the DB as the authoritative total.
+    // The DB total_amount = subtotal + shipping + tax (10%), computed at order
+    // placement time. Re-computing on the frontend (subtotal + shipping only)
+    // drops the tax component and shows a wrong figure (e.g. ₹6,999 vs ₹7,698.90).
+    const totalAmount = order.total_amount;
 
     return (
       <section>
@@ -338,8 +339,10 @@ export default async function Order({ params }: PageParams) {
                 total amount
               </Typography>
 
+              {/* ✅ FIX: Use order.total_amount directly (includes tax + shipping).
+                  Previous code recalculated as subtotal+shipping which dropped tax. */}
               <Typography className="text-xl capitalize font-semibold tracking-wide text-primary">
-                {inr(totalWithoutTax)}
+                {inr(totalAmount)}
               </Typography>
             </div>
           </div>

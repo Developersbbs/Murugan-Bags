@@ -434,9 +434,9 @@ export default function WishlistCartReportPage() {
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead>Image</TableHead>
+                                {/* <TableHead>Image</TableHead> */}
                                 <TableHead>Product Name</TableHead>
-                                <TableHead>Price</TableHead>
+                                {/* <TableHead>Price</TableHead> */}
                                 <TableHead className="text-center">In Wishlists</TableHead>
                                 <TableHead className="text-center">In Carts</TableHead>
                                 <TableHead className="text-right">Total Interest</TableHead>
@@ -462,7 +462,7 @@ export default function WishlistCartReportPage() {
                                         className="cursor-pointer hover:bg-muted/50"
                                         onClick={() => handleProductClick(item)}
                                     >
-                                        <TableCell>
+                                        {/* <TableCell>
                                             {item.image ? (
                                                 <img
                                                     src={item.image}
@@ -474,11 +474,11 @@ export default function WishlistCartReportPage() {
                                                     No Img
                                                 </div>
                                             )}
-                                        </TableCell>
+                                        </TableCell> */}
                                         <TableCell className="font-medium text-blue-600 hover:underline">
                                             {item.name}
                                         </TableCell>
-                                        <TableCell>
+                                        {/* <TableCell>
                                             <div className="flex flex-col">
                                                 <span className="font-bold">₹{item.discounted_price}</span>
                                                 {item.price > item.discounted_price && (
@@ -487,7 +487,7 @@ export default function WishlistCartReportPage() {
                                                     </span>
                                                 )}
                                             </div>
-                                        </TableCell>
+                                        </TableCell> */}
                                         <TableCell className="text-center font-medium text-pink-600">
                                             {item.inWishlists}
                                         </TableCell>

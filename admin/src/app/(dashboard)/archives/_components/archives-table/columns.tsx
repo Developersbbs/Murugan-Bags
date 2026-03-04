@@ -29,32 +29,6 @@ export const getColumns = ({
     hasPermission: HasPermission;
 }) => {
     const columns: ColumnDef<TransformedProduct>[] = [
-        /*
-                {
-                    id: "select",
-                    header: ({ table }) => (
-                        <Checkbox
-                            checked={
-                                table.getIsAllPageRowsSelected() ||
-                                (table.getIsSomePageRowsSelected() && "indeterminate")
-                            }
-                            onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-                            aria-label="Select all"
-                            className="translate-y-[2px]"
-                        />
-                    ),
-                    cell: ({ row }) => (
-                        <Checkbox
-                            checked={row.getIsSelected()}
-                            onCheckedChange={(value) => row.toggleSelected(!!value)}
-                            aria-label="Select row"
-                            className="translate-y-[2px]"
-                        />
-                    ),
-                    enableSorting: false,
-                    enableHiding: false,
-                },
-        */
         {
             header: "product name",
             cell: ({ row }) => {
@@ -64,7 +38,6 @@ export const getColumns = ({
 
                 return (
                     <div className="flex gap-2 items-center">
-
                         <div className="flex flex-col">
                             <span className="text-sm font-medium text-muted-foreground">
                                 {isVariant ? (
@@ -91,7 +64,7 @@ export const getColumns = ({
         {
             header: "structure",
             cell: ({ row }) => {
-                const isVariant = row.original._isVariant;
+                const isVariant = row.original.product_structure === 'variant'
                 return (
                     <Badge variant={isVariant ? "outline" : "secondary"}>
                         {isVariant ? "Variant" : "Simple"}
@@ -116,18 +89,28 @@ export const getColumns = ({
                 );
             },
         },
-        {
-            header: "cost price",
-            cell: ({ row }) => {
-                return formatAmount(row.original.cost_price);
-            },
-        },
-        {
-            header: "sale price",
-            cell: ({ row }) => {
-                return formatAmount(row.original.selling_price);
-            },
-        },
+        // {
+        //     // FIX: Read price from variantData for variant rows, fall back to parent product
+        //     header: "cost price",
+        //     cell: ({ row }) => {
+        //         const product = row.original;
+        //         const price = product._isVariant
+        //             ? (product._variantData?.cost_price ?? product.cost_price)
+        //             : product.cost_price;
+        //         return formatAmount(price);
+        //     },
+        // },
+        // {
+        //     // FIX: Read price from variantData for variant rows, fall back to parent product
+        //     header: "sale price",
+        //     cell: ({ row }) => {
+        //         const product = row.original;
+        //         const price = product._isVariant
+        //             ? (product._variantData?.selling_price ?? product.selling_price)
+        //             : product.selling_price;
+        //         return formatAmount(price);
+        //     },
+        // },
 
         {
             header: "actions",
@@ -161,17 +144,22 @@ export const getColumns = ({
 
                         {hasPermission("products", "canDelete") && (
                             <TableActionAlertDialog
-                                title={`PERMANENTLY DELETE ${isVariant ? 'variant' : 'product'} "${product.name}"?`}
+                                title={`PERMANENTLY DELETE ${isVariant ? 'variant' : 'product'} "${isVariant ? variantData?.name : product.name}"?`}
                                 description={
                                     isVariant
-                                        ? "This action CANNOT be undone. This will permanently remove this variant from the database."
-                                        : "This action CANNOT be undone. This will permanently remove the product and all its history from the database."
+                                        ? "This action CANNOT be undone. This will permanently remove this variant."
+                                        : "This action CANNOT be undone. This will permanently remove the product."
                                 }
                                 tooltipContent={isVariant ? "Delete Variant Permanently" : "Delete Product Permanently"}
                                 actionButtonText={isVariant ? "Delete Variant Permanently" : "Delete Product Permanently"}
-                                toastSuccessMessage={`${isVariant ? 'Variant' : 'Product'} "${product.name}" deleted permanently!`}
+                                toastSuccessMessage={`${isVariant ? 'Variant' : 'Product'} deleted permanently!`}
                                 queryKey="products"
-                                action={() => deleteProduct(parentProduct?._id || product._id)}
+                                action={() =>
+                                    deleteProduct(
+                                        parentProduct?._id || product._id,
+                                        isVariant ? variantData?._id : undefined
+                                    )
+                                }
                             >
                                 <div className="text-destructive hover:bg-destructive/10 p-2 rounded-md transition-colors cursor-pointer">
                                     <Trash2 className="size-5" />

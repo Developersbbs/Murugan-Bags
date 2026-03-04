@@ -86,31 +86,31 @@ export const getColumns = ({
         );
       },
     },
-    {
-      header: "status",
-      cell: ({ row }) => {
-        const status = row.original.status || 'draft';
-        const variantMap: Record<string, 'default' | 'destructive' | 'outline' | 'secondary'> = {
-          'selling': 'default',
-          'out_of_stock': 'destructive',
-          'draft': 'outline',
-          'archived': 'secondary'
-        };
+    // {
+    //   header: "status",
+    //   cell: ({ row }) => {
+    //     const status = row.original.status || 'draft';
+    //     const variantMap: Record<string, 'default' | 'destructive' | 'outline' | 'secondary'> = {
+    //       'selling': 'default',
+    //       'out_of_stock': 'destructive',
+    //       'draft': 'outline',
+    //       'archived': 'secondary'
+    //     };
 
-        const statusLabels: Record<string, string> = {
-          'selling': 'Selling',
-          'out_of_stock': 'Out of Stock',
-          'draft': 'Draft',
-          'archived': 'Archived'
-        };
+    //     const statusLabels: Record<string, string> = {
+    //       'selling': 'Selling',
+    //       'out_of_stock': 'Out of Stock',
+    //       'draft': 'Draft',
+    //       'archived': 'Archived'
+    //     };
 
-        return (
-          <Badge variant={variantMap[status] || 'outline'}>
-            {statusLabels[status] || status}
-          </Badge>
-        );
-      },
-    },
+    //     return (
+    //       <Badge variant={variantMap[status] || 'outline'}>
+    //         {statusLabels[status] || status}
+    //       </Badge>
+    //     );
+    //   },
+    // },
     {
       header: "category",
       cell: ({ row }) => {
