@@ -25,7 +25,7 @@ import { useCart } from "../../context/CartContext";
 import { useWishlist } from "../../context/WishlistContext";
 
 const Header = () => {
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); // Mobile menu state
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
   const [isMobileCategoryOpen, setIsMobileCategoryOpen] = useState(false);
@@ -77,7 +77,6 @@ const Header = () => {
   const isHome = location.pathname === "/";
   const isSearchPage = location.pathname === "/search";
 
-  // Use new Context-based cart and wishlist
   const { itemCount: cartItemCount, openSidebar } = useCart();
   const { itemCount: wishlistCount, openSidebar: openWishlistSidebar } =
     useWishlist();
@@ -87,7 +86,6 @@ const Header = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  // Handle scroll effect
   useEffect(() => {
     const handleScroll = () => {
       setScrolled(window.scrollY > 20);
@@ -96,10 +94,8 @@ const Header = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Fetch backend user if missing
   useEffect(() => {
     if (isAuthenticated && user?.uid && !backendUser && !backendUserLoading) {
-      console.log("Header: Backend user missing, fetching...");
       dispatch(fetchUserProfile(user.uid));
     }
   }, [isAuthenticated, user, backendUser, backendUserLoading, dispatch]);
@@ -191,7 +187,6 @@ const Header = () => {
     };
   }, [categoryTimeout]);
 
-  // Fetch categories from backend
   useEffect(() => {
     const fetchCategories = async () => {
       try {
@@ -200,7 +195,6 @@ const Header = () => {
         const data = await res.json();
 
         if (data.success && data.data && data.data.length > 0) {
-          // Map backend categories to mega menu format
           const iconMap = {
             BackPacks: <FaShoppingBag className="w-8 h-8 mb-2 text-rose-500" />,
             "Trolley Bags": (
@@ -214,13 +208,10 @@ const Header = () => {
           };
 
           const mappedCategories = data.data.map((cat) => {
-            // Get image URL
             let imageUrl = cat.image_url || cat.image;
-
             if (imageUrl && !imageUrl.startsWith("http")) {
               imageUrl = `${API_BASE_URL.replace("/api", "")}${imageUrl}`;
             }
-
             return {
               name: cat.name,
               path: `/products?category=${cat.slug || cat.name}`,
@@ -251,7 +242,6 @@ const Header = () => {
     { name: "New Arrivals", path: "/new-arrivals" },
   ];
 
-  // Determine styling based on route and scroll
   const isTransparent = isHome && !scrolled;
   const headerClass = isTransparent
     ? "bg-gradient-to-b from-black/60 to-transparent"
@@ -269,27 +259,31 @@ const Header = () => {
     <header
       className={`fixed w-full top-0 z-50 transition-all duration-300 ${headerClass}`}
     >
-      <div className="container mx-auto px-4 py-3">
-        <div className="flex items-center justify-between">
-          {/* Logo */}
+      {/* ── CHANGED: use px-3 lg:px-6 so it breathes on all widths ── */}
+      <div className="w-full max-w-screen-2xl mx-auto px-3 lg:px-6 py-3">
+
+        {/* ── CHANGED: grid layout so logo/nav/actions never overlap ── */}
+        <div className="flex items-center gap-2 lg:gap-4">
+
+          {/* ── Logo: shrink-0 keeps it from squishing ── */}
           <Link
             to="/"
-            className="flex items-center space-x-2 group cursor-pointer"
+            className="flex items-center gap-2 shrink-0 group cursor-pointer"
           >
             <img
-              className="w-14 h-14 drop-shadow-md"
+              className="w-10 h-10 lg:w-12 lg:h-12 drop-shadow-md"
               src="/Asset 1 1.svg"
               alt="Murugan Bags Logo"
             />
             <span
-              className={`text-2xl font-bold tracking-tight transition-colors duration-300 ${textColorClass}`}
+              className={`hidden sm:block text-lg lg:text-xl font-bold tracking-tight whitespace-nowrap transition-colors duration-300 ${textColorClass}`}
             >
-              <p>MURUGAN BAGS</p>
+              MURUGAN BAGS
             </span>
           </Link>
 
-          {/* Desktop Navigation */}
-          <nav className="hidden xl:flex items-center space-x-1">
+          {/* ── Desktop Navigation: flex-1 so it fills available space, centered ── */}
+          <nav className="hidden lg:flex items-center justify-center flex-1 gap-0.5 xl:gap-1">
             {/* Categories Mega Menu */}
             <div
               className="relative"
@@ -306,7 +300,7 @@ const Header = () => {
             >
               <button
                 id="category-button"
-                className={`px-4 py-2 rounded-full font-medium flex items-center transition-all duration-300 ${navTextClass}`}
+                className={`px-3 xl:px-4 py-2 rounded-full font-medium text-sm xl:text-base flex items-center whitespace-nowrap transition-all duration-300 ${navTextClass}`}
               >
                 Categories
                 <svg
@@ -368,25 +362,26 @@ const Header = () => {
               <Link
                 key={item.name}
                 to={item.path}
-                className={`px-4 py-2 rounded-full font-medium cursor-pointer transition-all duration-300 ${navTextClass}`}
+                className={`px-3 xl:px-4 py-2 rounded-full font-medium text-sm xl:text-base whitespace-nowrap cursor-pointer transition-all duration-300 ${navTextClass}`}
               >
                 {item.name}
               </Link>
             ))}
           </nav>
 
-          {/* Search, Cart, and Auth */}
-          <div className="hidden xl:flex items-center space-x-4">
+          {/* ── Right section: shrink-0 keeps icons from wrapping ── */}
+          <div className="hidden lg:flex items-center gap-2 xl:gap-3 shrink-0 ml-auto">
+            {/* Search */}
             {!isSearchPage && (
               <form onSubmit={handleSearch} className="relative group">
                 <div className="relative">
                   <input
                     type="text"
                     placeholder="Search..."
-                    className={`pl-10 pr-4 py-2.5 rounded-full text-sm focus:outline-none w-48 lg:w-64 transition-all duration-300 glass-input ${
+                    className={`pl-9 pr-3 py-2 rounded-full text-sm focus:outline-none transition-all duration-300 w-36 lg:w-44 xl:w-56 ${
                       !isTransparent
                         ? "bg-slate-100 text-slate-800 placeholder-slate-400 focus:bg-white"
-                        : "bg-white/10 text-white placeholder-white/70 focus:bg-white/20 border-white/30"
+                        : "bg-white/10 text-white placeholder-white/70 focus:bg-white/20 border border-white/30"
                     }`}
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
@@ -395,20 +390,20 @@ const Header = () => {
                     }
                   />
                   <div
-                    className={`absolute left-3 top-1/2 transform -translate-y-1/2 transition-colors duration-300 ${
+                    className={`absolute left-3 top-1/2 -translate-y-1/2 transition-colors duration-300 ${
                       !isTransparent
                         ? "text-slate-400 group-hover:text-rose-500"
                         : "text-white/70"
                     }`}
                   >
-                    <FaSearch className="w-4 h-4" />
+                    <FaSearch className="w-3.5 h-3.5" />
                   </div>
                 </div>
 
-                {/* Suggestions Dropdown in Header */}
+                {/* Suggestions Dropdown */}
                 {searchQuery.length >= 2 &&
                   suggestionsData?.data?.length > 0 && (
-                    <div className="absolute top-full mt-2 left-0 right-0 bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden z-50 min-w-[300px]">
+                    <div className="absolute top-full mt-2 left-0 right-0 bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden z-50 min-w-[280px]">
                       <div className="py-2">
                         {suggestionsData.data.slice(0, 5).map((item, idx) => (
                           <button
@@ -433,7 +428,7 @@ const Header = () => {
                               </div>
                             ) : (
                               <div className="w-10 h-10 bg-rose-100 rounded-lg flex items-center justify-center mr-3">
-                                <FaFire className="text-rose-500 text-xs" />
+                                <FaShoppingBag className="text-rose-500 text-xs" />
                               </div>
                             )}
                             <div className="flex-1 min-w-0">
@@ -460,13 +455,14 @@ const Header = () => {
               </form>
             )}
 
-            <div className="flex items-center space-x-2">
+            {/* Wishlist & Cart */}
+            <div className="flex items-center gap-1">
               <button
                 onClick={() => openWishlistSidebar()}
                 className={`relative p-2.5 rounded-full transition-all duration-300 group cursor-pointer ${iconClass}`}
                 title="Wishlist"
               >
-                <FaHeart className="h-5 w-5 group-hover:scale-110 transition-transform duration-200" />
+                <FaHeart className="h-4 w-4 xl:h-5 xl:w-5 group-hover:scale-110 transition-transform duration-200" />
                 {wishlistCount > 0 && (
                   <span className="absolute -top-1 -right-1 bg-rose-500 text-white text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center animate-pulse shadow-lg">
                     {wishlistCount}
@@ -479,7 +475,7 @@ const Header = () => {
                 className={`relative p-2.5 rounded-full transition-all duration-300 group cursor-pointer ${iconClass}`}
                 title="Cart"
               >
-                <FaShoppingCart className="h-5 w-5 group-hover:scale-110 transition-transform duration-200" />
+                <FaShoppingCart className="h-4 w-4 xl:h-5 xl:w-5 group-hover:scale-110 transition-transform duration-200" />
                 {cartItemCount > 0 && (
                   <span className="absolute -top-1 -right-1 bg-rose-500 text-white text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center animate-pulse shadow-lg">
                     {cartItemCount}
@@ -488,8 +484,9 @@ const Header = () => {
               </button>
             </div>
 
+            {/* Auth */}
             {loading || backendUserLoading ? (
-              <div className="flex items-center space-x-1">
+              <div className="flex items-center">
                 <div
                   className={`animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 ${!isTransparent ? "border-rose-500" : "border-white"}`}
                 ></div>
@@ -498,30 +495,21 @@ const Header = () => {
               <div className="relative">
                 <button
                   id="profile-button"
-                  className="group flex items-center space-x-1 focus:outline-none"
+                  className="group flex items-center gap-1.5 focus:outline-none"
                   onClick={toggleDropdown}
                 >
                   <div
-                    className={`w-9 h-9 rounded-full overflow-hidden flex items-center justify-center border-2 transition-all duration-300 ${!isTransparent ? "border-rose-100 shadow-sm" : "border-white/50"}`}
+                    className={`w-8 h-8 xl:w-9 xl:h-9 rounded-full overflow-hidden flex items-center justify-center border-2 transition-all duration-300 ${!isTransparent ? "border-rose-100 shadow-sm" : "border-white/50"}`}
                   >
                     {(() => {
                       if (backendUser?.image_url) {
                         return (
                           <img
                             src={backendUser.image_url}
-                            alt={
-                              backendUser.name || user?.displayName || "User"
-                            }
+                            alt={backendUser.name || user?.displayName || "User"}
                             className="w-full h-full object-cover"
                             onError={(e) => {
                               e.target.onerror = null;
-                              e.target.style.display = "none";
-                              e.target.parentElement.classList.add(
-                                "bg-slate-200",
-                              );
-                              // We'll let the parent div show the fallback icon if we hide the image
-                              // But since we are inside the img tag, we need to handle this carefully
-                              // Actually, simpler approach: switch to a reliable default avatar or just hide and show icon
                               e.target.src =
                                 "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23cbd5e1'%3E%3Cpath d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/%3E%3C/svg%3E";
                             }}
@@ -570,7 +558,7 @@ const Header = () => {
                     })()}
                   </div>
                   <span
-                    className={`hidden lg:inline font-medium text-sm ml-2 ${!isTransparent ? "text-slate-700" : "text-white"}`}
+                    className={`hidden xl:inline font-medium text-sm ${!isTransparent ? "text-slate-700" : "text-white"}`}
                   >
                     {backendUser?.name?.split(" ")[0] ||
                       user?.displayName?.split(" ")[0] ||
@@ -583,7 +571,7 @@ const Header = () => {
                   </span>
                 </button>
 
-                {/* Dropdown Menu */}
+                {/* Profile Dropdown */}
                 <div
                   className={`profile-dropdown absolute right-0 mt-3 w-56 bg-white/90 backdrop-blur-xl rounded-2xl shadow-2xl py-2 z-50 transition-all duration-300 border border-white/50 ${
                     isProfileDropdownOpen
@@ -593,10 +581,7 @@ const Header = () => {
                 >
                   <div className="px-4 py-3 border-b border-slate-100">
                     <p className="text-sm font-bold text-slate-800 truncate">
-                      {backendUser?.name ||
-                        user?.displayName ||
-                        user?.name ||
-                        "User"}
+                      {backendUser?.name || user?.displayName || user?.name || "User"}
                     </p>
                     <p className="text-xs text-slate-500 truncate mt-0.5">
                       {user?.email || user?.phoneNumber || "No contact info"}
@@ -647,26 +632,26 @@ const Header = () => {
             ) : (
               <Link
                 to="/login"
-                className="flex items-center space-x-2 text-white bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-700 hover:to-pink-700 px-6 py-2.5 rounded-full transition-all duration-300 shadow-lg hover:shadow-rose-500/30 cursor-pointer transform hover:-translate-y-0.5"
+                className="flex items-center gap-2 text-white bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-700 hover:to-pink-700 px-4 xl:px-6 py-2 xl:py-2.5 rounded-full transition-all duration-300 shadow-lg hover:shadow-rose-500/30 cursor-pointer transform hover:-translate-y-0.5 whitespace-nowrap text-sm font-bold"
               >
-                <FaUser size={14} />
-                <span className="text-sm font-bold">Login</span>
+                <FaUser size={13} />
+                <span>Login</span>
               </Link>
             )}
           </div>
 
           {/* Mobile menu button */}
           <button
-            className={`xl:hidden transition-colors duration-300 ${!isTransparent ? "text-slate-800" : "text-white"}`}
+            className={`lg:hidden ml-auto transition-colors duration-300 p-1 ${!isTransparent ? "text-slate-800" : "text-white"}`}
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           >
-            {isMobileMenuOpen ? <FaTimes size={24} /> : <FaBars size={24} />}
+            {isMobileMenuOpen ? <FaTimes size={22} /> : <FaBars size={22} />}
           </button>
         </div>
 
         {/* Mobile Menu */}
         {isMobileMenuOpen && (
-          <div className="xl:hidden mt-4 pb-6 border-t border-white/10 animate-fade-in-up bg-white/95 backdrop-blur-xl rounded-2xl p-4 shadow-2xl absolute left-4 right-4 top-16">
+          <div className="lg:hidden mt-4 pb-6 border-t border-white/10 animate-fade-in-up bg-white/95 backdrop-blur-xl rounded-2xl p-4 shadow-2xl absolute left-3 right-3 top-16 z-50">
             {!isSearchPage && (
               <form onSubmit={handleSearch} className="my-4 relative">
                 <input

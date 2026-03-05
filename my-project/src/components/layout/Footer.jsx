@@ -50,10 +50,11 @@ const Footer = () => {
             {/* Address */}
             <div>
               <address className="not-italic text-gray-400 text-sm leading-relaxed">
-                <p>NO 1/196, GOLDEN PRADISE,</p>
-                <p>GNANAPRAKASAM STREET,</p>
-                <p>LAKSHMI NAGAR, THARAPAKKAM,</p>
-                <p>CHENNAI - 122</p>
+                <p>NO 2/1, FIRST FLOOR,</p>
+                <p>VINAYAGAR KOIL STREET,</p>
+                <p>VANAGARAM,</p>
+                <p>CHENNAI - 600095</p>
+                <p>TAMIL NADU</p>
               </address>
             </div>
           </div>
